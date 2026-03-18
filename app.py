@@ -1,5 +1,5 @@
 """
-Platform & Policy Intelligence Engine — Enterprise PoC
+Platform & Policy Intelligence — Enterprise PoC
 Agentic Workflow · Structured Output · Role-based Deliverables
 """
 
@@ -16,7 +16,7 @@ import plotly.graph_objects as go
 
 # ─── Page Configuration ──────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Platform & Policy Intelligence Engine",
+    page_title="Platform & Policy Intelligence",
     page_icon="◆",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -1539,7 +1539,7 @@ def _format_slack_export(board_memo: str, domain: str, risk_label: str) -> str:
         f"{snippet}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"_Actions required — see full report in the enterprise dashboard._\n"
-        f"_Platform & Policy Intelligence Engine · claude-opus-4-6_"
+        f"_Platform & Policy Intelligence · claude-opus-4-6_"
     )
 
 
@@ -1732,7 +1732,7 @@ def main() -> None:
                      color:#F0EDE6 !important;font-size:3.4rem;font-weight:300;
                      letter-spacing:0.06em;margin:0 0 0.6rem;line-height:1.1">
             Platform & Policy<br>
-            <span style="color:{_ACCENT};font-style:italic">Intelligence Engine</span>
+            <span style="color:{_ACCENT};font-style:italic">Intelligence</span>
           </h1>
           <div style="width:80px;height:1px;background:linear-gradient(90deg,transparent,{_ACCENT},transparent);
                       margin:1.4rem auto"></div>
