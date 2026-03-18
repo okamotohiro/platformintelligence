@@ -1559,40 +1559,6 @@ def main() -> None:
         </div>""", unsafe_allow_html=True)
 
         st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
-                    letter-spacing:0.22em;text-transform:uppercase;margin-bottom:10px">
-          ◆ Policy / Platform Event
-        </div>""", unsafe_allow_html=True)
-
-        policy_text = st.text_area(
-            "policy_input", height=210,
-            placeholder=(
-                "Example: EU AI Act Amendment — Article 53\n"
-                "- Generative AI systems using copyrighted content for training\n"
-                "  must provide prior notice and a compensation scheme to rights holders.\n"
-                "- Non-compliance: 3% of global turnover or up to €15M, whichever is higher.\n"
-                "- Phased enforcement begins Q1 2026."
-            ),
-            label_visibility="collapsed",
-        )
-
-        st.markdown('<div style="height:1px;background:rgba(10,186,181,0.10);margin:1.2rem 0"></div>',
-                    unsafe_allow_html=True)
-
-        st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
-                    letter-spacing:0.22em;text-transform:uppercase;margin-bottom:10px">
-          ◆ Target Domain Profile
-        </div>""", unsafe_allow_html=True)
-
-        domain = st.radio("domain", options=list(DOMAIN_PROFILES.keys()),
-                          label_visibility="collapsed")
-        st.caption("Select the policy domain to calibrate the engine's risk assessment weights.")
-
-        st.markdown('<div style="height:1px;background:rgba(10,186,181,0.10);margin:1.4rem 0"></div>',
-                    unsafe_allow_html=True)
-
-        st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;font-size:0.65rem;margin-bottom:10px">
           <div style="color:{_ACCENT};letter-spacing:0.20em;font-size:0.56rem;
                       font-weight:600;margin-bottom:10px;text-transform:uppercase">
@@ -1619,21 +1585,9 @@ def main() -> None:
           </div>
         </div>""", unsafe_allow_html=True)
 
-        st.markdown('<div style="height:1px;background:rgba(10,186,181,0.10);margin:0.8rem 0 1.4rem"></div>',
+        st.markdown('<div style="height:1px;background:rgba(10,186,181,0.08);margin:1.4rem 0 1.2rem"></div>',
                     unsafe_allow_html=True)
 
-        has_input = bool(policy_text and policy_text.strip() and len(policy_text.strip()) >= 20)
-        sidebar_btn = st.button("◆  Run Intelligence Engine", use_container_width=True,
-                                disabled=not has_input)
-        if not has_input:
-            st.markdown(f"""
-            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.65rem;
-                        text-align:center;margin-top:4px;letter-spacing:0.06em">
-              Enter policy text to enable analysis
-            </div>""", unsafe_allow_html=True)
-
-        st.markdown('<div style="height:1px;background:rgba(10,186,181,0.08);margin:1.8rem 0 1.2rem"></div>',
-                    unsafe_allow_html=True)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;font-size:0.65rem;line-height:2.1">
           <div style="color:{_ACCENT};letter-spacing:0.20em;font-size:0.56rem;
@@ -1669,10 +1623,10 @@ def main() -> None:
           </div>
         </div>""", unsafe_allow_html=True)
 
-    run_triggered = sidebar_btn
+    run_triggered = False
 
-    # ── Welcome Screen ────────────────────────────────────────────────────────
-    if not st.session_state.results and not run_triggered:
+    # ── Welcome Screen + Inline Input Form ───────────────────────────────────
+    if not st.session_state.results:
         st.markdown(f"""
         <div style="text-align:center;padding:4rem 2rem 2.5rem">
           <div style="font-family:'Montserrat',sans-serif;color:{_ACCENT};font-size:0.62rem;
@@ -1712,19 +1666,75 @@ def main() -> None:
                               font-size:0.78rem;line-height:1.7">{desc}</div>
                 </div>""", unsafe_allow_html=True)
 
+        # ── Inline Input Container ────────────────────────────────────────────
         st.markdown("<div style='height:2.5rem'></div>", unsafe_allow_html=True)
-        _, center, _ = st.columns([1.5, 2, 1.5])
-        with center:
-            main_btn = st.button("◆  Run Intelligence Engine", key="main_run",
-                                 use_container_width=True, disabled=not has_input)
+        st.markdown(f"""
+        <div style="background:#0D0D0D;border:1px solid rgba(10,186,181,0.18);
+                    border-top:2px solid {_ACCENT};padding:2rem 2.4rem 1.8rem;
+                    margin-bottom:0.5rem">
+          <div style="font-family:'Montserrat',sans-serif;color:{_ACCENT};font-size:0.56rem;
+                      letter-spacing:0.32em;text-transform:uppercase;margin-bottom:1.4rem;
+                      display:flex;align-items:center;gap:10px">
+            <span>◆</span><span>ANALYSIS CONFIGURATION</span>
+            <div style="flex:1;height:1px;background:rgba(10,186,181,0.14)"></div>
+          </div>
+        </div>""", unsafe_allow_html=True)
+
+        inp_left, inp_right = st.columns([1, 2], gap="large")
+
+        with inp_left:
+            st.markdown(f"""
+            <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.52rem;
+                        letter-spacing:0.24em;text-transform:uppercase;margin-bottom:6px">
+              Target Domain Profile
+            </div>""", unsafe_allow_html=True)
+            domain = st.selectbox(
+                "domain_select",
+                options=list(DOMAIN_PROFILES.keys()),
+                key="domain",
+                label_visibility="collapsed",
+            )
+            st.caption("Calibrates risk-weighting and contract references for the selected domain.")
+
+        with inp_right:
+            st.markdown(f"""
+            <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.52rem;
+                        letter-spacing:0.24em;text-transform:uppercase;margin-bottom:6px">
+              Policy / Agreement / Regulatory Text
+            </div>""", unsafe_allow_html=True)
+            policy_text = st.text_area(
+                "policy_input",
+                height=260,
+                placeholder=(
+                    "Example: EU AI Act Amendment — Article 53\n"
+                    "- Generative AI systems using copyrighted content for training\n"
+                    "  must provide prior notice and a compensation scheme to rights holders.\n"
+                    "- Non-compliance: 3% of global turnover or up to €15M, whichever is higher.\n"
+                    "- Phased enforcement begins Q1 2026."
+                ),
+                key="policy_text",
+                label_visibility="collapsed",
+            )
+
+        has_input = bool(policy_text and policy_text.strip() and len(policy_text.strip()) >= 20)
+
+        st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+        _, btn_col, _ = st.columns([1, 2, 1])
+        with btn_col:
+            run_triggered = st.button(
+                "▶  EXECUTE INTELLIGENCE PIPELINE",
+                key="main_run",
+                use_container_width=True,
+                type="primary",
+                disabled=not has_input,
+            )
             if not has_input:
-                st.markdown(f"""
-                <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
-                            font-size:0.65rem;text-align:center;margin-top:6px;
-                            letter-spacing:0.06em">
-                  Enter policy text in the sidebar to begin
-                </div>""", unsafe_allow_html=True)
-        run_triggered = run_triggered or main_btn
+                st.markdown(
+                    '<div style="font-family:Montserrat,sans-serif;color:#6B6560;'
+                    'font-size:0.60rem;text-align:center;margin-top:5px;letter-spacing:0.06em">'
+                    'Paste policy text above (min 20 chars) to activate</div>',
+                    unsafe_allow_html=True,
+                )
 
         if not run_triggered:
             st.markdown("<div style='height:2rem'></div>", unsafe_allow_html=True)
@@ -1753,6 +1763,7 @@ def main() -> None:
 
     # ── Validation ────────────────────────────────────────────────────────────
     if run_triggered:
+        # domain / policy_text / has_input are defined in the welcome block above
         client = get_client()
         if not client:
             st.markdown(f"""
@@ -1764,7 +1775,7 @@ def main() -> None:
               </div>
               <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                           font-size:0.78rem;margin-top:4px">
-                Please enter your Anthropic API key in the sidebar.
+                Set the ANTHROPIC_API_KEY environment variable to enable analysis.
               </div>
             </div>""", unsafe_allow_html=True)
             return
