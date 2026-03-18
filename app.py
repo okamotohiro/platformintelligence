@@ -40,8 +40,8 @@ st.markdown("""
     --bg-card2:      #161616;
     --bg-sidebar:    #0D0D0D;
     --text:          #F0EDE6;
-    --text-sec:      #9A9590;
-    --text-muted:    #504D48;
+    --text-sec:      #A8A49E;
+    --text-muted:    #C4BFB8;
     --threat:        #8B2635;
     --opp:           #1A6B3C;
     --serif:         "Cormorant Garamond", "Palatino Linotype", "Palatino", Georgia, serif;
@@ -685,7 +685,7 @@ def create_radar_chart(scores: Dict) -> go.Figure:
             radialaxis=dict(
                 visible=True, range=[0, 100],
                 tickvals=[0, 25, 50, 75, 100],
-                tickfont=dict(size=9, color="#504D48", family="Montserrat"),
+                tickfont=dict(size=9, color="#C4BFB8", family="Montserrat"),
                 gridcolor="rgba(10,186,181,0.08)",
                 linecolor="rgba(10,186,181,0.06)",
             ),
@@ -718,10 +718,10 @@ def create_bar_chart(scores: Dict) -> go.Figure:
     fig.update_layout(
         xaxis=dict(tickfont=dict(size=11, color="#9A9590", family="Montserrat"),
                    gridcolor="rgba(10,186,181,0.05)", showline=False),
-        yaxis=dict(range=[0, 120], tickfont=dict(size=9, color="#504D48"),
+        yaxis=dict(range=[0, 120], tickfont=dict(size=9, color="#C4BFB8"),
                    gridcolor="rgba(10,186,181,0.06)",
                    title="Impact Score  (0 – 100)",
-                   title_font=dict(size=10, color="#504D48", family="Montserrat")),
+                   title_font=dict(size=10, color="#C4BFB8", family="Montserrat")),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,17,17,0.9)",
         font=dict(color="#9A9590", family="Montserrat"),
         showlegend=False, margin=dict(l=50, r=20, t=15, b=40), height=300,
@@ -743,7 +743,7 @@ def _risk_config(level: str):
         "high":     ("HIGH",     "#A8892A"),
         "medium":   ("MEDIUM",   "#8A7020"),
         "low":      ("LOW",      "#1A6B3C"),
-    }.get(level, ("—", "#504D48"))
+    }.get(level, ("—", "#C4BFB8"))
 
 
 def _accent_divider() -> None:
@@ -759,7 +759,7 @@ def _section_label(num: str, title: str) -> None:
       <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};font-size:1.6rem;
                   font-weight:300;line-height:1;min-width:28px">{num}</div>
       <div>
-        <div style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.62rem;
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.62rem;
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:2px">Step</div>
         <div style="font-family:'Cormorant Garamond',serif;color:#F0EDE6;font-size:1.15rem;
                     font-weight:400;letter-spacing:0.04em">{title}</div>
@@ -782,7 +782,7 @@ def _item_card(item: Dict, accent: str) -> None:
       </div>
       {"<span style='color:"+sc+";font-family:Montserrat,sans-serif;font-size:0.60rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase'>"+sev+"</span>" if sev else ""}
       {"<span style='color:"+_ACCENT+";font-family:Montserrat,sans-serif;font-weight:600;font-size:0.85rem;margin-left:10px'>"+val+"</span>" if val else ""}
-      <div style="color:#504D48;font-family:'Montserrat',sans-serif;
+      <div style="color:#C4BFB8;font-family:'Montserrat',sans-serif;
                   font-size:0.76rem;line-height:1.6;margin-top:5px">
         {desc[:130]}{'…' if len(desc)>130 else ''}
       </div>
@@ -809,7 +809,7 @@ def _score_card(axis: str, info: Dict) -> None:
       <div style="font-family:'Montserrat',sans-serif;color:{lc};
                   font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;
                   margin-bottom:10px">{d}</div>
-      <div style="font-family:'Montserrat',sans-serif;color:#504D48;
+      <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                   font-size:0.74rem;line-height:1.6">
         {ev[:100]}{'…' if len(ev)>100 else ''}
       </div>
@@ -819,7 +819,7 @@ def _score_card(axis: str, info: Dict) -> None:
 
 def _col_header(label: str) -> None:
     st.markdown(f"""
-    <div style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.62rem;
+    <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.62rem;
                 letter-spacing:0.20em;text-transform:uppercase;margin-bottom:10px;
                 border-bottom:1px solid rgba(10,186,181,0.10);padding-bottom:8px">
       {label}
@@ -857,7 +857,7 @@ def render_login() -> None:
                         font-size:1.1rem;font-weight:300;letter-spacing:0.16em;">
               POLICY INTELLIGENCE
             </div>
-            <div style="font-family:'Montserrat',sans-serif;color:#504D48;
+            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                         font-size:0.55rem;letter-spacing:0.34em;text-transform:uppercase;
                         margin-top:4px;">
               ENTERPRISE · RESTRICTED ACCESS
@@ -871,7 +871,7 @@ def render_login() -> None:
         # ── Form fields ───────────────────────────────────────────────────────
         # Custom labels (styled)
         st.markdown(f"""
-          <div style="font-family:'Montserrat',sans-serif;color:#504D48;
+          <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                       font-size:0.60rem;letter-spacing:0.22em;text-transform:uppercase;
                       margin-bottom:6px;">Login ID</div>
         """, unsafe_allow_html=True)
@@ -885,7 +885,7 @@ def render_login() -> None:
         st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
         st.markdown(f"""
-          <div style="font-family:'Montserrat',sans-serif;color:#504D48;
+          <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                       font-size:0.60rem;letter-spacing:0.22em;text-transform:uppercase;
                       margin-bottom:6px;">Password</div>
         """, unsafe_allow_html=True)
@@ -926,7 +926,7 @@ def render_login() -> None:
         # ── Footer note ───────────────────────────────────────────────────────
         st.markdown(f"""
         <div style="text-align:center;margin-top:20px;
-                    font-family:'Montserrat',sans-serif;color:#504D48;
+                    font-family:'Montserrat',sans-serif;color:#C4BFB8;
                     font-size:0.58rem;letter-spacing:0.14em;">
           Access restricted to authorized personnel only.
         </div>
@@ -955,7 +955,7 @@ def main() -> None:
                       font-size:1.05rem;font-weight:300;letter-spacing:0.12em;">
             POLICY INTELLIGENCE
           </div>
-          <div style="font-family:'Montserrat',sans-serif;color:#504D48;
+          <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                       font-size:0.58rem;letter-spacing:0.30em;text-transform:uppercase;
                       margin-top:2px">
             ENTERPRISE · CLAUDE claude-opus-4-6
@@ -966,7 +966,7 @@ def main() -> None:
 
         # API Key section
         st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.60rem;
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:10px">
           ◆ Claude API Key
         </div>""", unsafe_allow_html=True)
@@ -979,7 +979,7 @@ def main() -> None:
               <div style="font-family:'Montserrat',sans-serif;color:#1A6B3C;
                           font-size:0.60rem;letter-spacing:0.18em;text-transform:uppercase;
                           margin-bottom:3px">✓  Auto-configured from environment</div>
-              <div style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.72rem;">
+              <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;">
                 sk-ant-···{env_key[-6:]}</div>
             </div>""", unsafe_allow_html=True)
         else:
@@ -1004,7 +1004,7 @@ def main() -> None:
 
         # Policy text
         st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.60rem;
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:10px">
           ◆ Policy / Platform Event
         </div>""", unsafe_allow_html=True)
@@ -1027,7 +1027,7 @@ def main() -> None:
 
         # Domain
         st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.60rem;
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:10px">
           ◆ Target Domain Profile
         </div>""", unsafe_allow_html=True)
@@ -1049,7 +1049,7 @@ def main() -> None:
         )
         if not has_input:
             st.markdown(f"""
-            <div style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.65rem;
+            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.65rem;
                         text-align:center;margin-top:4px;letter-spacing:0.06em">
               Enter policy text to enable analysis
             </div>""", unsafe_allow_html=True)
@@ -1058,7 +1058,7 @@ def main() -> None:
         st.markdown('<div style="height:1px;background:rgba(10,186,181,0.08);margin:1.8rem 0 1.2rem"></div>',
                     unsafe_allow_html=True)
         st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.65rem;
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.65rem;
                     line-height:2.0">
           <div style="color:{_ACCENT}55;letter-spacing:0.16em;font-size:0.58rem;margin-bottom:6px">
             AGENTIC PIPELINE
@@ -1096,7 +1096,7 @@ def main() -> None:
           </h1>
           <div style="width:80px;height:1px;background:linear-gradient(90deg,transparent,{_ACCENT},transparent);
                       margin:1.4rem auto"></div>
-          <p style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.78rem;
+          <p style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.78rem;
                     letter-spacing:0.14em;text-transform:uppercase;margin:0">
             External Change &nbsp;→&nbsp; Strategic Clarity
           </p>
@@ -1118,7 +1118,7 @@ def main() -> None:
                   <div style="font-family:'Montserrat',sans-serif;color:#F0EDE6;
                               font-size:0.72rem;font-weight:600;letter-spacing:0.18em;
                               text-transform:uppercase;margin-bottom:12px">{label}</div>
-                  <div style="font-family:'Montserrat',sans-serif;color:#504D48;
+                  <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                               font-size:0.78rem;line-height:1.7">{desc}</div>
                 </div>""", unsafe_allow_html=True)
 
@@ -1134,7 +1134,7 @@ def main() -> None:
             )
             if not has_input:
                 st.markdown(f"""
-                <div style="font-family:'Montserrat',sans-serif;color:#504D48;
+                <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                             font-size:0.65rem;text-align:center;margin-top:6px;
                             letter-spacing:0.06em">
                   Enter policy text in the sidebar to begin
@@ -1163,7 +1163,7 @@ def main() -> None:
                       <div style="font-family:'Montserrat',sans-serif;color:#9A9590;
                                   font-size:0.68rem;font-weight:600;letter-spacing:0.14em;
                                   text-transform:uppercase;margin-bottom:8px">{cap}</div>
-                      <div style="font-family:'Montserrat',sans-serif;color:#504D48;
+                      <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                                   font-size:0.75rem;line-height:1.7">{sub}</div>
                     </div>""", unsafe_allow_html=True)
             return
@@ -1179,7 +1179,7 @@ def main() -> None:
                           font-size:0.72rem;font-weight:600;letter-spacing:0.12em">
                 API KEY REQUIRED
               </div>
-              <div style="font-family:'Montserrat',sans-serif;color:#504D48;
+              <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                           font-size:0.78rem;margin-top:4px">
                 Please enter your Anthropic API key in the sidebar.
               </div>
@@ -1276,7 +1276,7 @@ def main() -> None:
     with hcol1:
         st.markdown(f"""
         <div style="padding:1.5rem 0 0.5rem">
-          <div style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.60rem;
+          <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
                       letter-spacing:0.28em;text-transform:uppercase;margin-bottom:6px">
             Analysis Complete · {domain}
           </div>
@@ -1326,7 +1326,7 @@ def main() -> None:
         st.markdown(f"""
         <div style="background:#111111;border-left:2px solid {_ACCENT};
                     padding:14px 18px;margin-top:16px">
-          <div style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.60rem;
+          <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
                       letter-spacing:0.20em;text-transform:uppercase;margin-bottom:6px">Summary</div>
           <div style="font-family:'Montserrat',sans-serif;color:#9A9590;
                       font-size:0.82rem;line-height:1.7">
@@ -1346,13 +1346,13 @@ def main() -> None:
                 padding:16px 22px;margin-bottom:1.5rem;
                 display:flex;align-items:center;gap:20px">
       <div>
-        <div style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.58rem;
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.58rem;
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:3px">Overall Risk</div>
         <div style="font-family:'Cormorant Garamond',serif;color:{rl_color};
                     font-size:1.6rem;font-weight:300;letter-spacing:0.08em">{rl_label}</div>
       </div>
       <div style="width:1px;height:40px;background:rgba(10,186,181,0.14)"></div>
-      <div style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.80rem;
+      <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.80rem;
                   line-height:1.7;flex:1">
         {step2_data.get('executive_summary','')}
       </div>
@@ -1361,14 +1361,14 @@ def main() -> None:
     # Charts
     ch1, ch2 = st.columns(2)
     with ch1:
-        st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#504D48;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin-bottom:8px">Radar — Impact Map</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin-bottom:8px">Radar — Impact Map</div>', unsafe_allow_html=True)
         st.plotly_chart(create_radar_chart(step2_data["scores"]), use_container_width=True)
     with ch2:
-        st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#504D48;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin-bottom:8px">Bar — Score by Axis</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin-bottom:8px">Bar — Score by Axis</div>', unsafe_allow_html=True)
         st.plotly_chart(create_bar_chart(step2_data["scores"]), use_container_width=True)
 
     # Score cards
-    st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#504D48;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin:1rem 0 12px">Evidence & Priority Actions</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin:1rem 0 12px">Evidence & Priority Actions</div>', unsafe_allow_html=True)
     sc1, sc2, sc3, sc4 = st.columns(4)
     for col, axis in [(sc1, "IP"), (sc2, "Traffic"), (sc3, "Revenue"), (sc4, "Product")]:
         with col:
@@ -1416,7 +1416,7 @@ def main() -> None:
     _accent_divider()
     st.markdown(f"""
     <div style="text-align:center;padding:1rem 0 2rem">
-      <div style="font-family:'Montserrat',sans-serif;color:#504D48;font-size:0.58rem;
+      <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.58rem;
                   letter-spacing:0.28em;text-transform:uppercase">
         Analysis Complete &nbsp;◆&nbsp; 3-Step Prompt Chain &nbsp;◆&nbsp;
         JSON Schema Mode · Adaptive Thinking · Parallel Streaming
