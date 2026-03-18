@@ -947,41 +947,143 @@ def _audit_block(doc_id: str) -> None:
     </div>""", unsafe_allow_html=True)
 
 
-def _hitl_buttons(tab_key: str) -> None:
-    """Human-in-the-Loop workflow action buttons."""
+def _governance_panel(tab_key: str, risk_label: str = "HIGH") -> None:
+    """Enterprise governance & audit control panel — Human-in-the-Loop."""
     st.markdown(f"""
-    <div style="border-top:1px solid rgba(10,186,181,0.12);
-                margin:2.2rem 0 1rem;padding-top:1.2rem">
-      <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
-                  letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
-        ◆ &nbsp; HUMAN-IN-THE-LOOP — WORKFLOW ACTIONS
+    <div style="border-top:1px solid rgba(10,186,181,0.15);margin:3rem 0 1.6rem;padding-top:1.6rem">
+      <div style="font-family:'Montserrat',sans-serif;color:{_ACCENT};font-size:0.58rem;
+                  letter-spacing:0.28em;text-transform:uppercase;margin-bottom:0.4rem;
+                  display:flex;align-items:center;gap:10px">
+        <span>◆</span>
+        <span>GOVERNANCE &amp; AUDIT CONTROL PANEL</span>
+        <div style="flex:1;height:1px;background:rgba(10,186,181,0.14)"></div>
+      </div>
+      <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.56rem;
+                  letter-spacing:0.14em;margin-top:3px">
+        Human-in-the-Loop · System of Record · Audit-grade Sign-off
       </div>
     </div>""", unsafe_allow_html=True)
 
-    c1, c2, c3, _ = st.columns([1, 1, 1.6, 1.2])
-    with c1:
-        if st.button(
-            "✅  Approve & Share",
-            key=f"approve_{tab_key}",
-            use_container_width=True,
-        ):
-            st.toast("✅ Action recorded: Document approved and queued for sharing.", icon="✅")
-    with c2:
-        if st.button(
-            "🔄  Request Revision",
-            key=f"revise_{tab_key}",
-            type="secondary",
-            use_container_width=True,
-        ):
-            st.toast("🔄 Action recorded: Revision request submitted to analyst.", icon="🔄")
-    with c3:
-        if st.button(
-            "⚠️  Escalate to Outside Counsel",
-            key=f"escalate_{tab_key}",
-            type="secondary",
-            use_container_width=True,
-        ):
-            st.toast("⚠️ Action recorded: Escalated to Outside Counsel.", icon="⚠️")
+    rl_clean = risk_label.upper() if risk_label else "HIGH"
+    _, rl_color = _risk_config(rl_clean)
+
+    # Build override options dynamically based on current AI determination
+    all_levels = ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+    keep_opt   = f"— Keep AI Determination: {rl_clean} —"
+    down_opts  = [f"Downgrade to {l}" for l in all_levels if l != rl_clean and all_levels.index(l) > all_levels.index(rl_clean)]
+    up_opts    = [f"Escalate to {l}"  for l in all_levels if l != rl_clean and all_levels.index(l) < all_levels.index(rl_clean)]
+    override_options = [keep_opt] + up_opts + down_opts
+
+    with st.form(key=f"gov_{tab_key}"):
+
+        # ── ① AI Risk Determination Override ─────────────────────────────────
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.56rem;
+                    letter-spacing:0.22em;text-transform:uppercase;margin-bottom:12px">
+          ①&nbsp; AI RISK DETERMINATION OVERRIDE
+        </div>""", unsafe_allow_html=True)
+
+        oc1, oc2 = st.columns([1, 2.4])
+        with oc1:
+            st.markdown(f"""
+            <div style="background:#0D0D0D;border:1px solid {rl_color}44;
+                        padding:14px 16px;text-align:center;height:100%">
+              <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.50rem;
+                          letter-spacing:0.22em;text-transform:uppercase;margin-bottom:5px">
+                AI Determination
+              </div>
+              <div style="font-family:'Cormorant Garamond',serif;color:{rl_color};
+                          font-size:1.8rem;font-weight:300;letter-spacing:0.10em;line-height:1">
+                {rl_clean}
+              </div>
+              <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.48rem;
+                          letter-spacing:0.10em;margin-top:6px;line-height:1.5">
+                claude-opus-4-6<br>adaptive thinking
+              </div>
+            </div>""", unsafe_allow_html=True)
+        with oc2:
+            st.selectbox(
+                "Human Risk Override",
+                options=override_options,
+                key=f"override_{tab_key}",
+            )
+            st.text_area(
+                "Justification / Human Context  (Required for Audit Log)",
+                placeholder=(
+                    "Enter your justification for any risk level change, "
+                    "or add contextual notes to confirm the AI determination. "
+                    "This entry will be immutably logged with your Audit ID."
+                ),
+                height=82,
+                key=f"justification_{tab_key}",
+            )
+
+        st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
+
+        # ── ② Cross-functional Routing ────────────────────────────────────────
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.56rem;
+                    letter-spacing:0.22em;text-transform:uppercase;
+                    margin:18px 0 10px;padding-top:14px;
+                    border-top:1px solid rgba(10,186,181,0.08)">
+          ②&nbsp; CROSS-FUNCTIONAL ROUTING — WORKFLOW DESTINATIONS
+        </div>""", unsafe_allow_html=True)
+
+        rc1, rc2, rc3 = st.columns(3)
+        with rc1:
+            st.checkbox(
+                "Push Product Checklist to Jira  (Epic)",
+                value=True, key=f"r_jira_{tab_key}",
+            )
+        with rc2:
+            st.checkbox(
+                "Send Board Memo to Slack  (#exec-alerts)",
+                value=True, key=f"r_slack_{tab_key}",
+            )
+        with rc3:
+            st.checkbox(
+                "Escalate Legal Brief to Outside Counsel Portal",
+                value=False, key=f"r_counsel_{tab_key}",
+            )
+
+        st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
+
+        # ── ③ Audit Sign-off ──────────────────────────────────────────────────
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.56rem;
+                    letter-spacing:0.22em;text-transform:uppercase;
+                    margin:18px 0 10px;padding-top:14px;
+                    border-top:1px solid rgba(10,186,181,0.08)">
+          ③&nbsp; AUDIT SIGN-OFF &amp; EXECUTION
+        </div>""", unsafe_allow_html=True)
+
+        sc1, sc2 = st.columns([3, 1.2])
+        with sc1:
+            st.markdown(f"""
+            <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.60rem;
+                        letter-spacing:0.08em;line-height:1.8;padding-top:6px">
+              Logged in as: &nbsp;<span style="color:#C4BFB8;font-weight:600">General Counsel</span>
+              &nbsp;·&nbsp; Audit ID: <span style="color:{_ACCENT}">GC-8921</span>
+              &nbsp;·&nbsp; Session: <span style="color:#1A6B3C">enterprise-verified</span>
+              &nbsp;·&nbsp; Jurisdiction: Japan / APAC
+              <br>
+              <span style="color:#9A9590;font-size:0.54rem">
+                This sign-off constitutes a legally binding attestation under the enterprise governance protocol.
+                All actions will be immutably logged to the System of Record.
+              </span>
+            </div>""", unsafe_allow_html=True)
+        with sc2:
+            submitted = st.form_submit_button(
+                "◆  Sign-off & Execute Workflows",
+                use_container_width=True,
+            )
+
+        if submitted:
+            st.toast(
+                "✅ Sign-off recorded. Cross-functional workflows executing — "
+                "Audit ID GC-8921 logged. (mock)",
+                icon="✅",
+            )
 
 
 # ─── Multi-Agent Debate Helpers ───────────────────────────────────────────────
@@ -1730,6 +1832,10 @@ def main() -> None:
     def _fn(prefix: str) -> str:
         return f"{prefix}_{domain.replace(' ', '_')}.md"
 
+    # ── Compute governance risk label once (used across all tabs) ─────────────
+    _gov_risk_raw = step3_data.get("overall_risk", step2_data.get("overall_risk_level", "medium"))
+    _gov_risk_label, _ = _risk_config(_gov_risk_raw)
+
     # ── Tab 1: Executive Summary & Delta ─────────────────────────────────────
     with tab1:
         _audit_block(doc_id)
@@ -1771,7 +1877,7 @@ def main() -> None:
             mime=_DOCX_MIME,
         )
 
-        _hitl_buttons("tab1")
+        _governance_panel("tab1", _gov_risk_label)
 
     # ── Tab 2: Business Exposure ──────────────────────────────────────────────
     with tab2:
@@ -1802,7 +1908,7 @@ def main() -> None:
             mime=_DOCX_MIME,
         )
 
-        _hitl_buttons("tab2")
+        _governance_panel("tab2", _gov_risk_label)
 
     # ── Tab 3: Legal & Negotiation ────────────────────────────────────────────
     with tab3:
@@ -1833,7 +1939,7 @@ def main() -> None:
             mime=_DOCX_MIME,
         )
 
-        _hitl_buttons("tab3")
+        _governance_panel("tab3", _gov_risk_label)
 
     # ── Tab 4: Board Memo ─────────────────────────────────────────────────────
     with tab4:
@@ -1864,7 +1970,7 @@ def main() -> None:
             mime=_DOCX_MIME,
         )
 
-        _hitl_buttons("tab4")
+        _governance_panel("tab4", _gov_risk_label)
 
         # ── Slack Export ──────────────────────────────────────────────────────
         st.markdown(f"""
@@ -1907,7 +2013,7 @@ def main() -> None:
         else:
             st.caption("No checklist items generated.")
 
-        _hitl_buttons("tab5")
+        _governance_panel("tab5", _gov_risk_label)
 
         # ── Jira Export ───────────────────────────────────────────────────────
         if checklist:
