@@ -311,16 +311,18 @@ p, label, .stMarkdown p,
 }
 /* st.info override — evidence quote style */
 [data-testid="stAlert"][data-baseweb="notification"] {
-    background: rgba(10, 186, 181, 0.05) !important;
-    border: 1px solid rgba(10, 186, 181, 0.20) !important;
-    border-left: 3px solid var(--accent) !important;
+    background: rgba(10, 186, 181, 0.04) !important;
+    border: 1px solid rgba(100, 116, 139, 0.30) !important;
+    border-left: 3px solid #64748B !important;
+    border-radius: 0 !important;
 }
 [data-testid="stAlert"] p {
-    color: var(--text-sec) !important;
-    font-style: italic !important;
-    font-family: var(--serif) !important;
-    font-size: 0.90rem !important;
-    line-height: 1.75 !important;
+    color: rgba(255, 255, 255, 0.90) !important;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    font-family: var(--sans) !important;
+    font-size: 0.86rem !important;
+    line-height: 1.6 !important;
 }
 
 /* ── DIVIDER / CAPTION / JSON ───────────────── */
