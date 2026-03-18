@@ -898,14 +898,15 @@ def _build_debate_log(step1_data: Dict, step2_data: Dict, domain: str) -> List[D
             ),
         },
         {
-            "agent": "🧠 Synthesizer",
+            "agent": "🏛️ Executive Alignment",
             "color": "#0ABAB5",
+            "final": True,
             "message": (
-                f"Consensus: overall risk **{risk_level}**. Coordinated cross-functional response required. "
-                f"Priority order — (1) Legal: outside-counsel briefing within 24h, "
-                f"(2) Product: compliance sprint kick-off, "
-                f"(3) Business: renegotiate commercial terms using identified leverage points. "
-                f"Board notification warranted within 48 hours for {domain} domain."
+                f"Conflict Resolved: Balancing Legal risk (IP exposure: {ip_score}/100) with Business impact "
+                f"(revenue exposure: {rev_score}/100). Unified cross-functional strategy formulated — "
+                f"overall classification: {risk_level}. "
+                f"Action Required: Escalating to General Counsel and CPO for final review and compliance sprint kick-off. "
+                f"Board notification required within 48 hours — {domain} domain."
             ),
         },
     ]
@@ -922,19 +923,44 @@ def _debate_expander(debate_log: List[Dict]) -> None:
           Internal reasoning trace — autonomous committee deliberation prior to output generation
         </div>""", unsafe_allow_html=True)
         for entry in debate_log:
-            st.markdown(f"""
-            <div style="background:#111111;border-left:2px solid {entry['color']};
-                        padding:12px 16px;margin:8px 0">
-              <div style="font-family:'Montserrat',sans-serif;color:{entry['color']};
-                          font-size:0.65rem;font-weight:600;letter-spacing:0.14em;
-                          text-transform:uppercase;margin-bottom:6px">
-                {entry['agent']}
-              </div>
-              <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
-                          font-size:0.80rem;line-height:1.7">
-                {entry['message']}
-              </div>
-            </div>""", unsafe_allow_html=True)
+            is_final = entry.get("final", False)
+            if is_final:
+                st.markdown(f"""
+                <div style="background:linear-gradient(135deg,rgba(10,186,181,0.10),rgba(10,186,181,0.04));
+                            border:1px solid rgba(10,186,181,0.35);border-left:3px solid {entry['color']};
+                            padding:16px 18px;margin:14px 0 4px">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                    <div style="font-family:'Montserrat',sans-serif;color:{entry['color']};
+                                font-size:0.65rem;font-weight:700;letter-spacing:0.16em;
+                                text-transform:uppercase">
+                      {entry['agent']}
+                    </div>
+                    <div style="font-family:'Montserrat',sans-serif;color:{entry['color']};
+                                font-size:0.55rem;letter-spacing:0.18em;text-transform:uppercase;
+                                background:rgba(10,186,181,0.12);padding:2px 8px;
+                                border:1px solid rgba(10,186,181,0.25)">
+                      SYSTEM OF RECORD
+                    </div>
+                  </div>
+                  <div style="font-family:'Montserrat',sans-serif;color:#F0EDE6;
+                              font-size:0.82rem;line-height:1.75;font-weight:500">
+                    {entry['message']}
+                  </div>
+                </div>""", unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div style="background:#111111;border-left:2px solid {entry['color']};
+                            padding:12px 16px;margin:8px 0">
+                  <div style="font-family:'Montserrat',sans-serif;color:{entry['color']};
+                              font-size:0.65rem;font-weight:600;letter-spacing:0.14em;
+                              text-transform:uppercase;margin-bottom:6px">
+                    {entry['agent']}
+                  </div>
+                  <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
+                              font-size:0.80rem;line-height:1.7">
+                    {entry['message']}
+                  </div>
+                </div>""", unsafe_allow_html=True)
 
 
 # ─── System of Action Export Helpers ─────────────────────────────────────────
