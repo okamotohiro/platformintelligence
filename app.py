@@ -1424,34 +1424,8 @@ def main() -> None:
             st.session_state.results = None
             st.rerun()
 
-    # ── Success Banner ────────────────────────────────────────────────────────
-    if elapsed:
-        rl_raw = step3_data.get("overall_risk", step2_data.get("overall_risk_level", "medium"))
-        rl_label, rl_color = _risk_config(rl_raw)
-        st.markdown(f"""
-        <div style="background:linear-gradient(135deg,rgba(10,186,181,0.08),rgba(10,186,181,0.03));
-                    border:1px solid rgba(10,186,181,0.22);padding:18px 24px;
-                    margin:12px 0 0;display:flex;align-items:center;gap:24px;flex-wrap:wrap">
-          <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};font-size:2rem;
-                      font-weight:300;line-height:1">✓</div>
-          <div style="flex:1;min-width:200px">
-            <div style="font-family:'Montserrat',sans-serif;color:#F0EDE6;font-size:0.78rem;
-                        font-weight:600;letter-spacing:0.06em">
-              Analysis completed in {elapsed}s
-            </div>
-            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
-                        margin-top:3px;line-height:1.5">
-              Translated complex policy changes into 5 role-specific actionable outputs
-              with evidence citations. Work that previously took weeks, delivered in seconds.
-            </div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.56rem;
-                        letter-spacing:0.22em;text-transform:uppercase;margin-bottom:2px">Overall Risk</div>
-            <div style="font-family:'Cormorant Garamond',serif;color:{rl_color};
-                        font-size:1.4rem;font-weight:300;letter-spacing:0.10em">{rl_label}</div>
-          </div>
-        </div>""", unsafe_allow_html=True)
+    # ── Success Toast ─────────────────────────────────────────────────────────
+    st.toast("✅ Multi-Agent Synthesis Complete: Generated 5 role-specific actionable outputs.")
 
     # ── Multi-Agent Debate Log ────────────────────────────────────────────────
     _debate_expander(debate_log)
@@ -1725,8 +1699,8 @@ def main() -> None:
     <div style="text-align:center;padding:1rem 0 2rem">
       <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.58rem;
                   letter-spacing:0.28em;text-transform:uppercase">
-        Analysis Complete &nbsp;◆&nbsp; 3-Step Prompt Chain &nbsp;◆&nbsp;
-        Evidence Citations · Human-in-the-Loop · {elapsed}s
+        Analysis Complete &nbsp;◆&nbsp; Agentic Workflow Pipeline &nbsp;◆&nbsp;
+        Evidence-Grounded · Multi-Agent Debate · Human-in-the-Loop
       </div>
       <div style="width:60px;height:1px;background:linear-gradient(90deg,transparent,{_ACCENT}44,transparent);
                   margin:1rem auto"></div>
