@@ -623,55 +623,190 @@ def _majority_direction(scores: Dict) -> str:
     return max(set(dirs), key=dirs.count)
 
 
-def create_radar_chart(scores: Dict) -> go.Figure:
-    axes = ["IP", "Traffic", "Revenue", "Product"]
-    vals = [scores[a]["score"] for a in axes]
-    md = _majority_direction(scores)
-    line_color, fill_color = _DIR_COLORS.get(md, ("#0ABAB5", "rgba(10,186,181,0.16)"))
+def create_exposure_delta_radar(scores: Dict) -> go.Figure:
+    """Before/After radar: Current Baseline vs. New Policy Exposure."""
+    axes = ["Traffic", "IP", "Revenue", "Product"]
+
+    # New Policy Exposure = scores returned by AI analysis
+    new_vals = [scores[a]["score"] for a in axes]
+
+    # Current Baseline = pulled toward neutral (50) to show pre-policy state
+    # Threats show score jump upward; opportunities show score drop; neutral ≈ -5
+    def _baseline(axis: str) -> int:
+        s, d = scores[axis]["score"], scores[axis]["direction"]
+        if d == "threat":
+            return max(10, s - 22)
+        elif d == "opportunity":
+            return min(95, s + 14)
+        return max(10, s - 6)
+
+    base_vals = [_baseline(a) for a in axes]
+
+    # Close the polygon
+    theta   = axes + [axes[0]]
+    new_r   = new_vals  + [new_vals[0]]
+    base_r  = base_vals + [base_vals[0]]
+
     fig = go.Figure()
+
+    # ── Trace 1: Current Baseline (muted steel blue) ───────────────────────
     fig.add_trace(go.Scatterpolar(
-        r=vals + [vals[0]], theta=axes + [axes[0]],
-        fill="toself", fillcolor=fill_color,
-        line=dict(color=line_color, width=2),
-        marker=dict(size=7, color=line_color, symbol="diamond"),
-        hovertemplate="<b>%{theta}</b><br>%{r}/100<extra></extra>",
+        r=base_r, theta=theta,
+        fill="toself",
+        fillcolor="rgba(90,130,160,0.18)",
+        line=dict(color="rgba(90,130,160,0.65)", width=1.5, dash="dot"),
+        marker=dict(size=5, color="rgba(90,130,160,0.8)", symbol="circle"),
+        name="Current Baseline",
+        hovertemplate="<b>%{theta}</b><br>Baseline: %{r}/100<extra></extra>",
     ))
+
+    # ── Trace 2: New Policy Exposure (crimson warning) ─────────────────────
+    fig.add_trace(go.Scatterpolar(
+        r=new_r, theta=theta,
+        fill="toself",
+        fillcolor="rgba(139,38,53,0.28)",
+        line=dict(color="#C0392B", width=2.2),
+        marker=dict(size=7, color="#E74C3C", symbol="diamond"),
+        name="New Policy Exposure",
+        hovertemplate="<b>%{theta}</b><br>New Exposure: %{r}/100<extra></extra>",
+    ))
+
     fig.update_layout(
         polar=dict(
-            radialaxis=dict(visible=True, range=[0, 100], tickvals=[0, 25, 50, 75, 100],
-                tickfont=dict(size=9, color="#C4BFB8", family="Montserrat"),
-                gridcolor="rgba(10,186,181,0.08)", linecolor="rgba(10,186,181,0.06)"),
-            angularaxis=dict(tickfont=dict(size=12, color="#9A9590", family="Montserrat"),
-                gridcolor="rgba(10,186,181,0.08)", linecolor="rgba(10,186,181,0.10)"),
-            bgcolor="rgba(17,17,17,0.9)",
+            radialaxis=dict(
+                visible=True, range=[0, 100], tickvals=[25, 50, 75, 100],
+                tickfont=dict(size=8, color="#6B6560", family="Montserrat"),
+                gridcolor="rgba(196,191,184,0.07)",
+                linecolor="rgba(196,191,184,0.05)",
+            ),
+            angularaxis=dict(
+                tickfont=dict(size=11, color="#C4BFB8", family="Montserrat"),
+                gridcolor="rgba(10,186,181,0.08)",
+                linecolor="rgba(10,186,181,0.10)",
+            ),
+            bgcolor="rgba(13,13,13,0.0)",
         ),
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#9A9590", family="Montserrat"),
-        showlegend=False, margin=dict(l=55, r=55, t=30, b=30), height=360,
+        legend=dict(
+            x=0.5, y=-0.12, xanchor="center", orientation="h",
+            font=dict(size=9, color="#9A9590", family="Montserrat"),
+            bgcolor="rgba(0,0,0,0)", borderwidth=0,
+        ),
+        margin=dict(l=55, r=55, t=30, b=50),
+        height=380,
     )
     return fig
 
 
-def create_bar_chart(scores: Dict) -> go.Figure:
-    axes = ["IP", "Traffic", "Revenue", "Product"]
-    vals = [scores[a]["score"] for a in axes]
-    colors = [_DIR_COLORS.get(scores[a]["direction"], ("#0ABAB5", ""))[0] for a in axes]
-    fig = go.Figure(go.Bar(
-        x=axes, y=vals, marker_color=colors,
-        text=[str(v) for v in vals], textposition="outside",
-        textfont=dict(size=13, color="#F0EDE6", family="Montserrat"),
-        hovertemplate="<b>%{x}</b> — %{y}/100<extra></extra>",
-        marker=dict(line=dict(width=0)),
-    ))
+def create_risk_urgency_matrix(scores: Dict) -> go.Figure:
+    """Risk & Urgency Matrix: scatter of key policy clauses by time + severity."""
+    # ── Derive clause positions from actual axis scores ──────────────────────
+    ip_s  = scores["IP"]["score"]
+    tr_s  = scores["Traffic"]["score"]
+    rv_s  = scores["Revenue"]["score"]
+    pr_s  = scores["Product"]["score"]
+
+    clauses = [
+        {
+            "name": "IP Licensing Term",
+            "x": 10,                         # very close → high urgency
+            "y": min(98, ip_s + 4),
+            "color": "#C0392B",
+            "size": 14,
+            "detail": f"IP Licensing Term<br>Days to Enactment: 10<br>Severity: {min(98, ip_s+4)}/100",
+        },
+        {
+            "name": "Data Share-back Clause",
+            "x": 22,
+            "y": max(30, tr_s - 5),
+            "color": "#E67E22",
+            "size": 12,
+            "detail": f"Data Share-back Clause<br>Days to Enactment: 22<br>Severity: {max(30, tr_s-5)}/100",
+        },
+        {
+            "name": "Content Attribution Rule",
+            "x": 38,
+            "y": max(25, rv_s - 10),
+            "color": "#A8892A",
+            "size": 11,
+            "detail": f"Content Attribution Rule<br>Days to Enactment: 38<br>Severity: {max(25, rv_s-10)}/100",
+        },
+        {
+            "name": "Opt-out UI Change",
+            "x": 55,
+            "y": max(20, pr_s - 8),
+            "color": "#0ABAB5",
+            "size": 10,
+            "detail": f"Opt-out UI Change<br>Days to Enactment: 55<br>Severity: {max(20, pr_s-8)}/100",
+        },
+    ]
+
+    fig = go.Figure()
+
+    # ── Urgency quadrant shading ──────────────────────────────────────────────
+    # Q1 top-left: Critical & Urgent (darkest red tint)
+    fig.add_shape(type="rect", x0=0, y0=60, x1=30, y1=100,
+                  fillcolor="rgba(139,38,53,0.07)", line=dict(width=0), layer="below")
+    # Q2 top-right: Critical but time available
+    fig.add_shape(type="rect", x0=30, y0=60, x1=70, y1=100,
+                  fillcolor="rgba(168,137,42,0.05)", line=dict(width=0), layer="below")
+    # Quadrant labels
+    for txt, qx, qy, col in [
+        ("CRITICAL & URGENT", 15, 97, "rgba(139,38,53,0.55)"),
+        ("CRITICAL", 50, 97, "rgba(168,137,42,0.40)"),
+        ("MONITOR", 50, 22, "rgba(100,100,100,0.35)"),
+    ]:
+        fig.add_annotation(x=qx, y=qy, text=txt, showarrow=False,
+                           font=dict(size=7, color=col, family="Montserrat"),
+                           xanchor="center")
+
+    # ── Divider lines ─────────────────────────────────────────────────────────
+    fig.add_shape(type="line", x0=30, y0=0, x1=30, y1=100,
+                  line=dict(color="rgba(196,191,184,0.08)", width=1, dash="dot"))
+    fig.add_shape(type="line", x0=0, y0=60, x1=70, y1=60,
+                  line=dict(color="rgba(196,191,184,0.08)", width=1, dash="dot"))
+
+    # ── Data points ──────────────────────────────────────────────────────────
+    for c in clauses:
+        fig.add_trace(go.Scatter(
+            x=[c["x"]], y=[c["y"]],
+            mode="markers+text",
+            marker=dict(
+                size=c["size"] + 4,
+                color=c["color"],
+                opacity=0.85,
+                line=dict(width=1.5, color="rgba(255,255,255,0.15)"),
+            ),
+            text=[f'  {c["name"]}'],
+            textposition="middle right",
+            textfont=dict(size=9, color="#C4BFB8", family="Montserrat"),
+            hovertemplate=f"<b>{c['detail']}</b><extra></extra>",
+            showlegend=False,
+        ))
+
     fig.update_layout(
-        xaxis=dict(tickfont=dict(size=11, color="#9A9590", family="Montserrat"),
-                   gridcolor="rgba(10,186,181,0.05)", showline=False),
-        yaxis=dict(range=[0, 120], tickfont=dict(size=9, color="#C4BFB8"),
-                   gridcolor="rgba(10,186,181,0.06)", title="Impact Score  (0 – 100)",
-                   title_font=dict(size=10, color="#C4BFB8", family="Montserrat")),
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,17,17,0.9)",
+        xaxis=dict(
+            title=dict(text="← Time to Enactment (Days)  [left = more urgent]",
+                       font=dict(size=9, color="#9A9590", family="Montserrat")),
+            range=[0, 70], autorange="reversed",
+            tickfont=dict(size=9, color="#6B6560", family="Montserrat"),
+            gridcolor="rgba(196,191,184,0.05)", showline=False, zeroline=False,
+        ),
+        yaxis=dict(
+            title=dict(text="Business Impact Severity",
+                       font=dict(size=9, color="#9A9590", family="Montserrat")),
+            range=[0, 100],
+            tickfont=dict(size=9, color="#6B6560", family="Montserrat"),
+            gridcolor="rgba(196,191,184,0.05)", showline=False, zeroline=False,
+        ),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(13,13,13,0.0)",
         font=dict(color="#9A9590", family="Montserrat"),
-        showlegend=False, margin=dict(l=50, r=20, t=15, b=40), height=300,
+        showlegend=False,
+        margin=dict(l=60, r=30, t=20, b=55),
+        height=380,
     )
     return fig
 
@@ -1834,11 +1969,27 @@ def main() -> None:
 
     ch1, ch2 = st.columns(2)
     with ch1:
-        st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin-bottom:8px">Radar — Impact Map</div>', unsafe_allow_html=True)
-        st.plotly_chart(create_radar_chart(step2_data["scores"]), use_container_width=True)
+        st.markdown(
+            '<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;'
+            'letter-spacing:0.20em;text-transform:uppercase;margin-bottom:4px">'
+            'Exposure Delta Radar</div>'
+            '<div style="font-family:Montserrat,sans-serif;color:#6B6560;font-size:0.52rem;'
+            'margin-bottom:10px">Current Baseline vs. New Policy Exposure</div>',
+            unsafe_allow_html=True,
+        )
+        st.plotly_chart(create_exposure_delta_radar(step2_data["scores"]),
+                        use_container_width=True, config={"displayModeBar": False})
     with ch2:
-        st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin-bottom:8px">Bar — Score by Axis</div>', unsafe_allow_html=True)
-        st.plotly_chart(create_bar_chart(step2_data["scores"]), use_container_width=True)
+        st.markdown(
+            '<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;'
+            'letter-spacing:0.20em;text-transform:uppercase;margin-bottom:4px">'
+            'Risk &amp; Urgency Matrix</div>'
+            '<div style="font-family:Montserrat,sans-serif;color:#6B6560;font-size:0.52rem;'
+            'margin-bottom:10px">Key clauses by time-to-enactment × business severity</div>',
+            unsafe_allow_html=True,
+        )
+        st.plotly_chart(create_risk_urgency_matrix(step2_data["scores"]),
+                        use_container_width=True, config={"displayModeBar": False})
 
     st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin:1rem 0 12px">Evidence & Priority Actions</div>', unsafe_allow_html=True)
     sc1, sc2, sc3, sc4 = st.columns(4)
