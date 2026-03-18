@@ -56,6 +56,31 @@ st.markdown("""
     max-width: 1440px !important;
 }
 
+/* ── SIDEBAR TOGGLE (always visible even when header is hidden) ── */
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"] {
+    visibility: visible !important;
+    display: flex !important;
+    background: rgba(13,13,13,0.82) !important;
+    border-right: 1px solid rgba(10,186,181,0.22) !important;
+    border-radius: 0 6px 6px 0 !important;
+}
+[data-testid="collapsedControl"] svg,
+[data-testid="stSidebarCollapsedControl"] svg {
+    color: rgba(10,186,181,0.70) !important;
+    fill:  rgba(10,186,181,0.70) !important;
+    transition: color 0.2s, fill 0.2s !important;
+}
+[data-testid="collapsedControl"]:hover,
+[data-testid="stSidebarCollapsedControl"]:hover {
+    background: rgba(10,186,181,0.10) !important;
+}
+[data-testid="collapsedControl"]:hover svg,
+[data-testid="stSidebarCollapsedControl"]:hover svg {
+    color: #0ABAB5 !important;
+    fill:  #0ABAB5 !important;
+}
+
 /* ── SIDEBAR ────────────────────────────────── */
 [data-testid="stSidebar"] {
     background: var(--bg-sidebar) !important;
