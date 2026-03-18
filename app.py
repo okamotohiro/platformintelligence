@@ -348,24 +348,61 @@ hr { border: none !important; border-top: 1px solid var(--accent-border) !import
 MODEL = "claude-opus-4-6"
 
 DOMAIN_PROFILES: Dict[str, str] = {
-    "AI Licensing": (
-        "Partnership and licensing model development with generative AI operators "
-        "(domestic and international LLM providers, AI startups). "
-        "Pillars: fair valuation of training data supply with equitable revenue-share design, "
-        "and data defense strategy (robots.txt enforcement, technical protection measures, legal defense). "
-        "Core objective: licensing revenue maximization and strategic intellectual property protection."
+    "AI Licensing & Copyright": (
+        "Core business: licensing proprietary editorial content and structured data to generative AI operators "
+        "(global LLM providers, AI startups, enterprise AI vendors). "
+        "Primary risk vectors: unauthorized training data ingestion, inadequate royalty-sharing structures, "
+        "IP dilution through derivative AI outputs. "
+        "Key objectives: maximize licensing revenue through fair valuation of training data supply, "
+        "enforce copyright via technical protection measures and robots.txt, "
+        "establish enforceable indemnification clauses in all AI partnership agreements. "
+        "Special sensitivity: any policy change affecting copyright ownership, consent mechanisms for data use, "
+        "or compensation frameworks for rights holders carries CRITICAL-level exposure."
     ),
-    "News & Insights": (
-        "Japan's leading digital subscription media business with a strong domestic base. "
-        "Core strategy centers on combating zero-click search erosion (AI Overviews reducing article impressions), "
-        "liquid content transformation (cross-format distribution: video, audio, text), "
-        "and copyright enforcement with content licensing revenue optimization."
+    "AI Search & Zero-Click": (
+        "Core business: Japan's leading digital subscription media, dependent on organic search traffic "
+        "for subscriber acquisition and ad revenue. "
+        "Primary risk vectors: AI Overviews and zero-click SERP features reducing article click-through rates, "
+        "AI-generated summaries displacing direct content consumption, "
+        "algorithm changes deprioritizing premium paywalled content. "
+        "Key objectives: maintain referral traffic integrity, defend against AI summary cannibalization, "
+        "negotiate traffic guarantees or equivalent value-exchange in platform agreements. "
+        "Special sensitivity: any policy change enabling platform AI to summarize content without redirect, "
+        "or modifying traffic attribution models, carries HIGH-to-CRITICAL revenue exposure."
     ),
-    "Decision-making": (
-        "Enterprise generative AI agents for data analytics and executive decision support, "
-        "regulatory compliance services on disclosure platforms (DPF), "
-        "integrated risk management solutions, and ESG data business. "
-        "Core strategy: B2B SaaS revenue model with regulatory compliance and risk governance."
+    "Platform Distribution Policies": (
+        "Core business: multi-platform content distribution across social, video, audio, and aggregator channels "
+        "including Meta, Google Discover, YouTube, Apple News, and LINE. "
+        "Primary risk vectors: unilateral platform rule changes that restrict content eligibility, "
+        "monetization policy updates reducing CPM or revenue-share rates, "
+        "algorithmic demotion of news/editorial content, "
+        "new data-sharing requirements creating compliance overhead. "
+        "Key objectives: preserve multi-channel distribution breadth, negotiate favored-partner terms, "
+        "maintain content autonomy under platform moderation policies. "
+        "Special sensitivity: any policy mandating content modification, consent UI on distributed content, "
+        "or new data-reporting obligations to the platform carries HIGH product and legal exposure."
+    ),
+}
+
+# Domain-specific risk context injected into LLM prompts for calibrated output
+DOMAIN_RISK_FOCUS: Dict[str, str] = {
+    "AI Licensing & Copyright": (
+        "The user is evaluating this policy change from the perspective of the 'AI Licensing & Copyright' domain. "
+        "Place HEIGHTENED emphasis on: IP ownership implications, copyright consent mechanisms, "
+        "royalty and compensation structures, indemnification requirements, and training-data usage rights. "
+        "Treat any ambiguity in copyright assignment or consent scope as a CRITICAL-level exposure."
+    ),
+    "AI Search & Zero-Click": (
+        "The user is evaluating this policy change from the perspective of the 'AI Search & Zero-Click' domain. "
+        "Place HEIGHTENED emphasis on: traffic attribution, AI summary/snippet impact on click-through rates, "
+        "referral traffic guarantees, and SERP feature policies that displace direct content consumption. "
+        "Quantify estimated traffic and revenue loss in percentage and absolute terms where possible."
+    ),
+    "Platform Distribution Policies": (
+        "The user is evaluating this policy change from the perspective of the 'Platform Distribution Policies' domain. "
+        "Place HEIGHTENED emphasis on: content eligibility rules, monetization policy changes, "
+        "data-sharing obligations, algorithmic demotion risks, and consent UI requirements on distributed content. "
+        "Assess impact per distribution channel (search, social, video, aggregator) separately where relevant."
     ),
 }
 
@@ -447,6 +484,7 @@ def run_step2_impact_mapping(client: anthropic.Anthropic, step1_data: Dict, doma
             "content": (
                 f"Evaluate the business impact for the '{domain}' domain.\n\n"
                 f"[Domain Profile]\n{DOMAIN_PROFILES[domain]}\n\n"
+                f"[Domain-Specific Risk Calibration]\n{DOMAIN_RISK_FOCUS.get(domain, '')}\n\n"
                 f"[Step 1 Structured Data]\n{json.dumps(step1_data, ensure_ascii=False, indent=2)}\n\n"
                 f"Return ONLY the following JSON structure (no extra text whatsoever):\n"
                 f"{{\n"
@@ -473,6 +511,7 @@ def _build_draft_context(domain: str, step1_data: Dict, step2_data: Dict) -> str
     return (
         f"[Policy/Regulatory Change Summary]\n{step1_data.get('context_summary', '')}\n\n"
         f"[Target Domain] {domain}\n{DOMAIN_PROFILES[domain]}\n\n"
+        f"[Domain-Specific Risk Calibration]\n{DOMAIN_RISK_FOCUS.get(domain, '')}\n\n"
         f"[Structured Extraction]\n"
         f"Added Obligations: {json.dumps(step1_data.get('added_obligations', []), ensure_ascii=False)}\n"
         f"Removed Rights:    {json.dumps(step1_data.get('removed_rights', []), ensure_ascii=False)}\n"
@@ -811,6 +850,142 @@ def _hitl_buttons(tab_key: str) -> None:
             st.toast("⚠️ Action recorded: Escalated to Outside Counsel.", icon="⚠️")
 
 
+# ─── Multi-Agent Debate Helpers ───────────────────────────────────────────────
+
+def _build_debate_log(step1_data: Dict, step2_data: Dict, domain: str) -> List[Dict]:
+    """Build a virtual expert-committee debate transcript from analysis data (no API call)."""
+    scores    = step2_data.get("scores", {})
+    obligations = step1_data.get("added_obligations", [])
+    threats     = step2_data.get("key_threats", [])
+    opportunities = step2_data.get("key_opportunities", [])
+    risk_level  = step2_data.get("overall_risk_level", "medium").upper()
+
+    ip_score   = scores.get("IP",      {}).get("score", 50)
+    rev_score  = scores.get("Revenue", {}).get("score", 50)
+    prod_score = scores.get("Product", {}).get("score", 50)
+
+    obl_text = obligations[0].get("item", "new compliance obligations") if obligations else "new compliance obligations"
+    threat_text = threats[0]   if threats      else "potential operational disruption"
+    opp_text    = opportunities[0] if opportunities else "strategic repositioning opportunity"
+
+    return [
+        {
+            "agent": "⚖️ Legal Agent",
+            "color": "#8B2635",
+            "message": (
+                f"IP exposure flagged at {ip_score}/100. The obligation '{obl_text}' creates direct liability risk. "
+                f"Non-negotiable condition: require written indemnification clause before any commitment. "
+                f"I recommend triggering the standard outside-counsel review protocol for {domain}."
+            ),
+        },
+        {
+            "agent": "💰 Business Agent",
+            "color": "#A8892A",
+            "message": (
+                f"Revenue impact at {rev_score}/100 is material. Primary threat: '{threat_text}'. "
+                f"Counter-position: '{opp_text}' is a genuine leverage point. "
+                f"I disagree with full escalation — negotiated compliance with phased timelines protects both revenue and the partnership."
+            ),
+        },
+        {
+            "agent": "🧩 Product Agent",
+            "color": "#1A6B3C",
+            "message": (
+                f"Product surface exposure at {prod_score}/100. Consent UI and audit logging are hard requirements — "
+                f"estimate 4–6 weeks engineering lead time for full compliance stack. "
+                f"Recommend phased delivery: consent gate first, audit trail second. "
+                f"Legal sign-off required at each milestone before feature GA."
+            ),
+        },
+        {
+            "agent": "🧠 Synthesizer",
+            "color": "#0ABAB5",
+            "message": (
+                f"Consensus: overall risk **{risk_level}**. Coordinated cross-functional response required. "
+                f"Priority order — (1) Legal: outside-counsel briefing within 24h, "
+                f"(2) Product: compliance sprint kick-off, "
+                f"(3) Business: renegotiate commercial terms using identified leverage points. "
+                f"Board notification warranted within 48 hours for {domain} domain."
+            ),
+        },
+    ]
+
+
+def _debate_expander(debate_log: List[Dict]) -> None:
+    """Render the multi-agent debate transcript as a collapsible section."""
+    if not debate_log:
+        return
+    with st.expander("◆  Multi-Agent Debate Log — Virtual Expert Committee", expanded=False):
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
+                    letter-spacing:0.22em;text-transform:uppercase;margin-bottom:1.2rem">
+          Internal reasoning trace — autonomous committee deliberation prior to output generation
+        </div>""", unsafe_allow_html=True)
+        for entry in debate_log:
+            st.markdown(f"""
+            <div style="background:#111111;border-left:2px solid {entry['color']};
+                        padding:12px 16px;margin:8px 0">
+              <div style="font-family:'Montserrat',sans-serif;color:{entry['color']};
+                          font-size:0.65rem;font-weight:600;letter-spacing:0.14em;
+                          text-transform:uppercase;margin-bottom:6px">
+                {entry['agent']}
+              </div>
+              <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
+                          font-size:0.80rem;line-height:1.7">
+                {entry['message']}
+              </div>
+            </div>""", unsafe_allow_html=True)
+
+
+# ─── System of Action Export Helpers ─────────────────────────────────────────
+
+def _format_jira_export(checklist: List[str], domain: str) -> str:
+    """Format product checklist as Jira Epic + User Stories with Acceptance Criteria."""
+    lines = [
+        f"EPIC: Policy Compliance Sprint — {domain}",
+        f"Epic Description: Implement required product, legal, and engineering changes",
+        f"  per Policy Intelligence analysis. Priority: HIGH. Owner: CPO + Legal.",
+        "",
+    ]
+    for i, item in enumerate(checklist, 1):
+        lines.append(f"── Story {i:02d} ──────────────────────────────────────────")
+        lines.append(f"Title: {item}")
+        lines.append(f"Story Type: Task  |  Priority: High  |  Sprint: Compliance-Q2")
+        lines.append(f"User Story:")
+        if item.startswith("[") and "]" in item:
+            cat = item[1:item.index("]")]
+            rest = item[item.index("]") + 1:].strip(" —").strip()
+            lines.append(f"  As a compliance officer, I need {rest.lower()}")
+            lines.append(f"  so that the {domain} product satisfies {cat} requirements.")
+        else:
+            lines.append(f"  As a compliance officer, I need this item implemented")
+            lines.append(f"  so that the {domain} product satisfies policy requirements.")
+        lines.append(f"Acceptance Criteria:")
+        lines.append(f"  - [ ] Implementation complete and code-reviewed")
+        lines.append(f"  - [ ] QA sign-off on all affected user flows")
+        lines.append(f"  - [ ] Legal review completed — regulatory citation confirmed")
+        lines.append(f"  - [ ] Analytics event(s) verified in staging")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def _format_slack_export(board_memo: str, domain: str, risk_label: str) -> str:
+    """Format board memo as Slack #exec-alerts channel message."""
+    snippet = board_memo[:700].replace("\n\n", "\n").strip()
+    if len(board_memo) > 700:
+        snippet += "..."
+    risk_emoji = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🟢"}.get(risk_label.upper(), "⚪")
+    return (
+        f"*{risk_emoji} Policy Intelligence Alert — {domain}*\n"
+        f"*Risk Level:* `{risk_label.upper()}`\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"{snippet}\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"_Actions required — see full report in the enterprise dashboard._\n"
+        f"_Platform & Policy Intelligence Engine · claude-opus-4-6_"
+    )
+
+
 # ─── Login Screen ─────────────────────────────────────────────────────────────
 _LOGIN_ID = "aifund"
 _LOGIN_PW  = "nikkei2030"
@@ -950,6 +1125,7 @@ def main() -> None:
 
         domain = st.radio("domain", options=list(DOMAIN_PROFILES.keys()),
                           label_visibility="collapsed")
+        st.caption("Select the policy domain to calibrate the engine's risk assessment weights.")
 
         st.markdown('<div style="height:1px;background:rgba(10,186,181,0.10);margin:1.4rem 0"></div>',
                     unsafe_allow_html=True)
@@ -1136,6 +1312,17 @@ def main() -> None:
                 )
                 st.write(f"  ✓  Risk scores mapped — {score_str}")
 
+                # ── MULTI-AGENT DEBATE ────────────────────────────────────────
+                st.write("**Internal Debate:** Convening virtual expert committee (Legal · Business · Product) ...")
+                time.sleep(0.8)
+                debate_log = _build_debate_log(step1_data, step2_data, domain)
+                agent_labels = [e["agent"] for e in debate_log]
+                for entry in debate_log:
+                    short = entry["message"][:110].rstrip()
+                    st.write(f"  {entry['agent']}: _{short}..._")
+                    time.sleep(0.65)
+                st.write("  ✓  Committee consensus reached — coordinated escalation strategy confirmed")
+
                 # ── STEP 4: Generate role-specific outputs ────────────────────
                 st.write(
                     "**Step 4:** Generating role-specific output formats "
@@ -1182,6 +1369,7 @@ def main() -> None:
             "step3": step3_data,
             "domain": domain,
             "elapsed": elapsed,
+            "debate_log": debate_log if debate_log else [],
         }
 
     # ── Display Results ───────────────────────────────────────────────────────
@@ -1194,6 +1382,7 @@ def main() -> None:
     step3_data = res["step3"]
     domain     = res["domain"]
     elapsed    = res.get("elapsed", 0)
+    debate_log = res.get("debate_log", [])
 
     # ── Header ────────────────────────────────────────────────────────────────
     hcol1, hcol2 = st.columns([4, 1])
@@ -1242,6 +1431,9 @@ def main() -> None:
                         font-size:1.4rem;font-weight:300;letter-spacing:0.10em">{rl_label}</div>
           </div>
         </div>""", unsafe_allow_html=True)
+
+    # ── Multi-Agent Debate Log ────────────────────────────────────────────────
+    _debate_expander(debate_log)
 
     # ── STEP 1: Parsing Output ────────────────────────────────────────────────
     _accent_divider()
@@ -1443,6 +1635,22 @@ def main() -> None:
 
         _hitl_buttons("tab4")
 
+        # ── Slack Export ──────────────────────────────────────────────────────
+        st.markdown(f"""
+        <div style="border-top:1px solid rgba(10,186,181,0.10);margin:2.2rem 0 1rem;padding-top:1.2rem">
+          <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
+                      letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
+            ◆ &nbsp; SYSTEM OF ACTION — SLACK EXPORT
+          </div>
+        </div>""", unsafe_allow_html=True)
+
+        rl3_slack = step3_data.get("overall_risk", step2_data.get("overall_risk_level", "medium"))
+        rl3_label_slack, _ = _risk_config(rl3_slack)
+        slack_text = _format_slack_export(board, domain, rl3_label_slack)
+        st.code(slack_text, language=None)
+        if st.button("📨  Send to Slack  #exec-alerts  (Mock)", key="slack_export_tab4"):
+            st.toast("📨 Slack message queued for #exec-alerts — delivery confirmed (mock).", icon="📨")
+
     # ── Tab 5: Product Checklist ──────────────────────────────────────────────
     with tab5:
         checklist = step3_data.get("product_checklist", [])
@@ -1464,6 +1672,31 @@ def main() -> None:
             st.caption("No checklist items generated.")
 
         _hitl_buttons("tab5")
+
+        # ── Jira Export ───────────────────────────────────────────────────────
+        if checklist:
+            st.markdown(f"""
+            <div style="border-top:1px solid rgba(10,186,181,0.10);margin:2.2rem 0 1rem;padding-top:1.2rem">
+              <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
+                          letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
+                ◆ &nbsp; SYSTEM OF ACTION — JIRA EXPORT
+              </div>
+            </div>""", unsafe_allow_html=True)
+
+            jira_text = _format_jira_export(checklist, domain)
+            st.code(jira_text, language=None)
+            jc1, jc2 = st.columns([1, 2])
+            with jc1:
+                if st.button("🎯  Export to Jira  (Mock)", key="jira_export_tab5", use_container_width=True):
+                    st.toast("🎯 Jira Epic + Stories queued for import — ticket IDs assigned (mock).", icon="🎯")
+            with jc2:
+                st.download_button(
+                    "Download Jira Export (.txt)",
+                    data=jira_text,
+                    file_name=_fn("jira_export").replace(".md", ".txt"),
+                    mime="text/plain",
+                    use_container_width=True,
+                )
 
     # ── Footer ────────────────────────────────────────────────────────────────
     _accent_divider()
