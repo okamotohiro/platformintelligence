@@ -1783,86 +1783,121 @@ def main() -> None:
             st.warning("Please enter policy text (minimum 20 characters).")
             return
 
-        # ── Agentic Pipeline with granular step visualization ─────────────────
+        # ── Agentic Pipeline ───────────────────────────────────────────────────
         st.session_state.results = None
         pipeline_start = time.time()
 
         step1_data: Optional[Dict] = None
         step2_data: Optional[Dict] = None
         step3_data: Optional[Dict] = None
+        debate_log: List[Dict] = []
+
+        # Progress bar lives outside st.status so it stays visible throughout
+        _prog = st.progress(0, text="◆  Initializing Autonomous Intelligence Pipeline...")
+        time.sleep(0.3)
 
         with st.status(
-            "◆  Autonomous Intelligence Pipeline — Analyzing Policy...",
-            expanded=True
+            "◆  Autonomous Intelligence Pipeline — Running...",
+            expanded=True,
         ) as pipeline_status:
             try:
-                # ── STEP 1: Ingest & Parse ────────────────────────────────────
-                st.write("**Step 1:** Ingesting policy document and identifying text deltas...")
-                time.sleep(1.2)
+                # ── STEP I : Policy Ingestion & Structural Delta Extraction ────
+                _prog.progress(6, text="Step I · Policy Ingestion — Parsing document structure...")
+                st.write(
+                    "**Step I — Policy Ingestion & Structural Delta Extraction**  \n"
+                    "Deep-parsing source text to isolate added obligations, removed rights, "
+                    "penalty thresholds, and effective-date triggers..."
+                )
+                time.sleep(0.4)   # flush UI before blocking LLM call
 
                 step1_data = run_step1_parsing(client, policy_text)
 
-                n_obl  = len(step1_data.get("added_obligations", []))
-                n_rem  = len(step1_data.get("removed_rights", []))
-                n_thr  = len(step1_data.get("key_thresholds", []))
+                n_obl = len(step1_data.get("added_obligations", []))
+                n_rem = len(step1_data.get("removed_rights", []))
+                n_thr = len(step1_data.get("key_thresholds", []))
+                _prog.progress(25, text="Step I Complete ✓ — Delta extraction finished")
                 st.write(
-                    f"  ✓  Extracted **{n_obl}** added obligations · "
-                    f"**{n_rem}** removed rights · **{n_thr}** key thresholds"
+                    f"  ✓  Delta extraction complete — "
+                    f"**{n_obl}** added obligations · "
+                    f"**{n_rem}** removed rights · "
+                    f"**{n_thr}** key thresholds identified"
                 )
+                time.sleep(0.3)
 
-                # ── STEP 2: Cross-reference with Domain Profile ───────────────
+                # ── STEP II : Domain-Calibrated Business Impact Mapping ────────
+                _prog.progress(30, text=f"Step II · Domain Calibration — Loading '{domain}' risk profile...")
                 st.write(
-                    f"**Step 2:** Cross-referencing deltas with Nikkei's Business Model Profile "
-                    f"(IP, Revenue, Traffic) — *{domain}* domain..."
+                    f"**Step II — Domain-Calibrated Business Impact Mapping**  \n"
+                    f"Cross-referencing extracted deltas against the *{domain}* domain profile. "
+                    f"Scoring across 4 axes: IP Exposure · Traffic Risk · Revenue Sensitivity · "
+                    f"Product Constraint. Consulting internal red-line register and prior MSA terms..."
                 )
-                time.sleep(1.2)
+                time.sleep(0.4)   # flush before LLM
 
                 step2_data = run_step2_impact_mapping(client, step1_data, domain)
 
                 rl_raw = step2_data.get("overall_risk_level", "medium").upper()
-                st.write(
-                    f"  ✓  Impact mapping complete — Overall Risk: **{rl_raw}**"
-                )
-
-                # ── STEP 3: Assess risk severity ──────────────────────────────
-                st.write("**Step 3:** Assessing risk severity across 4 dimensions...")
-                time.sleep(1.0)
-
                 scores = step2_data.get("scores", {})
-                score_str = " · ".join(
-                    f"{ax}: **{scores[ax]['score']}**"
+                score_str = "  ·  ".join(
+                    f"{ax}: **{scores[ax]['score']}**/100"
                     for ax in ["IP", "Traffic", "Revenue", "Product"]
                     if ax in scores
                 )
-                st.write(f"  ✓  Risk scores mapped — {score_str}")
-
-                # ── MULTI-AGENT DEBATE ────────────────────────────────────────
-                st.write("**Internal Debate:** Convening virtual expert committee (Legal · Business · Product) ...")
-                time.sleep(0.8)
-                debate_log = _build_debate_log(step1_data, step2_data, domain)
-                agent_labels = [e["agent"] for e in debate_log]
-                for entry in debate_log:
-                    short = entry["message"][:110].rstrip()
-                    st.write(f"  {entry['agent']}: _{short}..._")
-                    time.sleep(0.65)
-                st.write("  ✓  Committee consensus reached — coordinated escalation strategy confirmed")
-
-                # ── STEP 4: Generate role-specific outputs ────────────────────
+                _prog.progress(50, text=f"Step II Complete ✓ — Overall Risk: {rl_raw}")
                 st.write(
-                    "**Step 4:** Generating role-specific output formats "
-                    "(Legal, Board, Product) with evidence citations..."
+                    f"  ✓  4-axis impact mapping complete — Overall Risk: **{rl_raw}**  \n"
+                    f"  {score_str}"
                 )
-                time.sleep(1.2)
+                time.sleep(0.3)
+
+                # ── MULTI-AGENT DEBATE ─────────────────────────────────────────
+                _prog.progress(54, text="Multi-Agent Debate · Convening virtual expert committee...")
+                st.write(
+                    "**Multi-Agent Debate — Virtual Expert Committee**  \n"
+                    "Convening Legal Counsel, Business Strategy, Product Leadership, "
+                    "and Executive Alignment agents for structured adversarial review..."
+                )
+                time.sleep(0.5)
+
+                debate_log = _build_debate_log(step1_data, step2_data, domain)
+
+                _debate_progress_steps = [56, 59, 62, 65]
+                for i, entry in enumerate(debate_log):
+                    pct = _debate_progress_steps[i] if i < len(_debate_progress_steps) else 65
+                    _prog.progress(pct, text=f"Multi-Agent Debate · {entry['agent']} speaking...")
+                    short = entry["message"][:120].rstrip()
+                    st.write(f"  {entry['agent']}: _{short}..._")
+                    time.sleep(0.55)
+
+                _prog.progress(68, text="Multi-Agent Debate · Consensus reached ✓")
+                st.write(
+                    "  ✓  Committee consensus reached — "
+                    "coordinated escalation strategy confirmed by all agents"
+                )
+                time.sleep(0.3)
+
+                # ── STEP III : Role-Specific Deliverable Synthesis ─────────────
+                _prog.progress(72, text="Step III · Synthesizing 5 role-specific deliverables...")
+                st.write(
+                    "**Step III — Role-Specific Deliverable Synthesis**  \n"
+                    "Generating Executive Delta Brief · Business Exposure Memo · "
+                    "Legal & Negotiation Brief · Board Memo · Product Checklist — "
+                    "each grounded with verbatim evidence citations from the source text..."
+                )
+                time.sleep(0.4)   # flush before the longest LLM call
 
                 step3_data = run_step3_structured(
                     client, domain, step1_data, step2_data, policy_text
                 )
 
+                _prog.progress(98, text="Step III · Finalizing audit metadata & document ID...")
                 st.write(
                     "  ✓  5 role-specific deliverables generated — "
-                    "evidence quotes extracted from source text"
+                    "verbatim evidence citations extracted from source text"
                 )
+                time.sleep(0.4)
 
+                _prog.progress(100, text="◆  Intelligence Package Ready — All steps complete ✓")
                 pipeline_status.update(
                     label="◆  Analysis Complete — 5 Role Deliverables Ready",
                     state="complete",
@@ -1870,18 +1905,21 @@ def main() -> None:
                 )
 
             except anthropic.AuthenticationError:
+                _prog.progress(100, text="Pipeline failed.")
                 pipeline_status.update(
                     label="◆  Pipeline Failed — Authentication Error", state="error"
                 )
                 st.error("Invalid API key. Please check your credentials.")
                 return
             except anthropic.RateLimitError:
+                _prog.progress(100, text="Pipeline failed.")
                 pipeline_status.update(
                     label="◆  Pipeline Failed — Rate Limit", state="error"
                 )
                 st.error("Rate limit exceeded. Please wait a moment and try again.")
                 return
             except Exception as exc:
+                _prog.progress(100, text="Pipeline failed.")
                 pipeline_status.update(label="◆  Pipeline Failed", state="error")
                 st.error(f"Pipeline Error: {exc}")
                 return
