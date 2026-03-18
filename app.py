@@ -934,13 +934,89 @@ def _col_header(label: str) -> None:
 
 
 def _prose_block(text: str) -> None:
-    """Render a long prose string as a styled readable block."""
-    st.markdown(f"""
-    <div style="background:#111111;border:1px solid rgba(10,186,181,0.10);
-                padding:24px 28px;margin:4px 0;">
-      <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
-                  font-size:0.88rem;line-height:1.85;white-space:pre-wrap">{text}</div>
-    </div>""", unsafe_allow_html=True)
+    """Render prose with excess-newline sanitization and inline Markdown table support."""
+    import re as _re
+
+    # ── 1. Sanitize: collapse 3+ consecutive newlines → single blank line ──────
+    text = _re.sub(r'\n{3,}', '\n\n', text.strip())
+
+    # ── 2. Split text into prose / table segments ──────────────────────────────
+    lines = text.split('\n')
+    segments: list = []
+    i = 0
+    while i < len(lines):
+        if lines[i].strip().startswith('|'):
+            tbl: list = []
+            while i < len(lines) and lines[i].strip().startswith('|'):
+                tbl.append(lines[i])
+                i += 1
+            segments.append(('table', tbl))
+        else:
+            prose: list = []
+            while i < len(lines) and not lines[i].strip().startswith('|'):
+                prose.append(lines[i])
+                i += 1
+            segments.append(('prose', prose))
+
+    # ── 3. Build HTML ──────────────────────────────────────────────────────────
+    _TH = (
+        "padding:7px 14px;text-align:left;font-family:'Montserrat',sans-serif;"
+        "font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;"
+        "color:#9A9590;border-bottom:1px solid rgba(10,186,181,0.22);"
+        "background:rgba(10,186,181,0.06);white-space:nowrap"
+    )
+    _TD = (
+        "padding:7px 14px;font-family:'Montserrat',sans-serif;"
+        "font-size:0.80rem;color:#C4BFB8;line-height:1.5;"
+        "border-bottom:1px solid rgba(196,191,184,0.06)"
+    )
+
+    html_parts: list = []
+    for seg_type, seg_lines in segments:
+        if seg_type == 'prose':
+            body = '\n'.join(seg_lines).strip()
+            if body:
+                # HTML-escape angle brackets, preserve newlines as <br>
+                safe = (body
+                        .replace('&', '&amp;')
+                        .replace('<', '&lt;')
+                        .replace('>', '&gt;')
+                        .replace('\n', '<br>'))
+                html_parts.append(
+                    f'<div style="font-family:\'Montserrat\',sans-serif;color:#C4BFB8;'
+                    f'font-size:0.88rem;line-height:1.85;margin-bottom:0.8rem">'
+                    f'{safe}</div>'
+                )
+        else:
+            rows_html: list = []
+            header_done = False
+            for tl in seg_lines:
+                cols = [c.strip() for c in tl.strip().strip('|').split('|')]
+                # Skip separator row (---, :--:, etc.)
+                if all(_re.match(r'^[-: ]+$', c) for c in cols if c):
+                    header_done = True
+                    continue
+                if not header_done:
+                    cells = ''.join(f'<th style="{_TH}">{c}</th>' for c in cols)
+                    rows_html.append(f'<tr>{cells}</tr>')
+                    header_done = True
+                else:
+                    cells = ''.join(f'<td style="{_TD}">{c}</td>' for c in cols)
+                    rows_html.append(f'<tr>{cells}</tr>')
+            if rows_html:
+                html_parts.append(
+                    f'<div style="overflow-x:auto;margin:0 0 0.8rem">'
+                    f'<table style="width:100%;border-collapse:collapse;'
+                    f'background:#0D0D0D;border:1px solid rgba(10,186,181,0.12)">'
+                    f'{"".join(rows_html)}</table></div>'
+                )
+
+    inner = ''.join(html_parts) or f'<div style="color:#6B6560;font-size:0.80rem">—</div>'
+    st.markdown(
+        f'<div style="background:#111111;border:1px solid rgba(10,186,181,0.10);'
+        f'padding:24px 28px;margin:4px 0">{inner}</div>',
+        unsafe_allow_html=True,
+    )
 
 
 def _checklist_items(items: list) -> None:
