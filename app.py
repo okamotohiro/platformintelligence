@@ -978,9 +978,9 @@ def main() -> None:
 
         g1, g2, g3 = st.columns(3)
         for col, num, label, desc in [
-            (g1, "I",   "Configure",  "Enter your Anthropic API key and select the target business domain profile."),
-            (g2, "II",  "Input",      "Paste the policy text, regulatory update, or platform change document."),
-            (g3, "III", "Execute",    "Run the 3-step intelligence pipeline to generate 5 role-specific deliverables in seconds."),
+            (g1, "I",   "Set Context",       "Select the target business domain profile (e.g., AI Licensing) to align the engine with your company's revenue and IP structure."),
+            (g2, "II",  "Ingest Data",       "Paste the external change—such as a new platform policy, draft agreement, or regulatory update."),
+            (g3, "III", "Run Intelligence",  "Execute the agentic pipeline to autonomously extract deltas and generate role-specific deliverables in seconds."),
         ]:
             with col:
                 st.markdown(f"""
