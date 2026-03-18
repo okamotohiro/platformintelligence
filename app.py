@@ -1906,9 +1906,6 @@ def main() -> None:
     _accent_divider()
     _section_label("I", "Structured Delta Extraction — Parsing Output")
 
-    with st.expander("View Raw JSON", expanded=False):
-        st.json(step1_data)
-
     c1, c2, c3 = st.columns(3)
     with c1:
         _col_header("Added Obligations")
