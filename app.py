@@ -1777,6 +1777,53 @@ def main() -> None:
 
         inp_left, inp_right = st.columns([1, 2], gap="large")
 
+        # ── Sample text payloads ──────────────────────────────────────────
+        _SAMPLES: Dict[str, str] = {
+            "gaif": (
+                "GAIF Draft v3.0 — Article 12: Content Licensing & AI Training\n"
+                "Effective Date: 2026-07-01 | Jurisdiction: G7 + EU\n\n"
+                "12.1 Mandatory Prior Notice: Any AI developer deploying a foundation model trained on\n"
+                "      copyrighted editorial or structured-data content must provide written notice to\n"
+                "      the rights holder no fewer than 90 days before first commercial use.\n\n"
+                "12.2 Compensation Framework: A minimum per-token royalty of USD 0.0008 per 1,000\n"
+                "      training tokens derived from licensed sources shall apply. Parties may negotiate\n"
+                "      alternative lump-sum arrangements subject to a floor equal to 120% of the\n"
+                "      per-token baseline.\n\n"
+                "12.3 Zero-Click & Summary Display Prohibition: Reproduction of more than 40 words\n"
+                "      from a licensed article in any AI-generated search snippet, summary card, or\n"
+                "      conversational response is prohibited without an active revenue-share agreement.\n\n"
+                "12.4 Enforcement: Non-compliant operators face suspension from GAIF-certified\n"
+                "      distribution networks and fines up to 4% of global annual turnover.\n\n"
+                "12.5 Audit Rights: Rights holders may request quarterly token-usage reports with\n"
+                "      source attribution logs. Operators must retain logs for a minimum of 36 months."
+            ),
+            "euai": (
+                "EU AI Act — Article 53 Amendment (Trilogue Consolidated Text, March 2026)\n"
+                "Scope: General-Purpose AI Models with Systemic Risk\n\n"
+                "53(a) Obligation to Disclose Training Data Provenance: Providers of GPAI models\n"
+                "      classified as 'systemic risk' (cumulative compute > 10^25 FLOPs) must publish\n"
+                "      a standardised data provenance report listing all content categories used in\n"
+                "      pre-training, fine-tuning, and RLHF phases within 60 days of model release.\n\n"
+                "53(b) Content Opt-Out Registry: Member States shall establish a centralised AI\n"
+                "      Training Content Opt-Out Registry by Q3 2026. GPAI providers must honour\n"
+                "      opt-out flags within 14 days of registry update and purge flagged content\n"
+                "      from future training cycles.\n\n"
+                "53(c) Search & Retrieval Augmentation: AI-powered search services that retrieve,\n"
+                "      summarise, or display news and editorial content must enter into licensing\n"
+                "      agreements with qualifying press publishers as defined under Directive 2019/790.\n"
+                "      Failure to comply triggers an interim injunction mechanism.\n\n"
+                "53(d) Penalties: Infringement of Article 53 obligations: up to 3% of worldwide\n"
+                "      annual turnover or EUR 15,000,000, whichever is higher. Repeat violations\n"
+                "      within 24 months: up to 6% or EUR 30,000,000."
+            ),
+        }
+
+        # Pre-fill session state when a sample button is clicked
+        for _sk, _sv in _SAMPLES.items():
+            if st.session_state.get(f"_load_{_sk}"):
+                st.session_state["policy_text"] = _sv
+                st.session_state[f"_load_{_sk}"] = False
+
         with inp_left:
             st.markdown(f"""
             <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.52rem;
@@ -1791,15 +1838,56 @@ def main() -> None:
             )
             st.caption("Calibrates risk-weighting and contract references for the selected domain.")
 
-        with inp_right:
+            # ── Active Data Integrations panel ────────────────────────────
+            st.markdown("<div style='height:1.2rem'></div>", unsafe_allow_html=True)
             st.markdown(f"""
-            <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.52rem;
-                        letter-spacing:0.24em;text-transform:uppercase;margin-bottom:6px">
-              Policy / Agreement / Regulatory Text
+            <div style="font-family:'Montserrat',sans-serif;color:{_ACCENT};font-size:0.50rem;
+                        letter-spacing:0.28em;text-transform:uppercase;margin-bottom:10px;
+                        display:flex;align-items:center;gap:8px">
+              <span>◆</span><span>Active Data Integrations</span>
+            </div>
+            <div style="background:rgba(10,186,181,0.04);border:1px solid rgba(10,186,181,0.14);
+                        border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:0.55rem;line-height:1">🟢</span>
+                <span style="font-family:'Montserrat',sans-serif;color:#C8C3BD;font-size:0.60rem;
+                             letter-spacing:0.04em">Nikkei IP &amp; Content Archive</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:0.55rem;line-height:1">🟢</span>
+                <span style="font-family:'Montserrat',sans-serif;color:#C8C3BD;font-size:0.60rem;
+                             letter-spacing:0.04em">Active MSA Contract DB</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:0.55rem;line-height:1">🟢</span>
+                <span style="font-family:'Montserrat',sans-serif;color:#C8C3BD;font-size:0.60rem;
+                             letter-spacing:0.04em">Audience Traffic Analytics</span>
+              </div>
             </div>""", unsafe_allow_html=True)
+
+        with inp_right:
+            # ── Sample loader row ─────────────────────────────────────────
+            _lbl_col, _b1_col, _b2_col = st.columns([2.2, 2, 2])
+            with _lbl_col:
+                st.markdown(f"""
+                <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.52rem;
+                            letter-spacing:0.24em;text-transform:uppercase;padding-top:6px">
+                  Policy / Regulatory Text
+                </div>""", unsafe_allow_html=True)
+            with _b1_col:
+                if st.button("⬇ GAIF v3.0 Draft", key="_load_gaif",
+                             use_container_width=True, help="Load GAIF v3.0 Article 12 sample"):
+                    st.session_state["policy_text"] = _SAMPLES["gaif"]
+                    st.rerun()
+            with _b2_col:
+                if st.button("⬇ EU AI Act Art.53", key="_load_euai",
+                             use_container_width=True, help="Load EU AI Act Article 53 amendment sample"):
+                    st.session_state["policy_text"] = _SAMPLES["euai"]
+                    st.rerun()
+
             policy_text = st.text_area(
                 "policy_input",
-                height=260,
+                height=248,
                 placeholder=(
                     "Example: EU AI Act Amendment — Article 53\n"
                     "- Generative AI systems using copyrighted content for training\n"
