@@ -519,9 +519,31 @@ def run_step3_structured(
                 f"with role-specific deliverables for the '{domain}' domain.\n\n"
                 f"{original_block}"
                 f"{context}\n\n"
-                f"CRITICAL INSTRUCTION: For every *_quotes field, you MUST include 1–3 VERBATIM "
+                f"CRITICAL INSTRUCTION A: For every *_quotes field, you MUST include 1–3 VERBATIM "
                 f"quotes copied exactly from the ORIGINAL SOURCE TEXT above. "
                 f"These are evidence citations — they must be exact text, not paraphrases.\n\n"
+                f"CRITICAL INSTRUCTION B — product_checklist QUALITY STANDARD:\n"
+                f"The product_checklist must function as a concrete implementation specification that a "
+                f"CPO and UX designer can execute directly without further legal interpretation. "
+                f"Each item must be written in the format: [CATEGORY] Owner Team — specific action. "
+                f"You MUST cover ALL of the following five mandatory categories with at least one item each:\n"
+                f"  1. CONSENT MECHANISM: Specify whether opt-in or opt-out consent is required under the "
+                f"new policy, which user actions trigger consent capture, and the exact data to be stored "
+                f"(timestamp, version ID, user ID). Distinguish between first-time users and existing users.\n"
+                f"  2. CONSENT UI IMPLEMENTATION: Define exactly when and where the consent surface appears "
+                f"(e.g., on first login post-update, at checkout, before AI feature activation). Specify the "
+                f"UI component (modal, banner, inline checkbox, gate screen). List dark-pattern anti-patterns "
+                f"to avoid: pre-ticked boxes, buried decline links, misleading button labels, confusing "
+                f"double-negatives. Cite applicable regulation (GDPR Art.7, CCPA, etc.) per item.\n"
+                f"  3. LEGAL DOCUMENT DISCLOSURE: Specify the UI pattern for notifying users of updated "
+                f"Terms of Service or Privacy Policy (e.g., persistent header banner, email notification, "
+                f"in-app toast). Define the required link placement, label text, and whether a summary "
+                f"changelog ('What changed') must accompany the full document link.\n"
+                f"  4. FEATURE / PLATFORM CHANGE: Specific product feature, API endpoint, content filter, "
+                f"or platform capability to add, modify, or disable — with owning team and deadline.\n"
+                f"  5. AUDIT & COMPLIANCE LOGGING: What events must be logged, retained for how long, and "
+                f"in what format to satisfy the new regulatory requirement. Include any required audit trail "
+                f"for consent records.\n\n"
                 f"Return ONLY the following JSON structure (no preamble, no code fences):\n"
                 f"{{\n"
                 f'  "what_changed_brief": "Concise 90-second delta memo: exactly what changed, written as a clear before/after summary for a busy executive. Include specific clause numbers, penalties, and effective dates where applicable.",\n'
@@ -533,7 +555,13 @@ def run_step3_structured(
                 f'  "negotiation_quotes": ["Verbatim quote from source text relevant to negotiation position"],\n'
                 f'  "board_memo": "One-page board summary covering: (1) What happened and why it matters now, (2) Financial and strategic exposure, (3) Decisions the board must make, (4) Recommended immediate actions with owners and deadlines, (5) Best/base/worst case scenarios.",\n'
                 f'  "board_memo_quotes": ["Verbatim quote from source text supporting board-level concern"],\n'
-                f'  "product_checklist": ["Specific feature, UI element, terms of service clause, or technical implementation to review or change — each item actionable and assigned to a team"]\n'
+                f'  "product_checklist": [\n'
+                f'    "[CONSENT MECHANISM] Team — opt-in/opt-out specification with trigger condition, data captured, and user segment (new vs. existing)",\n'
+                f'    "[CONSENT UI] Team — component type, placement, timing, and specific dark-pattern anti-patterns to avoid with regulatory citation",\n'
+                f'    "[LEGAL DISCLOSURE] Team — notification UI pattern, link placement, changelog summary requirement, and rollout timing",\n'
+                f'    "[FEATURE CHANGE] Team — specific product or platform change with implementation detail and deadline",\n'
+                f'    "[AUDIT LOGGING] Team — events to log, retention period, format, and consent record requirements"\n'
+                f'  ]\n'
                 f"}}"
             ),
         }],
