@@ -813,6 +813,43 @@ def _evidence_block(quotes: List[str]) -> None:
         st.info(f'"{q}"')
 
 
+def _audit_block(doc_id: str) -> None:
+    """Render compact audit-metadata header at the top of each deliverable tab."""
+    st.markdown(f"""
+    <div style="background:#0D0D0D;border:1px solid rgba(10,186,181,0.14);
+                border-left:2px solid rgba(10,186,181,0.45);
+                padding:10px 18px;margin-bottom:20px;
+                display:flex;flex-wrap:wrap;gap:10px 36px;align-items:center">
+      <div>
+        <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.50rem;
+                    letter-spacing:0.24em;text-transform:uppercase;margin-bottom:2px">Document ID</div>
+        <div style="font-family:'Montserrat',sans-serif;color:{_ACCENT};
+                    font-size:0.68rem;letter-spacing:0.08em">{doc_id}</div>
+      </div>
+      <div>
+        <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.50rem;
+                    letter-spacing:0.24em;text-transform:uppercase;margin-bottom:2px">Grounding Sources</div>
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.68rem">
+          External Policy Text &nbsp;&middot;&nbsp; Nikkei Internal DB
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.50rem;
+                    letter-spacing:0.24em;text-transform:uppercase;margin-bottom:2px">Compliance Status</div>
+        <div style="font-family:'Montserrat',sans-serif;color:#A8892A;font-size:0.68rem">
+          🟡 Pending Human Review &nbsp;(GC &amp; CPO)
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.50rem;
+                    letter-spacing:0.24em;text-transform:uppercase;margin-bottom:2px">Traceability</div>
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.68rem">
+          Claim-level provenance active
+        </div>
+      </div>
+    </div>""", unsafe_allow_html=True)
+
+
 def _hitl_buttons(tab_key: str) -> None:
     """Human-in-the-Loop workflow action buttons."""
     st.markdown(f"""
@@ -1156,6 +1193,36 @@ def main() -> None:
         st.markdown('<div style="height:1px;background:rgba(10,186,181,0.10);margin:1.4rem 0"></div>',
                     unsafe_allow_html=True)
 
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;font-size:0.65rem;margin-bottom:10px">
+          <div style="color:{_ACCENT};letter-spacing:0.20em;font-size:0.56rem;
+                      font-weight:600;margin-bottom:10px;text-transform:uppercase">
+            ◆ Internal Data Grounding
+          </div>
+          <div style="color:#9A9590;font-size:0.57rem;letter-spacing:0.08em;
+                      margin-bottom:10px;line-height:1.5">
+            RAG-linked sources · AI Licensing domain
+          </div>
+          <div style="color:#C4BFB8;line-height:2.2;font-size:0.64rem">
+            <span style="color:#1A6B3C;margin-right:5px">🟢</span>
+            Content &amp; IP Archive
+            <span style="color:#9A9590;font-size:0.54rem;margin-left:4px">(Asset volume linked)</span>
+          </div>
+          <div style="color:#C4BFB8;line-height:2.2;font-size:0.64rem">
+            <span style="color:#1A6B3C;margin-right:5px">🟢</span>
+            Rights Management System
+            <span style="color:#9A9590;font-size:0.54rem;margin-left:4px">(Third-party clearance linked)</span>
+          </div>
+          <div style="color:#C4BFB8;line-height:2.2;font-size:0.64rem">
+            <span style="color:#1A6B3C;margin-right:5px">🟢</span>
+            Contract Repository
+            <span style="color:#9A9590;font-size:0.54rem;margin-left:4px">(Existing AI MSAs linked)</span>
+          </div>
+        </div>""", unsafe_allow_html=True)
+
+        st.markdown('<div style="height:1px;background:rgba(10,186,181,0.10);margin:0.8rem 0 1.4rem"></div>',
+                    unsafe_allow_html=True)
+
         has_input = bool(policy_text and policy_text.strip() and len(policy_text.strip()) >= 20)
         sidebar_btn = st.button("◆  Run Intelligence Engine", use_container_width=True,
                                 disabled=not has_input)
@@ -1410,6 +1477,9 @@ def main() -> None:
                 return
 
         elapsed = round(time.time() - pipeline_start, 1)
+        initials = "".join(w[0].upper() for w in domain.split() if w[0].isalpha())[:4]
+        doc_id = f"REQ-{time.strftime('%Y%m%d')}-{initials}-{str(int(elapsed * 1000))[-4:]}"
+
         st.session_state.results = {
             "step1": step1_data,
             "step2": step2_data,
@@ -1417,6 +1487,7 @@ def main() -> None:
             "domain": domain,
             "elapsed": elapsed,
             "debate_log": debate_log if debate_log else [],
+            "doc_id": doc_id,
         }
 
     # ── Display Results ───────────────────────────────────────────────────────
@@ -1430,6 +1501,7 @@ def main() -> None:
     domain     = res["domain"]
     elapsed    = res.get("elapsed", 0)
     debate_log = res.get("debate_log", [])
+    doc_id     = res.get("doc_id", "REQ-—")
 
     # ── Header ────────────────────────────────────────────────────────────────
     hcol1, hcol2 = st.columns([4, 1])
@@ -1563,6 +1635,7 @@ def main() -> None:
 
     # ── Tab 1: Executive Summary & Delta ─────────────────────────────────────
     with tab1:
+        _audit_block(doc_id)
         rl3 = step3_data.get("overall_risk", "—")
         rl3_label, rl3_color = _risk_config(rl3)
         st.markdown(f"""
@@ -1595,6 +1668,7 @@ def main() -> None:
 
     # ── Tab 2: Business Exposure ──────────────────────────────────────────────
     with tab2:
+        _audit_block(doc_id)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:16px">
@@ -1616,6 +1690,7 @@ def main() -> None:
 
     # ── Tab 3: Legal & Negotiation ────────────────────────────────────────────
     with tab3:
+        _audit_block(doc_id)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:16px">
@@ -1637,6 +1712,7 @@ def main() -> None:
 
     # ── Tab 4: Board Memo ─────────────────────────────────────────────────────
     with tab4:
+        _audit_block(doc_id)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:16px">
@@ -1674,6 +1750,7 @@ def main() -> None:
 
     # ── Tab 5: Product Checklist ──────────────────────────────────────────────
     with tab5:
+        _audit_block(doc_id)
         checklist = step3_data.get("product_checklist", [])
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
