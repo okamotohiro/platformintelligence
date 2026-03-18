@@ -393,7 +393,7 @@ def _safe_json_parse(text: str) -> Dict:
 
 
 def get_client() -> Optional[anthropic.Anthropic]:
-    api_key = os.environ.get("ANTHROPIC_API_KEY") or st.session_state.get("api_key", "")
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
         return None
     return anthropic.Anthropic(api_key=api_key)
@@ -892,40 +892,6 @@ def main() -> None:
           <div style="height:1px;background:linear-gradient(90deg,{_ACCENT}33,transparent);
                       margin-top:12px"></div>
         </div>""", unsafe_allow_html=True)
-
-        st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
-                    letter-spacing:0.22em;text-transform:uppercase;margin-bottom:10px">
-          ◆ Claude API Key
-        </div>""", unsafe_allow_html=True)
-
-        env_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        if env_key:
-            st.markdown(f"""
-            <div style="background:#111111;border:1px solid rgba(26,107,60,0.35);
-                        padding:10px 14px;margin-bottom:1rem;">
-              <div style="font-family:'Montserrat',sans-serif;color:#1A6B3C;
-                          font-size:0.60rem;letter-spacing:0.18em;text-transform:uppercase;
-                          margin-bottom:3px">✓  Auto-configured from environment</div>
-              <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;">
-                sk-ant-···{env_key[-6:]}</div>
-            </div>""", unsafe_allow_html=True)
-        else:
-            api_input = st.text_input("API Key", type="password",
-                                      placeholder="sk-ant-api03-...",
-                                      help="Your API key from console.anthropic.com",
-                                      label_visibility="collapsed")
-            if api_input:
-                st.session_state["api_key"] = api_input
-            if not st.session_state.get("api_key"):
-                st.markdown(f"""
-                <div style="font-family:'Montserrat',sans-serif;color:#8B2635;
-                            font-size:0.68rem;margin-top:-6px;margin-bottom:8px">
-                  Please enter your API key
-                </div>""", unsafe_allow_html=True)
-
-        st.markdown('<div style="height:1px;background:rgba(10,186,181,0.10);margin:1.4rem 0"></div>',
-                    unsafe_allow_html=True)
 
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
