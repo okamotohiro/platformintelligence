@@ -1146,6 +1146,25 @@ def _to_docx_bytes(title: str, body: str, domain: str, doc_id: str) -> bytes:
 _DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
+def _download_row(label: str, data: bytes, file_name: str, key: str) -> None:
+    """Render a visually prominent .docx download button with teal accent divider."""
+    st.markdown(
+        '<div style="height:1px;background:rgba(10,186,181,0.14);margin:1.6rem 0 1.2rem"></div>',
+        unsafe_allow_html=True,
+    )
+    _, btn_col, _ = st.columns([1, 2, 1])
+    with btn_col:
+        st.download_button(
+            label=label,
+            data=data,
+            file_name=file_name,
+            mime=_DOCX_MIME,
+            use_container_width=True,
+            type="primary",
+            key=key,
+        )
+
+
 def _audit_block(doc_id: str, domain: str = "", step2_data: Optional[Dict] = None) -> None:
     """Render compact audit-metadata header — contextual data derived from domain & analysis."""
     import datetime as _dt
@@ -2204,15 +2223,15 @@ def main() -> None:
             agent_tag="Executive Summary",
         )
 
-        st.download_button(
-            "Export to Word (.docx)",
+        _download_row(
+            label="📥  Export Executive Delta Brief (.docx)",
             data=_to_docx_bytes(
                 f"Executive Delta Brief — {domain}",
                 f"Overall Risk: {rl3_label}\n\n{what_changed}",
                 domain, doc_id,
             ),
             file_name=_fn("delta_brief").replace(".md", ".docx"),
-            mime=_DOCX_MIME,
+            key="dl_tab1",
         )
 
         _governance_panel("tab1", _gov_risk_label)
@@ -2236,14 +2255,14 @@ def main() -> None:
             agent_tag="Business Agent",
         )
 
-        st.download_button(
-            "Export to Word (.docx)",
+        _download_row(
+            label="📥  Export Business Exposure Memo (.docx)",
             data=_to_docx_bytes(
                 f"Business Exposure Memo — {domain}",
                 exposure, domain, doc_id,
             ),
             file_name=_fn("business_exposure").replace(".md", ".docx"),
-            mime=_DOCX_MIME,
+            key="dl_tab2",
         )
 
         _governance_panel("tab2", _gov_risk_label)
@@ -2267,14 +2286,14 @@ def main() -> None:
             agent_tag="Legal Agent",
         )
 
-        st.download_button(
-            "Export to Word (.docx)",
+        _download_row(
+            label="📥  Export Legal & Negotiation Brief (.docx)",
             data=_to_docx_bytes(
                 f"Legal & Negotiation Brief — {domain}",
                 negotiation, domain, doc_id,
             ),
             file_name=_fn("negotiation_brief").replace(".md", ".docx"),
-            mime=_DOCX_MIME,
+            key="dl_tab3",
         )
 
         _governance_panel("tab3", _gov_risk_label)
@@ -2298,14 +2317,14 @@ def main() -> None:
             agent_tag="Board Level",
         )
 
-        st.download_button(
-            "Export to Word (.docx)",
+        _download_row(
+            label="📥  Export Board Memorandum (.docx)",
             data=_to_docx_bytes(
                 f"Board Memorandum — {domain}",
                 board, domain, doc_id,
             ),
             file_name=_fn("board_memo").replace(".md", ".docx"),
-            mime=_DOCX_MIME,
+            key="dl_tab4",
         )
 
         _governance_panel("tab4", _gov_risk_label)
@@ -2339,14 +2358,14 @@ def main() -> None:
         if checklist:
             _checklist_items(checklist)
             checklist_body = "\n\n".join(f"{i}. {item}" for i, item in enumerate(checklist, 1))
-            st.download_button(
-                "Export to Word (.docx)",
+            _download_row(
+                label="📥  Export Product Checklist (.docx)",
                 data=_to_docx_bytes(
                     f"Product Checklist — {domain}",
                     checklist_body, domain, doc_id,
                 ),
                 file_name=_fn("product_checklist").replace(".md", ".docx"),
-                mime=_DOCX_MIME,
+                key="dl_tab5",
             )
         else:
             st.caption("No checklist items generated.")
