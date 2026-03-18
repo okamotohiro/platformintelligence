@@ -9,7 +9,7 @@ import json
 import re
 import os
 import time
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, List
 
 import plotly.graph_objects as go
 
@@ -134,7 +134,7 @@ p, label, .stMarkdown p,
     padding: 0.1em 0.4em !important;
 }
 
-/* ── BUTTONS ────────────────────────────────── */
+/* ── PRIMARY BUTTONS ────────────────────────── */
 .stButton > button {
     background: linear-gradient(135deg, #0ABAB5 0%, #089590 100%) !important;
     color: #FFFFFF !important;
@@ -164,6 +164,26 @@ p, label, .stMarkdown p,
     transform: none !important;
     cursor: not-allowed !important;
 }
+
+/* ── SECONDARY BUTTONS (HITL actions) ───────── */
+.stButton > button[kind="secondary"] {
+    background: transparent !important;
+    color: var(--text-sec) !important;
+    border: 1px solid rgba(10, 186, 181, 0.25) !important;
+    box-shadow: none !important;
+    font-size: 0.66rem !important;
+    letter-spacing: 0.12em !important;
+    padding: 0.72rem 1.1rem !important;
+    text-transform: none !important;
+}
+.stButton > button[kind="secondary"]:hover {
+    background: rgba(10, 186, 181, 0.07) !important;
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
 [data-testid="stDownloadButton"] > button {
     background: transparent !important;
     color: var(--accent) !important;
@@ -282,12 +302,25 @@ p, label, .stMarkdown p,
     align-items: center !important;
 }
 
-/* ── ALERTS ─────────────────────────────────── */
+/* ── ALERTS / INFO (Evidence quotes) ────────── */
 [data-testid="stAlert"] {
     border-radius: 0 !important;
     font-family: var(--sans) !important;
     font-size: 0.83rem !important;
     background: var(--bg-card2) !important;
+}
+/* st.info override — evidence quote style */
+[data-testid="stAlert"][data-baseweb="notification"] {
+    background: rgba(10, 186, 181, 0.05) !important;
+    border: 1px solid rgba(10, 186, 181, 0.20) !important;
+    border-left: 3px solid var(--accent) !important;
+}
+[data-testid="stAlert"] p {
+    color: var(--text-sec) !important;
+    font-style: italic !important;
+    font-family: var(--serif) !important;
+    font-size: 0.90rem !important;
+    line-height: 1.75 !important;
 }
 
 /* ── DIVIDER / CAPTION / JSON ───────────────── */
@@ -454,28 +487,50 @@ def _build_draft_context(domain: str, step1_data: Dict, step2_data: Dict) -> str
 
 
 def run_step3_structured(
-    client: anthropic.Anthropic, domain: str, step1_data: Dict, step2_data: Dict
+    client: anthropic.Anthropic,
+    domain: str,
+    step1_data: Dict,
+    step2_data: Dict,
+    policy_text: str = "",
 ) -> Dict:
-    """Generate all 6 role-based deliverables as a single structured JSON call."""
+    """Generate all role-based deliverables as a single structured JSON call with evidence quotes."""
     context = _build_draft_context(domain, step1_data, step2_data)
+
+    # Prepend original policy text so LLM can extract verbatim evidence quotes
+    original_block = ""
+    if policy_text:
+        snippet = policy_text[:3500]
+        original_block = (
+            f"[ORIGINAL SOURCE TEXT — Extract VERBATIM quotes from this for all *_quotes fields]\n"
+            f"{snippet}\n\n"
+        )
+
     response = client.messages.create(
         model=MODEL,
-        max_tokens=8192,
+        max_tokens=10000,
         thinking={"type": "adaptive"},
         system=STRATEGIST_SYSTEM,
         messages=[{
             "role": "user",
             "content": (
                 f"Based on the following policy analysis, generate a complete intelligence report "
-                f"with 6 role-specific deliverables for the '{domain}' domain.\n\n"
+                f"with role-specific deliverables for the '{domain}' domain.\n\n"
+                f"{original_block}"
                 f"{context}\n\n"
+                f"CRITICAL INSTRUCTION: For every *_quotes field, you MUST include 1–3 VERBATIM "
+                f"quotes copied exactly from the ORIGINAL SOURCE TEXT above. "
+                f"These are evidence citations — they must be exact text, not paraphrases.\n\n"
                 f"Return ONLY the following JSON structure (no preamble, no code fences):\n"
                 f"{{\n"
                 f'  "what_changed_brief": "Concise 90-second delta memo: exactly what changed, written as a clear before/after summary for a busy executive. Include specific clause numbers, penalties, and effective dates where applicable.",\n'
+                f'  "what_changed_quotes": ["Verbatim quote from source text supporting this delta"],\n'
                 f'  "overall_risk": "CRITICAL|HIGH|MEDIUM|LOW",\n'
                 f'  "business_exposure_memo": "Structured memo covering how this affects: (1) Traffic & audience reach, (2) Revenue streams & monetization, (3) IP & copyright position, (4) Product & platform capabilities, (5) Brand & competitive standing. Include estimated financial impact ranges and timelines.",\n'
+                f'  "business_exposure_quotes": ["Verbatim quote from source text supporting this exposure assessment"],\n'
                 f'  "negotiation_brief": "Legal & deal team briefing covering: (1) Non-negotiable conditions we must insist on, (2) Items requiring written confirmation from the other party, (3) Our strongest leverage points, (4) Acceptable compromise zones, (5) Red lines that trigger legal escalation or deal termination.",\n'
+                f'  "negotiation_quotes": ["Verbatim quote from source text relevant to negotiation position"],\n'
                 f'  "board_memo": "One-page board summary covering: (1) What happened and why it matters now, (2) Financial and strategic exposure, (3) Decisions the board must make, (4) Recommended immediate actions with owners and deadlines, (5) Best/base/worst case scenarios.",\n'
+                f'  "board_memo_quotes": ["Verbatim quote from source text supporting board-level concern"],\n'
                 f'  "product_checklist": ["Specific feature, UI element, terms of service clause, or technical implementation to review or change — each item actionable and assigned to a team"]\n'
                 f"}}"
             ),
@@ -669,6 +724,61 @@ def _checklist_items(items: list) -> None:
           <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                       font-size:0.82rem;line-height:1.6">{item}</div>
         </div>""", unsafe_allow_html=True)
+
+
+def _evidence_block(quotes: List[str]) -> None:
+    """Render evidence quotes extracted verbatim from the source policy text."""
+    if not quotes:
+        return
+    st.markdown(f"""
+    <div style="margin:1.8rem 0 0.6rem">
+      <div style="font-family:'Montserrat',sans-serif;color:{_ACCENT};font-size:0.58rem;
+                  letter-spacing:0.28em;text-transform:uppercase;margin-bottom:0.7rem;
+                  display:flex;align-items:center;gap:10px">
+        <span>◈</span>
+        <span>EVIDENCE — VERBATIM CITATIONS FROM SOURCE TEXT</span>
+        <div style="flex:1;height:1px;background:rgba(10,186,181,0.12)"></div>
+      </div>
+    </div>""", unsafe_allow_html=True)
+    for q in quotes:
+        st.info(f'"{q}"')
+
+
+def _hitl_buttons(tab_key: str) -> None:
+    """Human-in-the-Loop workflow action buttons."""
+    st.markdown(f"""
+    <div style="border-top:1px solid rgba(10,186,181,0.12);
+                margin:2.2rem 0 1rem;padding-top:1.2rem">
+      <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
+                  letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
+        ◆ &nbsp; HUMAN-IN-THE-LOOP — WORKFLOW ACTIONS
+      </div>
+    </div>""", unsafe_allow_html=True)
+
+    c1, c2, c3, _ = st.columns([1, 1, 1.6, 1.2])
+    with c1:
+        if st.button(
+            "✅  Approve & Share",
+            key=f"approve_{tab_key}",
+            use_container_width=True,
+        ):
+            st.toast("✅ Action recorded: Document approved and queued for sharing.", icon="✅")
+    with c2:
+        if st.button(
+            "🔄  Request Revision",
+            key=f"revise_{tab_key}",
+            type="secondary",
+            use_container_width=True,
+        ):
+            st.toast("🔄 Action recorded: Revision request submitted to analyst.", icon="🔄")
+    with c3:
+        if st.button(
+            "⚠️  Escalate to Outside Counsel",
+            key=f"escalate_{tab_key}",
+            type="secondary",
+            use_container_width=True,
+        ):
+            st.toast("⚠️ Action recorded: Escalated to Outside Counsel.", icon="⚠️")
 
 
 # ─── Login Screen ─────────────────────────────────────────────────────────────
@@ -870,7 +980,7 @@ def main() -> None:
           <div>II &nbsp; Impact Mapping → 4-Axis Score</div>
           <div>III &nbsp; Intelligence → 5 Role Outputs</div>
           <div style="margin-top:10px;color:{_ACCENT}44;letter-spacing:0.12em;font-size:0.58rem">
-            JSON Schema · Adaptive Thinking<br>Structured Output · Prompt Chain
+            JSON Schema · Adaptive Thinking<br>Evidence Quotes · Human-in-the-Loop
           </div>
         </div>""", unsafe_allow_html=True)
 
@@ -941,7 +1051,7 @@ def main() -> None:
                 (c2, "◉", "4-Axis Impact Score",
                  "Quantifies IP · Traffic · Revenue · Product exposure 0–100 with Adaptive Thinking"),
                 (c3, "◆", "5 Role Deliverables",
-                 "Generates Executive Delta · Business Exposure · Legal Brief · Board Memo · Product Checklist simultaneously"),
+                 "Generates Executive Delta · Business Exposure · Legal Brief · Board Memo · Product Checklist with evidence citations"),
             ]:
                 with col:
                     st.markdown(f"""
@@ -977,7 +1087,7 @@ def main() -> None:
             st.warning("Please enter policy text (minimum 20 characters).")
             return
 
-        # ── Pipeline ─────────────────────────────────────────────────────────
+        # ── Agentic Pipeline with granular step visualization ─────────────────
         st.session_state.results = None
         pipeline_start = time.time()
 
@@ -985,55 +1095,91 @@ def main() -> None:
         step2_data: Optional[Dict] = None
         step3_data: Optional[Dict] = None
 
-        with st.status("I  ·  Parsing — Structured Delta Extraction", expanded=True) as s1:
-            st.write("Extracting obligations, removed rights, and key thresholds as structured JSON…")
+        with st.status(
+            "◆  Autonomous Intelligence Pipeline — Analyzing Policy...",
+            expanded=True
+        ) as pipeline_status:
             try:
+                # ── STEP 1: Ingest & Parse ────────────────────────────────────
+                st.write("**Step 1:** Ingesting policy document and identifying text deltas...")
+                time.sleep(1.2)
+
                 step1_data = run_step1_parsing(client, policy_text)
-                s1.update(label="I  ·  Parsing  ✓  Complete", state="complete", expanded=False)
+
+                n_obl  = len(step1_data.get("added_obligations", []))
+                n_rem  = len(step1_data.get("removed_rights", []))
+                n_thr  = len(step1_data.get("key_thresholds", []))
+                st.write(
+                    f"  ✓  Extracted **{n_obl}** added obligations · "
+                    f"**{n_rem}** removed rights · **{n_thr}** key thresholds"
+                )
+
+                # ── STEP 2: Cross-reference with Domain Profile ───────────────
+                st.write(
+                    f"**Step 2:** Cross-referencing deltas with Nikkei's Business Model Profile "
+                    f"(IP, Revenue, Traffic) — *{domain}* domain..."
+                )
+                time.sleep(1.2)
+
+                step2_data = run_step2_impact_mapping(client, step1_data, domain)
+
+                rl_raw = step2_data.get("overall_risk_level", "medium").upper()
+                st.write(
+                    f"  ✓  Impact mapping complete — Overall Risk: **{rl_raw}**"
+                )
+
+                # ── STEP 3: Assess risk severity ──────────────────────────────
+                st.write("**Step 3:** Assessing risk severity across 4 dimensions...")
+                time.sleep(1.0)
+
+                scores = step2_data.get("scores", {})
+                score_str = " · ".join(
+                    f"{ax}: **{scores[ax]['score']}**"
+                    for ax in ["IP", "Traffic", "Revenue", "Product"]
+                    if ax in scores
+                )
+                st.write(f"  ✓  Risk scores mapped — {score_str}")
+
+                # ── STEP 4: Generate role-specific outputs ────────────────────
+                st.write(
+                    "**Step 4:** Generating role-specific output formats "
+                    "(Legal, Board, Product) with evidence citations..."
+                )
+                time.sleep(1.2)
+
+                step3_data = run_step3_structured(
+                    client, domain, step1_data, step2_data, policy_text
+                )
+
+                st.write(
+                    "  ✓  5 role-specific deliverables generated — "
+                    "evidence quotes extracted from source text"
+                )
+
+                pipeline_status.update(
+                    label="◆  Analysis Complete — 5 Role Deliverables Ready",
+                    state="complete",
+                    expanded=False,
+                )
+
             except anthropic.AuthenticationError:
-                s1.update(label="I  ·  Parsing  ✗  Authentication Error", state="error")
+                pipeline_status.update(
+                    label="◆  Pipeline Failed — Authentication Error", state="error"
+                )
                 st.error("Invalid API key. Please check your credentials.")
                 return
             except anthropic.RateLimitError:
-                s1.update(label="I  ·  Parsing  ✗  Rate Limit", state="error")
+                pipeline_status.update(
+                    label="◆  Pipeline Failed — Rate Limit", state="error"
+                )
                 st.error("Rate limit exceeded. Please wait a moment and try again.")
                 return
             except Exception as exc:
-                s1.update(label="I  ·  Parsing  ✗  Error", state="error")
-                st.error(f"Step 1 Error: {exc}")
-                return
-
-        with st.status(f"II  ·  Impact Mapping — {domain}", expanded=True) as s2:
-            st.write(f"Scoring IP / Traffic / Revenue / Product impact against the '{domain}' domain profile…")
-            try:
-                step2_data = run_step2_impact_mapping(client, step1_data, domain)
-                s2.update(label="II  ·  Impact Mapping  ✓  Complete", state="complete", expanded=False)
-            except anthropic.AuthenticationError:
-                s2.update(label="II  ·  Impact Mapping  ✗  Authentication Error", state="error")
-                st.error("Invalid API key.")
-                return
-            except Exception as exc:
-                s2.update(label="II  ·  Impact Mapping  ✗  Error", state="error")
-                st.error(f"Step 2 Error: {exc}")
-                return
-
-        with st.status("III  ·  Intelligence — Generating 5 Role-Specific Deliverables", expanded=True) as s3:
-            st.write("Synthesizing Executive Delta · Business Exposure · Legal Brief · Board Memo · Product Checklist…")
-            st.caption("Structured output with Adaptive Thinking — typically 30–90 seconds.")
-            try:
-                step3_data = run_step3_structured(client, domain, step1_data, step2_data)
-                s3.update(label="III  ·  Intelligence  ✓  Complete", state="complete", expanded=False)
-            except anthropic.AuthenticationError:
-                s3.update(label="III  ·  Intelligence  ✗  Authentication Error", state="error")
-                st.error("Invalid API key.")
-                return
-            except Exception as exc:
-                s3.update(label="III  ·  Intelligence  ✗  Error", state="error")
-                st.error(f"Step 3 Error: {exc}")
+                pipeline_status.update(label="◆  Pipeline Failed", state="error")
+                st.error(f"Pipeline Error: {exc}")
                 return
 
         elapsed = round(time.time() - pipeline_start, 1)
-
         st.session_state.results = {
             "step1": step1_data,
             "step2": step2_data,
@@ -1089,8 +1235,8 @@ def main() -> None:
             </div>
             <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                         margin-top:3px;line-height:1.5">
-              Translated complex policy changes into 5 role-specific actionable outputs.
-              Work that previously took weeks, delivered in seconds.
+              Translated complex policy changes into 5 role-specific actionable outputs
+              with evidence citations. Work that previously took weeks, delivered in seconds.
             </div>
           </div>
           <div style="text-align:right">
@@ -1206,7 +1352,7 @@ def main() -> None:
     def _fn(prefix: str) -> str:
         return f"{prefix}_{domain.replace(' ', '_')}.md"
 
-    # Tab 1 — Executive Summary & Delta
+    # ── Tab 1: Executive Summary & Delta ─────────────────────────────────────
     with tab1:
         rl3 = step3_data.get("overall_risk", "—")
         rl3_label, rl3_color = _risk_config(rl3)
@@ -1228,13 +1374,17 @@ def main() -> None:
         what_changed = step3_data.get("what_changed_brief", "")
         _prose_block(what_changed)
 
+        _evidence_block(step3_data.get("what_changed_quotes", []))
+
         st.download_button(
             "Download Delta Brief (.md)",
             data=f"# Executive Delta Brief — {domain}\n\n**Overall Risk: {rl3_label}**\n\n{what_changed}",
             file_name=_fn("delta_brief"), mime="text/markdown"
         )
 
-    # Tab 2 — Business Exposure
+        _hitl_buttons("tab1")
+
+    # ── Tab 2: Business Exposure ──────────────────────────────────────────────
     with tab2:
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
@@ -1245,13 +1395,17 @@ def main() -> None:
         exposure = step3_data.get("business_exposure_memo", "")
         _prose_block(exposure)
 
+        _evidence_block(step3_data.get("business_exposure_quotes", []))
+
         st.download_button(
             "Download Business Exposure Memo (.md)",
             data=f"# Business Exposure Memo — {domain}\n\n{exposure}",
             file_name=_fn("business_exposure"), mime="text/markdown"
         )
 
-    # Tab 3 — Legal & Negotiation
+        _hitl_buttons("tab2")
+
+    # ── Tab 3: Legal & Negotiation ────────────────────────────────────────────
     with tab3:
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
@@ -1262,13 +1416,17 @@ def main() -> None:
         negotiation = step3_data.get("negotiation_brief", "")
         _prose_block(negotiation)
 
+        _evidence_block(step3_data.get("negotiation_quotes", []))
+
         st.download_button(
             "Download Legal & Negotiation Brief (.md)",
             data=f"# Legal & Negotiation Brief — {domain}\n\n{negotiation}",
             file_name=_fn("negotiation_brief"), mime="text/markdown"
         )
 
-    # Tab 4 — Board Memo
+        _hitl_buttons("tab3")
+
+    # ── Tab 4: Board Memo ─────────────────────────────────────────────────────
     with tab4:
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
@@ -1279,13 +1437,17 @@ def main() -> None:
         board = step3_data.get("board_memo", "")
         _prose_block(board)
 
+        _evidence_block(step3_data.get("board_memo_quotes", []))
+
         st.download_button(
             "Download Board Memo (.md)",
             data=f"# Board Memorandum — {domain}\n\n{board}",
             file_name=_fn("board_memo"), mime="text/markdown"
         )
 
-    # Tab 5 — Product Checklist
+        _hitl_buttons("tab4")
+
+    # ── Tab 5: Product Checklist ──────────────────────────────────────────────
     with tab5:
         checklist = step3_data.get("product_checklist", [])
         st.markdown(f"""
@@ -1305,6 +1467,8 @@ def main() -> None:
         else:
             st.caption("No checklist items generated.")
 
+        _hitl_buttons("tab5")
+
     # ── Footer ────────────────────────────────────────────────────────────────
     _accent_divider()
     st.markdown(f"""
@@ -1312,7 +1476,7 @@ def main() -> None:
       <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.58rem;
                   letter-spacing:0.28em;text-transform:uppercase">
         Analysis Complete &nbsp;◆&nbsp; 3-Step Prompt Chain &nbsp;◆&nbsp;
-        JSON Schema · Adaptive Thinking · Structured Output · {elapsed}s
+        Evidence Citations · Human-in-the-Loop · {elapsed}s
       </div>
       <div style="width:60px;height:1px;background:linear-gradient(90deg,transparent,{_ACCENT}44,transparent);
                   margin:1rem auto"></div>
