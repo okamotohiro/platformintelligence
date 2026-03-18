@@ -1,6 +1,6 @@
 """
-Policy Intelligence Engine — Luxury Enterprise UI
-Agentic Workflow PoC · Nikkei AI Strategy
+Platform & Policy Intelligence Engine — Enterprise PoC
+Agentic Workflow · Structured Output · Role-based Deliverables
 """
 
 import streamlit as st
@@ -8,16 +8,14 @@ import anthropic
 import json
 import re
 import os
-import concurrent.futures
-
-port = int(os.environ.get("PORT", 8080))
-port_number = int(os.environ.get("PORT", 8080))
-import plotly.graph_objects as go
+import time
 from typing import Optional, Dict, Any, Tuple
+
+import plotly.graph_objects as go
 
 # ─── Page Configuration ──────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Policy Intelligence Engine",
+    page_title="Platform & Policy Intelligence Engine",
     page_icon="◆",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -75,10 +73,6 @@ h1, h2, h3, h4 {
 h1 { font-weight: 300 !important; }
 h2 { font-weight: 300 !important; }
 h3 { font-weight: 400 !important; }
-/* Apply sans-serif broadly, but NOT to bare `span` —
-   Streamlit status/alert widgets use Material Symbols font
-   via ligature text (e.g. "check") inside <span> elements.
-   Overriding span globally breaks those icon ligatures. */
 p, label, .stMarkdown p,
 .stMarkdown span, .stText span,
 [data-testid="stRadio"] span,
@@ -89,9 +83,6 @@ p, label, .stMarkdown p,
 [data-testid="stDownloadButton"] span {
     font-family: var(--sans) !important;
 }
-
-/* Explicitly restore Material Symbols icon font for status/notification widgets.
-   Must come AFTER the broad rule above to win the specificity race. */
 [data-testid="stStatusWidget"] span,
 [data-testid="stNotification"] span,
 [data-testid="stAlert"] span,
@@ -173,8 +164,6 @@ p, label, .stMarkdown p,
     transform: none !important;
     cursor: not-allowed !important;
 }
-
-/* download button — outlined accent */
 [data-testid="stDownloadButton"] > button {
     background: transparent !important;
     color: var(--accent) !important;
@@ -245,11 +234,11 @@ p, label, .stMarkdown p,
     background: transparent !important;
     color: var(--text-muted) !important;
     font-family: var(--sans) !important;
-    font-size: 0.68rem !important;
+    font-size: 0.66rem !important;
     font-weight: 600 !important;
-    letter-spacing: 0.18em !important;
+    letter-spacing: 0.16em !important;
     text-transform: uppercase !important;
-    padding: 0.85rem 2rem !important;
+    padding: 0.85rem 1.6rem !important;
     border-bottom: 2px solid transparent !important;
     transition: all 0.3s !important;
 }
@@ -281,14 +270,12 @@ p, label, .stMarkdown p,
     border: 1px solid var(--accent-border) !important;
     border-radius: 0 !important;
 }
-/* Status label text (the div/p next to the icon) */
 [data-testid="stStatusWidget"] p,
 [data-testid="stStatusWidget"] div:not([class*="icon"]) {
     font-family: var(--sans) !important;
     font-size: 0.82rem !important;
     color: var(--text-sec) !important;
 }
-/* Prevent layout shift: give the icon container a stable width */
 [data-testid="stStatusWidget"] > div > div:first-child {
     min-width: 1.5rem !important;
     display: inline-flex !important;
@@ -303,27 +290,15 @@ p, label, .stMarkdown p,
     background: var(--bg-card2) !important;
 }
 
-/* ── DIVIDER ────────────────────────────────── */
-hr {
-    border: none !important;
-    border-top: 1px solid var(--accent-border) !important;
-    margin: 2rem 0 !important;
-}
-
-/* ── CAPTION ────────────────────────────────── */
+/* ── DIVIDER / CAPTION / JSON ───────────────── */
+hr { border: none !important; border-top: 1px solid var(--accent-border) !important; margin: 2rem 0 !important; }
 [data-testid="stCaptionContainer"] p {
-    color: var(--text-muted) !important;
-    font-size: 0.68rem !important;
-    letter-spacing: 0.08em !important;
-    font-family: var(--sans) !important;
+    color: var(--text-muted) !important; font-size: 0.68rem !important;
+    letter-spacing: 0.08em !important; font-family: var(--sans) !important;
 }
-
-/* ── JSON VIEWER ────────────────────────────── */
 [data-testid="stJson"] {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--accent-border) !important;
-    font-family: "SF Mono", "Monaco", monospace !important;
-    font-size: 0.78rem !important;
+    background: var(--bg-card) !important; border: 1px solid var(--accent-border) !important;
+    font-family: "SF Mono", "Monaco", monospace !important; font-size: 0.78rem !important;
 }
 
 /* ── SCROLLBAR ──────────────────────────────── */
@@ -370,113 +345,15 @@ STRATEGIST_SYSTEM = (
     "All output must be in professional business English."
 )
 
-# ─── JSON Schemas ─────────────────────────────────────────────────────────────
-STEP1_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "added_obligations": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "item": {"type": "string"},
-                    "severity": {"type": "string", "enum": ["high", "medium", "low"]},
-                    "description": {"type": "string"},
-                },
-                "required": ["item", "severity", "description"],
-                "additionalProperties": False,
-            },
-        },
-        "removed_rights": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "item": {"type": "string"},
-                    "severity": {"type": "string", "enum": ["high", "medium", "low"]},
-                    "description": {"type": "string"},
-                },
-                "required": ["item", "severity", "description"],
-                "additionalProperties": False,
-            },
-        },
-        "key_thresholds": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "item": {"type": "string"},
-                    "value": {"type": "string"},
-                    "description": {"type": "string"},
-                },
-                "required": ["item", "value", "description"],
-                "additionalProperties": False,
-            },
-        },
-        "context_summary": {"type": "string"},
-    },
-    "required": ["added_obligations", "removed_rights", "key_thresholds", "context_summary"],
-    "additionalProperties": False,
-}
-
-STEP2_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "scores": {
-            "type": "object",
-            "properties": {
-                axis: {
-                    "type": "object",
-                    "properties": {
-                        "score": {"type": "integer"},
-                        "direction": {
-                            "type": "string",
-                            "enum": ["threat", "opportunity", "neutral"],
-                        },
-                        "evidence": {"type": "string"},
-                        "priority_actions": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
-                    },
-                    "required": ["score", "direction", "evidence", "priority_actions"],
-                    "additionalProperties": False,
-                }
-                for axis in ["IP", "Traffic", "Revenue", "Product"]
-            },
-            "required": ["IP", "Traffic", "Revenue", "Product"],
-            "additionalProperties": False,
-        },
-        "overall_risk_level": {
-            "type": "string",
-            "enum": ["critical", "high", "medium", "low"],
-        },
-        "executive_summary": {"type": "string"},
-        "key_opportunities": {"type": "array", "items": {"type": "string"}},
-        "key_threats": {"type": "array", "items": {"type": "string"}},
-    },
-    "required": [
-        "scores", "overall_risk_level", "executive_summary",
-        "key_opportunities", "key_threats",
-    ],
-    "additionalProperties": False,
-}
-
 # ─── Pipeline Functions ───────────────────────────────────────────────────────
 def _safe_json_parse(text: str) -> Dict:
-    """Safely extract and parse JSON from LLM output.
-    Strips ```json ... ``` or ``` ... ``` code fences and surrounding text before parsing.
-    """
-    # Prefer code fence extraction
     match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
     if match:
         return json.loads(match.group(1).strip())
-    # No code fence — extract from first { to last }
     start = text.find("{")
     end = text.rfind("}")
     if start != -1 and end != -1 and end > start:
         return json.loads(text[start : end + 1])
-    # Fallback: parse as-is (raises json.JSONDecodeError on failure)
     return json.loads(text.strip())
 
 
@@ -497,31 +374,27 @@ def run_step1_parsing(client: anthropic.Anthropic, policy_text: str) -> Dict:
             "focusing on elements relevant to media companies and AI operators.\n"
             "Return ONLY a valid JSON object — no preamble, no explanation, no markdown code fences."
         ),
-        messages=[
-            {
-                "role": "user",
-                "content": (
-                    f"Analyze the following Policy/Platform Event text and extract structured data "
-                    f"from the perspective of media company intellectual property and copyright management.\n\n"
-                    f"[TEXT]\n{policy_text}\n\n"
-                    f"Return ONLY the following JSON structure (no extra text whatsoever):\n"
-                    f"{{\n"
-                    f'  "added_obligations": [{{"item": "...", "severity": "high|medium|low", "description": "..."}}],\n'
-                    f'  "removed_rights":    [{{"item": "...", "severity": "high|medium|low", "description": "..."}}],\n'
-                    f'  "key_thresholds":    [{{"item": "...", "value": "...", "description": "..."}}],\n'
-                    f'  "context_summary":   "2-3 sentence summary of the entire text"\n'
-                    f"}}"
-                ),
-            }
-        ],
+        messages=[{
+            "role": "user",
+            "content": (
+                f"Analyze the following Policy/Platform Event text and extract structured data "
+                f"from the perspective of media company intellectual property and copyright management.\n\n"
+                f"[TEXT]\n{policy_text}\n\n"
+                f"Return ONLY the following JSON structure (no extra text whatsoever):\n"
+                f"{{\n"
+                f'  "added_obligations": [{{"item": "...", "severity": "high|medium|low", "description": "..."}}],\n'
+                f'  "removed_rights":    [{{"item": "...", "severity": "high|medium|low", "description": "..."}}],\n'
+                f'  "key_thresholds":    [{{"item": "...", "value": "...", "description": "..."}}],\n'
+                f'  "context_summary":   "2-3 sentence summary of the entire text"\n'
+                f"}}"
+            ),
+        }],
     )
     raw = next(b.text for b in response.content if b.type == "text")
     return _safe_json_parse(raw)
 
 
-def run_step2_impact_mapping(
-    client: anthropic.Anthropic, step1_data: Dict, domain: str
-) -> Dict:
+def run_step2_impact_mapping(client: anthropic.Anthropic, step1_data: Dict, domain: str) -> Dict:
     response = client.messages.create(
         model=MODEL,
         max_tokens=4096,
@@ -534,29 +407,27 @@ def run_step2_impact_mapping(
             "Return ONLY a valid JSON object — no preamble, no explanation, no markdown code fences. "
             "All text fields must be in professional business English."
         ),
-        messages=[
-            {
-                "role": "user",
-                "content": (
-                    f"Evaluate the business impact for the '{domain}' domain.\n\n"
-                    f"[Domain Profile]\n{DOMAIN_PROFILES[domain]}\n\n"
-                    f"[Step 1 Structured Data]\n{json.dumps(step1_data, ensure_ascii=False, indent=2)}\n\n"
-                    f"Return ONLY the following JSON structure (no extra text whatsoever):\n"
-                    f"{{\n"
-                    f'  "scores": {{\n'
-                    f'    "IP":      {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}},\n'
-                    f'    "Traffic": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}},\n'
-                    f'    "Revenue": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}},\n'
-                    f'    "Product": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}}\n'
-                    f'  }},\n'
-                    f'  "overall_risk_level": "critical|high|medium|low",\n'
-                    f'  "executive_summary": "...",\n'
-                    f'  "key_opportunities": ["..."],\n'
-                    f'  "key_threats": ["..."]\n'
-                    f"}}"
-                ),
-            }
-        ],
+        messages=[{
+            "role": "user",
+            "content": (
+                f"Evaluate the business impact for the '{domain}' domain.\n\n"
+                f"[Domain Profile]\n{DOMAIN_PROFILES[domain]}\n\n"
+                f"[Step 1 Structured Data]\n{json.dumps(step1_data, ensure_ascii=False, indent=2)}\n\n"
+                f"Return ONLY the following JSON structure (no extra text whatsoever):\n"
+                f"{{\n"
+                f'  "scores": {{\n'
+                f'    "IP":      {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}},\n'
+                f'    "Traffic": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}},\n'
+                f'    "Revenue": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}},\n'
+                f'    "Product": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}}\n'
+                f'  }},\n'
+                f'  "overall_risk_level": "critical|high|medium|low",\n'
+                f'  "executive_summary": "...",\n'
+                f'  "key_opportunities": ["..."],\n'
+                f'  "key_threats": ["..."]\n'
+                f"}}"
+            ),
+        }],
     )
     raw = next(b.text for b in response.content if b.type == "text")
     return _safe_json_parse(raw)
@@ -582,78 +453,39 @@ def _build_draft_context(domain: str, step1_data: Dict, step2_data: Dict) -> str
     )
 
 
-_DOC_PROMPTS = {
-    "board_memo": (
-        "Draft a Board Memorandum for executive leadership.\n\n{context}\n\n"
-        "[Required Sections]\n"
-        "1. Executive Summary (3–5 lines)\n"
-        "2. Impact on Business Objectives (with quantified figures and deadlines)\n"
-        "3. Board-Level Decisions Required (in priority order)\n"
-        "4. Recommended Actions (Immediate / Within 30 days / Within 90 days)\n"
-        "5. Risk Scenarios (Worst Case / Base Case / Best Case)\n"
-        "Format in Markdown. All content in professional business English."
-    ),
-    "strategic_actions": (
-        "Draft a Strategic Action Plan for operational teams and partner organizations.\n\n{context}\n\n"
-        "[Required Sections]\n"
-        "1. Domain-Specific Priority Strategy (concrete measures tailored to the {domain} profile)\n"
-        "2. Department-Level Action Plan (Editorial / Technology / Legal / Sales / AI Business)\n"
-        "3. Partner Collaboration Strategy (specific Co-Build initiatives with AI Fund partners)\n"
-        "4. KPIs and Success Metrics (quantitative targets)\n"
-        "5. Timeline (Phase 1 → Phase 2 → Phase 3)\n"
-        "6. Required Resources and Estimated Budget\n"
-        "Format in Markdown. All content in professional business English."
-    ),
-    "legal_defense": (
-        "Draft a Legal Defense and Negotiation Strategy document for engagement with AI operators and platform owners.\n\n{context}\n\n"
-        "[Required Sections]\n"
-        "1. Data Defense Framework (three-layer defense: technical / legal / contractual measures)\n"
-        "2. Non-Negotiable Terms (absolute conditions listed as a numbered list)\n"
-        "3. Acceptable Conditions (permissible terms with defined limits)\n"
-        "4. Monitoring Framework (early detection of policy changes and violations)\n"
-        "5. Legal Red Lines (conditions that justify litigation or breakdown of negotiations)\n"
-        "6. Negotiation Scenario Playbook (Hardline / Compromise / Exit strategies)\n"
-        "Format in Markdown. All content in professional business English."
-    ),
-}
-
-
-def _generate_single_doc(
-    client: anthropic.Anthropic, doc_type: str, domain: str,
-    step1_data: Dict, step2_data: Dict,
-) -> str:
+def run_step3_structured(
+    client: anthropic.Anthropic, domain: str, step1_data: Dict, step2_data: Dict
+) -> Dict:
+    """Generate all 6 role-based deliverables as a single structured JSON call."""
     context = _build_draft_context(domain, step1_data, step2_data)
-    prompt = _DOC_PROMPTS[doc_type].format(context=context, domain=domain)
-    with client.messages.stream(
-        model=MODEL, max_tokens=8192, system=STRATEGIST_SYSTEM,
-        messages=[{"role": "user", "content": prompt}],
-    ) as stream:
-        final = stream.get_final_message()
-    return next(b.text for b in final.content if b.type == "text")
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=8192,
+        thinking={"type": "adaptive"},
+        system=STRATEGIST_SYSTEM,
+        messages=[{
+            "role": "user",
+            "content": (
+                f"Based on the following policy analysis, generate a complete intelligence report "
+                f"with 6 role-specific deliverables for the '{domain}' domain.\n\n"
+                f"{context}\n\n"
+                f"Return ONLY the following JSON structure (no preamble, no code fences):\n"
+                f"{{\n"
+                f'  "what_changed_brief": "Concise 90-second delta memo: exactly what changed, written as a clear before/after summary for a busy executive. Include specific clause numbers, penalties, and effective dates where applicable.",\n'
+                f'  "overall_risk": "CRITICAL|HIGH|MEDIUM|LOW",\n'
+                f'  "business_exposure_memo": "Structured memo covering how this affects: (1) Traffic & audience reach, (2) Revenue streams & monetization, (3) IP & copyright position, (4) Product & platform capabilities, (5) Brand & competitive standing. Include estimated financial impact ranges and timelines.",\n'
+                f'  "negotiation_brief": "Legal & deal team briefing covering: (1) Non-negotiable conditions we must insist on, (2) Items requiring written confirmation from the other party, (3) Our strongest leverage points, (4) Acceptable compromise zones, (5) Red lines that trigger legal escalation or deal termination.",\n'
+                f'  "board_memo": "One-page board summary covering: (1) What happened and why it matters now, (2) Financial and strategic exposure, (3) Decisions the board must make, (4) Recommended immediate actions with owners and deadlines, (5) Best/base/worst case scenarios.",\n'
+                f'  "product_checklist": ["Specific feature, UI element, terms of service clause, or technical implementation to review or change — each item actionable and assigned to a team"]\n'
+                f"}}"
+            ),
+        }],
+    )
+    raw = next(b.text for b in response.content if b.type == "text")
+    return _safe_json_parse(raw)
 
 
-def run_step3_parallel(
-    client: anthropic.Anthropic, domain: str,
-    step1_data: Dict, step2_data: Dict,
-) -> Tuple[str, str, str]:
-    results: Dict[str, Any] = {}
-    errors: Dict[str, str] = {}
-
-    def _gen(dt: str) -> None:
-        try:
-            results[dt] = _generate_single_doc(client, dt, domain, step1_data, step2_data)
-        except Exception as exc:
-            errors[dt] = str(exc)
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as ex:
-        concurrent.futures.wait([ex.submit(_gen, dt) for dt in ["board_memo", "strategic_actions", "legal_defense"]])
-
-    if errors:
-        raise RuntimeError(f"Document generation errors: {errors}")
-    return results["board_memo"], results["strategic_actions"], results["legal_defense"]
-
-
-# ─── Chart Functions (Tiffany Blue palette) ───────────────────────────────────
+# ─── Chart Functions ──────────────────────────────────────────────────────────
 _DIR_COLORS = {
     "threat":      ("#8B2635", "rgba(139, 38, 53, 0.18)"),
     "opportunity": ("#1A6B3C", "rgba(26, 107, 60, 0.18)"),
@@ -671,7 +503,6 @@ def create_radar_chart(scores: Dict) -> go.Figure:
     vals = [scores[a]["score"] for a in axes]
     md = _majority_direction(scores)
     line_color, fill_color = _DIR_COLORS.get(md, ("#0ABAB5", "rgba(10,186,181,0.16)"))
-
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(
         r=vals + [vals[0]], theta=axes + [axes[0]],
@@ -682,18 +513,11 @@ def create_radar_chart(scores: Dict) -> go.Figure:
     ))
     fig.update_layout(
         polar=dict(
-            radialaxis=dict(
-                visible=True, range=[0, 100],
-                tickvals=[0, 25, 50, 75, 100],
+            radialaxis=dict(visible=True, range=[0, 100], tickvals=[0, 25, 50, 75, 100],
                 tickfont=dict(size=9, color="#C4BFB8", family="Montserrat"),
-                gridcolor="rgba(10,186,181,0.08)",
-                linecolor="rgba(10,186,181,0.06)",
-            ),
-            angularaxis=dict(
-                tickfont=dict(size=12, color="#9A9590", family="Montserrat"),
-                gridcolor="rgba(10,186,181,0.08)",
-                linecolor="rgba(10,186,181,0.10)",
-            ),
+                gridcolor="rgba(10,186,181,0.08)", linecolor="rgba(10,186,181,0.06)"),
+            angularaxis=dict(tickfont=dict(size=12, color="#9A9590", family="Montserrat"),
+                gridcolor="rgba(10,186,181,0.08)", linecolor="rgba(10,186,181,0.10)"),
             bgcolor="rgba(17,17,17,0.9)",
         ),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
@@ -707,7 +531,6 @@ def create_bar_chart(scores: Dict) -> go.Figure:
     axes = ["IP", "Traffic", "Revenue", "Product"]
     vals = [scores[a]["score"] for a in axes]
     colors = [_DIR_COLORS.get(scores[a]["direction"], ("#0ABAB5", ""))[0] for a in axes]
-
     fig = go.Figure(go.Bar(
         x=axes, y=vals, marker_color=colors,
         text=[str(v) for v in vals], textposition="outside",
@@ -719,8 +542,7 @@ def create_bar_chart(scores: Dict) -> go.Figure:
         xaxis=dict(tickfont=dict(size=11, color="#9A9590", family="Montserrat"),
                    gridcolor="rgba(10,186,181,0.05)", showline=False),
         yaxis=dict(range=[0, 120], tickfont=dict(size=9, color="#C4BFB8"),
-                   gridcolor="rgba(10,186,181,0.06)",
-                   title="Impact Score  (0 – 100)",
+                   gridcolor="rgba(10,186,181,0.06)", title="Impact Score  (0 – 100)",
                    title_font=dict(size=10, color="#C4BFB8", family="Montserrat")),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,17,17,0.9)",
         font=dict(color="#9A9590", family="Montserrat"),
@@ -731,7 +553,7 @@ def create_bar_chart(scores: Dict) -> go.Figure:
 
 # ─── HTML Component Helpers ───────────────────────────────────────────────────
 _ACCENT = "#0ABAB5"
-_ACCENT_DARK = "#089590"
+
 
 def _sev_color(sev: str) -> str:
     return {"high": "#8B2635", "medium": "#A8892A", "low": "#1A6B3C"}.get(sev, _ACCENT)
@@ -743,7 +565,7 @@ def _risk_config(level: str):
         "high":     ("HIGH",     "#A8892A"),
         "medium":   ("MEDIUM",   "#8A7020"),
         "low":      ("LOW",      "#1A6B3C"),
-    }.get(level, ("—", "#C4BFB8"))
+    }.get(level.lower() if level else "medium", ("—", "#C4BFB8"))
 
 
 def _accent_divider() -> None:
@@ -826,14 +648,35 @@ def _col_header(label: str) -> None:
     </div>""", unsafe_allow_html=True)
 
 
+def _prose_block(text: str) -> None:
+    """Render a long prose string as a styled readable block."""
+    st.markdown(f"""
+    <div style="background:#111111;border:1px solid rgba(10,186,181,0.10);
+                padding:24px 28px;margin:4px 0;">
+      <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
+                  font-size:0.88rem;line-height:1.85;white-space:pre-wrap">{text}</div>
+    </div>""", unsafe_allow_html=True)
+
+
+def _checklist_items(items: list) -> None:
+    """Render product checklist as styled actionable items."""
+    for i, item in enumerate(items, 1):
+        st.markdown(f"""
+        <div style="background:#111111;border-left:2px solid {_ACCENT};
+                    padding:12px 16px;margin:6px 0;display:flex;gap:12px;align-items:flex-start">
+          <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};
+                      font-size:1.0rem;font-weight:300;min-width:20px;margin-top:1px">{i:02d}</div>
+          <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
+                      font-size:0.82rem;line-height:1.6">{item}</div>
+        </div>""", unsafe_allow_html=True)
+
+
 # ─── Login Screen ─────────────────────────────────────────────────────────────
 _LOGIN_ID = "aifund"
 _LOGIN_PW  = "nikkei2030"
 
 
 def render_login() -> None:
-    """Render the full-screen login gate. Returns only after st.stop()."""
-    # Hide sidebar and its toggle completely while on the login screen
     st.markdown("""
     <style>
     [data-testid="stSidebar"]        { display: none !important; }
@@ -841,21 +684,17 @@ def render_login() -> None:
     </style>
     """, unsafe_allow_html=True)
 
-    # Vertical centering via top spacer
     st.markdown("<div style='height:10vh'></div>", unsafe_allow_html=True)
 
     _, card_col, _ = st.columns([1, 1.2, 1])
     with card_col:
-        # ── Card header ──────────────────────────────────────────────────────
         st.markdown(f"""
         <div style="background:#111111;border:1px solid rgba(10,186,181,0.18);
                     padding:44px 44px 36px;">
-
-          <!-- wordmark -->
           <div style="text-align:center;margin-bottom:32px;">
             <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};
                         font-size:1.1rem;font-weight:300;letter-spacing:0.16em;">
-              POLICY INTELLIGENCE
+              PLATFORM & POLICY INTELLIGENCE
             </div>
             <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                         font-size:0.55rem;letter-spacing:0.34em;text-transform:uppercase;
@@ -868,19 +707,13 @@ def render_login() -> None:
           </div>
         """, unsafe_allow_html=True)
 
-        # ── Form fields ───────────────────────────────────────────────────────
-        # Custom labels (styled)
         st.markdown(f"""
           <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                       font-size:0.60rem;letter-spacing:0.22em;text-transform:uppercase;
                       margin-bottom:6px;">Login ID</div>
         """, unsafe_allow_html=True)
-        login_id = st.text_input(
-            "login_id",
-            placeholder="Enter your login ID",
-            label_visibility="collapsed",
-            key="login_id_input",
-        )
+        login_id = st.text_input("login_id", placeholder="Enter your login ID",
+                                 label_visibility="collapsed", key="login_id_input")
 
         st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
@@ -889,24 +722,14 @@ def render_login() -> None:
                       font-size:0.60rem;letter-spacing:0.22em;text-transform:uppercase;
                       margin-bottom:6px;">Password</div>
         """, unsafe_allow_html=True)
-        password = st.text_input(
-            "password",
-            type="password",
-            placeholder="Enter your password",
-            label_visibility="collapsed",
-            key="login_pw_input",
-        )
+        password = st.text_input("password", type="password",
+                                 placeholder="Enter your password",
+                                 label_visibility="collapsed", key="login_pw_input")
 
         st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
-        # ── Login button ──────────────────────────────────────────────────────
-        login_btn = st.button(
-            "◆  Login",
-            use_container_width=True,
-            key="login_btn",
-        )
+        login_btn = st.button("◆  Login", use_container_width=True, key="login_btn")
 
-        # ── Auth logic ────────────────────────────────────────────────────────
         if login_btn:
             if login_id == _LOGIN_ID and password == _LOGIN_PW:
                 st.session_state.authenticated = True
@@ -920,10 +743,8 @@ def render_login() -> None:
                 </div>
                 """, unsafe_allow_html=True)
 
-        # Close card div
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # ── Footer note ───────────────────────────────────────────────────────
         st.markdown(f"""
         <div style="text-align:center;margin-top:20px;
                     font-family:'Montserrat',sans-serif;color:#C4BFB8;
@@ -937,34 +758,29 @@ def render_login() -> None:
 
 # ─── Main App ─────────────────────────────────────────────────────────────────
 def main() -> None:
-    # ── Authentication gate ───────────────────────────────────────────────────
     if not st.session_state.get("authenticated", False):
         render_login()
-        # render_login() always calls st.stop(), so execution never reaches here
 
-    # ── Session state init ────────────────────────────────────────────────────
     if "results" not in st.session_state:
         st.session_state.results = None
 
     # ── Sidebar ───────────────────────────────────────────────────────────────
     with st.sidebar:
-        # Wordmark
         st.markdown(f"""
         <div style="margin-bottom:2rem;">
           <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};
                       font-size:1.05rem;font-weight:300;letter-spacing:0.12em;">
-            POLICY INTELLIGENCE
+            PLATFORM & POLICY INTELLIGENCE
           </div>
           <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                       font-size:0.58rem;letter-spacing:0.30em;text-transform:uppercase;
                       margin-top:2px">
-            ENTERPRISE · CLAUDE claude-opus-4-6
+            ENTERPRISE · CLAUDE {MODEL.upper()}
           </div>
           <div style="height:1px;background:linear-gradient(90deg,{_ACCENT}33,transparent);
                       margin-top:12px"></div>
         </div>""", unsafe_allow_html=True)
 
-        # API Key section
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:10px">
@@ -983,13 +799,10 @@ def main() -> None:
                 sk-ant-···{env_key[-6:]}</div>
             </div>""", unsafe_allow_html=True)
         else:
-            api_input = st.text_input(
-                "API Key",
-                type="password",
-                placeholder="sk-ant-api03-...",
-                help="Your API key from console.anthropic.com",
-                label_visibility="collapsed",
-            )
+            api_input = st.text_input("API Key", type="password",
+                                      placeholder="sk-ant-api03-...",
+                                      help="Your API key from console.anthropic.com",
+                                      label_visibility="collapsed")
             if api_input:
                 st.session_state["api_key"] = api_input
             if not st.session_state.get("api_key"):
@@ -1002,7 +815,6 @@ def main() -> None:
         st.markdown('<div style="height:1px;background:rgba(10,186,181,0.10);margin:1.4rem 0"></div>',
                     unsafe_allow_html=True)
 
-        # Policy text
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:10px">
@@ -1010,8 +822,7 @@ def main() -> None:
         </div>""", unsafe_allow_html=True)
 
         policy_text = st.text_area(
-            "policy_input",
-            height=210,
+            "policy_input", height=210,
             placeholder=(
                 "Example: EU AI Act Amendment — Article 53\n"
                 "- Generative AI systems using copyrighted content for training\n"
@@ -1025,28 +836,21 @@ def main() -> None:
         st.markdown('<div style="height:1px;background:rgba(10,186,181,0.10);margin:1.2rem 0"></div>',
                     unsafe_allow_html=True)
 
-        # Domain
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:10px">
           ◆ Target Domain Profile
         </div>""", unsafe_allow_html=True)
 
-        domain = st.radio(
-            "domain",
-            options=list(DOMAIN_PROFILES.keys()),
-            label_visibility="collapsed",
-        )
+        domain = st.radio("domain", options=list(DOMAIN_PROFILES.keys()),
+                          label_visibility="collapsed")
 
         st.markdown('<div style="height:1px;background:rgba(10,186,181,0.10);margin:1.4rem 0"></div>',
                     unsafe_allow_html=True)
 
         has_input = bool(policy_text and policy_text.strip() and len(policy_text.strip()) >= 20)
-        sidebar_btn = st.button(
-            "◆  Run Translation Engine",
-            use_container_width=True,
-            disabled=not has_input,
-        )
+        sidebar_btn = st.button("◆  Run Intelligence Engine", use_container_width=True,
+                                disabled=not has_input)
         if not has_input:
             st.markdown(f"""
             <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.65rem;
@@ -1054,7 +858,6 @@ def main() -> None:
               Enter policy text to enable analysis
             </div>""", unsafe_allow_html=True)
 
-        # Pipeline info
         st.markdown('<div style="height:1px;background:rgba(10,186,181,0.08);margin:1.8rem 0 1.2rem"></div>',
                     unsafe_allow_html=True)
         st.markdown(f"""
@@ -1063,51 +866,43 @@ def main() -> None:
           <div style="color:{_ACCENT}55;letter-spacing:0.16em;font-size:0.58rem;margin-bottom:6px">
             AGENTIC PIPELINE
           </div>
-          <div>I &nbsp; Parsing → Structured JSON</div>
+          <div>I &nbsp; Parsing → Structured Delta</div>
           <div>II &nbsp; Impact Mapping → 4-Axis Score</div>
-          <div>III &nbsp; Drafting → 3 Docs (parallel)</div>
+          <div>III &nbsp; Intelligence → 5 Role Outputs</div>
           <div style="margin-top:10px;color:{_ACCENT}44;letter-spacing:0.12em;font-size:0.58rem">
-            JSON Schema · Adaptive Thinking<br>Streaming · Prompt Chain
+            JSON Schema · Adaptive Thinking<br>Structured Output · Prompt Chain
           </div>
         </div>""", unsafe_allow_html=True)
-
-    # ── Determine run trigger ─────────────────────────────────────────────────
-    if not st.session_state.results:
-        main_btn_clicked = False
-    else:
-        main_btn_clicked = False
 
     run_triggered = sidebar_btn
 
     # ── Welcome Screen ────────────────────────────────────────────────────────
     if not st.session_state.results and not run_triggered:
-        # Hero
         st.markdown(f"""
         <div style="text-align:center;padding:4rem 2rem 2.5rem">
           <div style="font-family:'Montserrat',sans-serif;color:{_ACCENT};font-size:0.62rem;
                       letter-spacing:0.42em;text-transform:uppercase;margin-bottom:1.8rem">
-            ◆ &nbsp; Agentic Workflow · Policy Intelligence &nbsp; ◆
+            ◆ &nbsp; Agentic Workflow · Platform & Policy Intelligence &nbsp; ◆
           </div>
           <h1 style="font-family:'Cormorant Garamond',serif !important;
                      color:#F0EDE6 !important;font-size:3.4rem;font-weight:300;
                      letter-spacing:0.06em;margin:0 0 0.6rem;line-height:1.1">
-            Policy Intelligence<br>
-            <span style="color:{_ACCENT};font-style:italic">Engine</span>
+            Platform & Policy<br>
+            <span style="color:{_ACCENT};font-style:italic">Intelligence Engine</span>
           </h1>
           <div style="width:80px;height:1px;background:linear-gradient(90deg,transparent,{_ACCENT},transparent);
                       margin:1.4rem auto"></div>
           <p style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.78rem;
                     letter-spacing:0.14em;text-transform:uppercase;margin:0">
-            External Change &nbsp;→&nbsp; Strategic Clarity
+            External Change &nbsp;→&nbsp; 5 Role-Specific Actionable Outputs
           </p>
         </div>""", unsafe_allow_html=True)
 
-        # 3-Step Guide
         g1, g2, g3 = st.columns(3)
         for col, num, label, desc in [
-            (g1, "I",   "Configure",  "Enter or confirm your Anthropic API key in the sidebar."),
-            (g2, "II",  "Input",      "Paste the policy or platform update text and select your target business domain."),
-            (g3, "III", "Execute",    "Click 'Run Translation Engine' to launch the 3-step agentic pipeline."),
+            (g1, "I",   "Configure",  "Enter your Anthropic API key and select the target business domain profile."),
+            (g2, "II",  "Input",      "Paste the policy text, regulatory update, or platform change document."),
+            (g3, "III", "Execute",    "Run the 3-step intelligence pipeline to generate 5 role-specific deliverables in seconds."),
         ]:
             with col:
                 st.markdown(f"""
@@ -1122,16 +917,11 @@ def main() -> None:
                               font-size:0.78rem;line-height:1.7">{desc}</div>
                 </div>""", unsafe_allow_html=True)
 
-        # Centered CTA button
         st.markdown("<div style='height:2.5rem'></div>", unsafe_allow_html=True)
         _, center, _ = st.columns([1.5, 2, 1.5])
         with center:
-            main_btn_clicked = st.button(
-                "◆  Run Translation Engine",
-                key="main_run",
-                use_container_width=True,
-                disabled=not has_input,
-            )
+            main_btn = st.button("◆  Run Intelligence Engine", key="main_run",
+                                 use_container_width=True, disabled=not has_input)
             if not has_input:
                 st.markdown(f"""
                 <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
@@ -1139,21 +929,19 @@ def main() -> None:
                             letter-spacing:0.06em">
                   Enter policy text in the sidebar to begin
                 </div>""", unsafe_allow_html=True)
-
-        run_triggered = run_triggered or main_btn_clicked
+        run_triggered = run_triggered or main_btn
 
         if not run_triggered:
-            # Capability strip
             st.markdown("<div style='height:2rem'></div>", unsafe_allow_html=True)
             _accent_divider()
             c1, c2, c3 = st.columns(3)
             for col, icon, cap, sub in [
-                (c1, "◈", "Structured Parsing",
-                 "Decomposes policy text into Added Obligations · Removed Rights · Key Thresholds via JSON Schema mode"),
-                (c2, "◉", "Quantified Impact",
-                 "Scores IP · Traffic · Revenue · Product impact 0–100 with Adaptive Thinking"),
-                (c3, "◆", "Parallel Drafting",
-                 "Generates Board Memo · Strategic Actions · Legal & Defense in parallel (ThreadPoolExecutor + Streaming)"),
+                (c1, "◈", "Delta Extraction",
+                 "Identifies exactly what changed — added obligations, removed rights, key thresholds — as structured JSON"),
+                (c2, "◉", "4-Axis Impact Score",
+                 "Quantifies IP · Traffic · Revenue · Product exposure 0–100 with Adaptive Thinking"),
+                (c3, "◆", "5 Role Deliverables",
+                 "Generates Executive Delta · Business Exposure · Legal Brief · Board Memo · Product Checklist simultaneously"),
             ]:
                 with col:
                     st.markdown(f"""
@@ -1191,12 +979,13 @@ def main() -> None:
 
         # ── Pipeline ─────────────────────────────────────────────────────────
         st.session_state.results = None
+        pipeline_start = time.time()
 
         step1_data: Optional[Dict] = None
         step2_data: Optional[Dict] = None
+        step3_data: Optional[Dict] = None
 
-        # Step 1
-        with st.status("I  ·  Parsing — Structured Data Extraction", expanded=True) as s1:
+        with st.status("I  ·  Parsing — Structured Delta Extraction", expanded=True) as s1:
             st.write("Extracting obligations, removed rights, and key thresholds as structured JSON…")
             try:
                 step1_data = run_step1_parsing(client, policy_text)
@@ -1214,7 +1003,6 @@ def main() -> None:
                 st.error(f"Step 1 Error: {exc}")
                 return
 
-        # Step 2
         with st.status(f"II  ·  Impact Mapping — {domain}", expanded=True) as s2:
             st.write(f"Scoring IP / Traffic / Revenue / Product impact against the '{domain}' domain profile…")
             try:
@@ -1222,41 +1010,36 @@ def main() -> None:
                 s2.update(label="II  ·  Impact Mapping  ✓  Complete", state="complete", expanded=False)
             except anthropic.AuthenticationError:
                 s2.update(label="II  ·  Impact Mapping  ✗  Authentication Error", state="error")
-                st.error("Invalid API key. Please check your credentials.")
+                st.error("Invalid API key.")
                 return
             except Exception as exc:
                 s2.update(label="II  ·  Impact Mapping  ✗  Error", state="error")
                 st.error(f"Step 2 Error: {exc}")
                 return
 
-        # Step 3
-        with st.status("III  ·  Drafting — 3 Documents in Parallel", expanded=True) as s3:
-            st.write("Generating Board Memo · Strategic Actions · Legal & Defense in parallel…")
-            st.caption("Long-form document generation may take 1–3 minutes.")
+        with st.status("III  ·  Intelligence — Generating 5 Role-Specific Deliverables", expanded=True) as s3:
+            st.write("Synthesizing Executive Delta · Business Exposure · Legal Brief · Board Memo · Product Checklist…")
+            st.caption("Structured output with Adaptive Thinking — typically 30–90 seconds.")
             try:
-                board_memo, strategic_actions, legal_defense = run_step3_parallel(
-                    client, domain, step1_data, step2_data
-                )
-                s3.update(label="III  ·  Drafting  ✓  Complete", state="complete", expanded=False)
+                step3_data = run_step3_structured(client, domain, step1_data, step2_data)
+                s3.update(label="III  ·  Intelligence  ✓  Complete", state="complete", expanded=False)
             except anthropic.AuthenticationError:
-                s3.update(label="III  ·  Drafting  ✗  Authentication Error", state="error")
-                st.error("Invalid API key. Please check your credentials.")
+                s3.update(label="III  ·  Intelligence  ✗  Authentication Error", state="error")
+                st.error("Invalid API key.")
                 return
             except Exception as exc:
-                s3.update(label="III  ·  Drafting  ✗  Error", state="error")
+                s3.update(label="III  ·  Intelligence  ✗  Error", state="error")
                 st.error(f"Step 3 Error: {exc}")
                 return
 
-        # Store results
+        elapsed = round(time.time() - pipeline_start, 1)
+
         st.session_state.results = {
             "step1": step1_data,
             "step2": step2_data,
-            "step3": {
-                "board_memo": board_memo,
-                "strategic_actions": strategic_actions,
-                "legal_defense": legal_defense,
-            },
+            "step3": step3_data,
             "domain": domain,
+            "elapsed": elapsed,
         }
 
     # ── Display Results ───────────────────────────────────────────────────────
@@ -1264,14 +1047,13 @@ def main() -> None:
     if not res:
         return
 
-    step1_data  = res["step1"]
-    step2_data  = res["step2"]
-    board_memo  = res["step3"]["board_memo"]
-    strategic_actions = res["step3"]["strategic_actions"]
-    legal_defense     = res["step3"]["legal_defense"]
-    domain      = res["domain"]
+    step1_data = res["step1"]
+    step2_data = res["step2"]
+    step3_data = res["step3"]
+    domain     = res["domain"]
+    elapsed    = res.get("elapsed", 0)
 
-    # Result header + new analysis button
+    # ── Header ────────────────────────────────────────────────────────────────
     hcol1, hcol2 = st.columns([4, 1])
     with hcol1:
         st.markdown(f"""
@@ -1282,7 +1064,7 @@ def main() -> None:
           </div>
           <div style="font-family:'Cormorant Garamond',serif;color:#F0EDE6;
                       font-size:1.6rem;font-weight:300;letter-spacing:0.04em">
-            Strategic Intelligence Report
+            Platform & Policy Intelligence Report
           </div>
         </div>""", unsafe_allow_html=True)
     with hcol2:
@@ -1290,9 +1072,38 @@ def main() -> None:
             st.session_state.results = None
             st.rerun()
 
-    # ── STEP 1 RESULTS ────────────────────────────────────────────────────────
+    # ── Success Banner ────────────────────────────────────────────────────────
+    if elapsed:
+        rl_raw = step3_data.get("overall_risk", step2_data.get("overall_risk_level", "medium"))
+        rl_label, rl_color = _risk_config(rl_raw)
+        st.markdown(f"""
+        <div style="background:linear-gradient(135deg,rgba(10,186,181,0.08),rgba(10,186,181,0.03));
+                    border:1px solid rgba(10,186,181,0.22);padding:18px 24px;
+                    margin:12px 0 0;display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+          <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};font-size:2rem;
+                      font-weight:300;line-height:1">✓</div>
+          <div style="flex:1;min-width:200px">
+            <div style="font-family:'Montserrat',sans-serif;color:#F0EDE6;font-size:0.78rem;
+                        font-weight:600;letter-spacing:0.06em">
+              Analysis completed in {elapsed}s
+            </div>
+            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                        margin-top:3px;line-height:1.5">
+              Translated complex policy changes into 5 role-specific actionable outputs.
+              Work that previously took weeks, delivered in seconds.
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.56rem;
+                        letter-spacing:0.22em;text-transform:uppercase;margin-bottom:2px">Overall Risk</div>
+            <div style="font-family:'Cormorant Garamond',serif;color:{rl_color};
+                        font-size:1.4rem;font-weight:300;letter-spacing:0.10em">{rl_label}</div>
+          </div>
+        </div>""", unsafe_allow_html=True)
+
+    # ── STEP 1: Parsing Output ────────────────────────────────────────────────
     _accent_divider()
-    _section_label("I", "Structured Data Extraction — Parsing Output")
+    _section_label("I", "Structured Delta Extraction — Parsing Output")
 
     with st.expander("View Raw JSON", expanded=False):
         st.json(step1_data)
@@ -1305,7 +1116,6 @@ def main() -> None:
             _item_card(it, _sev_color(it.get("severity", "medium")))
         if not items:
             st.caption("—")
-
     with c2:
         _col_header("Removed Rights")
         items = step1_data.get("removed_rights", [])
@@ -1313,7 +1123,6 @@ def main() -> None:
             _item_card(it, _sev_color(it.get("severity", "medium")))
         if not items:
             st.caption("—")
-
     with c3:
         _col_header("Key Thresholds")
         items = step1_data.get("key_thresholds", [])
@@ -1327,29 +1136,28 @@ def main() -> None:
         <div style="background:#111111;border-left:2px solid {_ACCENT};
                     padding:14px 18px;margin-top:16px">
           <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
-                      letter-spacing:0.20em;text-transform:uppercase;margin-bottom:6px">Summary</div>
-          <div style="font-family:'Montserrat',sans-serif;color:#9A9590;
+                      letter-spacing:0.20em;text-transform:uppercase;margin-bottom:6px">Context Summary</div>
+          <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                       font-size:0.82rem;line-height:1.7">
             {step1_data['context_summary']}
           </div>
         </div>""", unsafe_allow_html=True)
 
-    # ── STEP 2 RESULTS ────────────────────────────────────────────────────────
+    # ── STEP 2: Impact Mapping ────────────────────────────────────────────────
     _accent_divider()
     _section_label("II", f"Impact Mapping — {domain}")
 
-    # Risk banner
     rl = step2_data.get("overall_risk_level", "medium")
-    rl_label, rl_color = _risk_config(rl)
+    rl_label2, rl_color2 = _risk_config(rl)
     st.markdown(f"""
-    <div style="background:#111111;border:1px solid {rl_color}55;
+    <div style="background:#111111;border:1px solid {rl_color2}55;
                 padding:16px 22px;margin-bottom:1.5rem;
                 display:flex;align-items:center;gap:20px">
       <div>
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.58rem;
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:3px">Overall Risk</div>
-        <div style="font-family:'Cormorant Garamond',serif;color:{rl_color};
-                    font-size:1.6rem;font-weight:300;letter-spacing:0.08em">{rl_label}</div>
+        <div style="font-family:'Cormorant Garamond',serif;color:{rl_color2};
+                    font-size:1.6rem;font-weight:300;letter-spacing:0.08em">{rl_label2}</div>
       </div>
       <div style="width:1px;height:40px;background:rgba(10,186,181,0.14)"></div>
       <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.80rem;
@@ -1358,7 +1166,6 @@ def main() -> None:
       </div>
     </div>""", unsafe_allow_html=True)
 
-    # Charts
     ch1, ch2 = st.columns(2)
     with ch1:
         st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin-bottom:8px">Radar — Impact Map</div>', unsafe_allow_html=True)
@@ -1367,14 +1174,12 @@ def main() -> None:
         st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin-bottom:8px">Bar — Score by Axis</div>', unsafe_allow_html=True)
         st.plotly_chart(create_bar_chart(step2_data["scores"]), use_container_width=True)
 
-    # Score cards
     st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin:1rem 0 12px">Evidence & Priority Actions</div>', unsafe_allow_html=True)
     sc1, sc2, sc3, sc4 = st.columns(4)
     for col, axis in [(sc1, "IP"), (sc2, "Traffic"), (sc3, "Revenue"), (sc4, "Product")]:
         with col:
             _score_card(axis, step2_data["scores"][axis])
 
-    # Opportunities / Threats
     st.markdown("<div style='height:1.2rem'></div>", unsafe_allow_html=True)
     op_col, th_col = st.columns(2)
     with op_col:
@@ -1386,40 +1191,128 @@ def main() -> None:
         for thr in step2_data.get("key_threats", []):
             st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#8B2635;padding:4px 0 4px 10px;border-left:1px solid #8B263544;font-size:0.78rem;margin:3px 0">▸ {thr}</div>', unsafe_allow_html=True)
 
-    # ── STEP 3 RESULTS ────────────────────────────────────────────────────────
+    # ── STEP 3: Role-Specific Deliverables (5 Tabs) ───────────────────────────
     _accent_divider()
-    _section_label("III", "Strategic Documents — Board Memo · Strategic Actions · Legal & Defense")
+    _section_label("III", "Role-Specific Intelligence — 5 Actionable Deliverables")
 
-    tab1, tab2, tab3 = st.tabs([
-        "Board Memo", "Strategic Actions", "Legal & Defense"
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "◆  Executive Summary & Delta",
+        "◉  Business Exposure",
+        "⚖  Legal & Negotiation",
+        "▪  Board Memo",
+        "✓  Product Checklist",
     ])
 
     def _fn(prefix: str) -> str:
-        return f"{prefix}_{domain.replace(' ','_').replace('·','_')}.md"
+        return f"{prefix}_{domain.replace(' ', '_')}.md"
 
+    # Tab 1 — Executive Summary & Delta
     with tab1:
-        st.markdown(board_memo)
-        st.download_button("Download Board Memo (.md)", data=board_memo,
-                           file_name=_fn("board_memo"), mime="text/markdown")
+        rl3 = step3_data.get("overall_risk", "—")
+        rl3_label, rl3_color = _risk_config(rl3)
+        st.markdown(f"""
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+          <div style="background:#111111;border:1px solid {rl3_color}55;
+                      padding:14px 20px;text-align:center;min-width:120px">
+            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.55rem;
+                        letter-spacing:0.22em;text-transform:uppercase;margin-bottom:4px">Risk Level</div>
+            <div style="font-family:'Cormorant Garamond',serif;color:{rl3_color};
+                        font-size:1.5rem;font-weight:300;letter-spacing:0.10em">{rl3_label}</div>
+          </div>
+          <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.76rem;
+                      line-height:1.6;flex:1">
+            90-second delta brief — what specifically changed and why it matters now.
+          </div>
+        </div>""", unsafe_allow_html=True)
 
+        what_changed = step3_data.get("what_changed_brief", "")
+        _prose_block(what_changed)
+
+        st.download_button(
+            "Download Delta Brief (.md)",
+            data=f"# Executive Delta Brief — {domain}\n\n**Overall Risk: {rl3_label}**\n\n{what_changed}",
+            file_name=_fn("delta_brief"), mime="text/markdown"
+        )
+
+    # Tab 2 — Business Exposure
     with tab2:
-        st.markdown(strategic_actions)
-        st.download_button("Download Strategic Actions (.md)", data=strategic_actions,
-                           file_name=_fn("strategic_actions"), mime="text/markdown")
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                    line-height:1.6;margin-bottom:16px">
+          Impact on traffic, revenue, IP rights, product capabilities, and competitive position.
+        </div>""", unsafe_allow_html=True)
 
+        exposure = step3_data.get("business_exposure_memo", "")
+        _prose_block(exposure)
+
+        st.download_button(
+            "Download Business Exposure Memo (.md)",
+            data=f"# Business Exposure Memo — {domain}\n\n{exposure}",
+            file_name=_fn("business_exposure"), mime="text/markdown"
+        )
+
+    # Tab 3 — Legal & Negotiation
     with tab3:
-        st.markdown(legal_defense)
-        st.download_button("Download Legal & Defense (.md)", data=legal_defense,
-                           file_name=_fn("legal_defense"), mime="text/markdown")
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                    line-height:1.6;margin-bottom:16px">
+          Deal team briefing: non-negotiable conditions, confirmation points, leverage, and red lines.
+        </div>""", unsafe_allow_html=True)
 
-    # Footer
+        negotiation = step3_data.get("negotiation_brief", "")
+        _prose_block(negotiation)
+
+        st.download_button(
+            "Download Legal & Negotiation Brief (.md)",
+            data=f"# Legal & Negotiation Brief — {domain}\n\n{negotiation}",
+            file_name=_fn("negotiation_brief"), mime="text/markdown"
+        )
+
+    # Tab 4 — Board Memo
+    with tab4:
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                    line-height:1.6;margin-bottom:16px">
+          One-page board summary: business significance, decisions required, and recommended actions.
+        </div>""", unsafe_allow_html=True)
+
+        board = step3_data.get("board_memo", "")
+        _prose_block(board)
+
+        st.download_button(
+            "Download Board Memo (.md)",
+            data=f"# Board Memorandum — {domain}\n\n{board}",
+            file_name=_fn("board_memo"), mime="text/markdown"
+        )
+
+    # Tab 5 — Product Checklist
+    with tab5:
+        checklist = step3_data.get("product_checklist", [])
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                    line-height:1.6;margin-bottom:16px">
+          {len(checklist)} implementation items — features, UI elements, terms, and technical changes to review.
+        </div>""", unsafe_allow_html=True)
+
+        if checklist:
+            _checklist_items(checklist)
+            checklist_md = "\n".join(f"- [ ] {item}" for item in checklist)
+            st.download_button(
+                "Download Product Checklist (.md)",
+                data=f"# Product Checklist — {domain}\n\n{checklist_md}",
+                file_name=_fn("product_checklist"), mime="text/markdown"
+            )
+        else:
+            st.caption("No checklist items generated.")
+
+    # ── Footer ────────────────────────────────────────────────────────────────
     _accent_divider()
     st.markdown(f"""
     <div style="text-align:center;padding:1rem 0 2rem">
       <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.58rem;
                   letter-spacing:0.28em;text-transform:uppercase">
         Analysis Complete &nbsp;◆&nbsp; 3-Step Prompt Chain &nbsp;◆&nbsp;
-        JSON Schema Mode · Adaptive Thinking · Parallel Streaming
+        JSON Schema · Adaptive Thinking · Structured Output · {elapsed}s
       </div>
       <div style="width:60px;height:1px;background:linear-gradient(90deg,transparent,{_ACCENT}44,transparent);
                   margin:1rem auto"></div>
