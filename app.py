@@ -1143,16 +1143,37 @@ def main() -> None:
         st.markdown('<div style="height:1px;background:rgba(10,186,181,0.08);margin:1.8rem 0 1.2rem"></div>',
                     unsafe_allow_html=True)
         st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.65rem;
-                    line-height:2.0">
-          <div style="color:{_ACCENT}55;letter-spacing:0.16em;font-size:0.58rem;margin-bottom:6px">
-            AGENTIC PIPELINE
+        <div style="font-family:'Montserrat',sans-serif;font-size:0.65rem;line-height:2.1">
+          <div style="color:{_ACCENT};letter-spacing:0.20em;font-size:0.56rem;
+                      font-weight:600;margin-bottom:10px;text-transform:uppercase">
+            AGENTIC WORKFLOW PIPELINE
           </div>
-          <div>I &nbsp; Parsing → Structured Delta</div>
-          <div>II &nbsp; Impact Mapping → 4-Axis Score</div>
-          <div>III &nbsp; Intelligence → 5 Role Outputs</div>
-          <div style="margin-top:10px;color:{_ACCENT}44;letter-spacing:0.12em;font-size:0.58rem">
-            JSON Schema · Adaptive Thinking<br>Evidence Quotes · Human-in-the-Loop
+          <div style="color:#C4BFB8">
+            <span style="color:{_ACCENT};font-family:'Cormorant Garamond',serif;
+                         font-size:0.85rem;font-weight:300;margin-right:6px">I</span>
+            Policy Ingestion &rarr; Structural Delta
+          </div>
+          <div style="color:#C4BFB8">
+            <span style="color:{_ACCENT};font-family:'Cormorant Garamond',serif;
+                         font-size:0.85rem;font-weight:300;margin-right:6px">II</span>
+            Business Translation &rarr; 4-Axis Risk Profiling
+          </div>
+          <div style="color:#C4BFB8">
+            <span style="color:{_ACCENT};font-family:'Cormorant Garamond',serif;
+                         font-size:0.85rem;font-weight:300;margin-right:6px">III</span>
+            Multi-Agent Synthesis &rarr; Role-Specific Actions
+          </div>
+          <div style="margin-top:12px;padding-top:10px;
+                      border-top:1px solid rgba(10,186,181,0.10);
+                      color:#A8A49E;letter-spacing:0.10em;font-size:0.57rem;
+                      line-height:1.9">
+            <span style="color:{_ACCENT}99">Evidence-Grounded</span>
+            &nbsp;&middot;&nbsp;
+            <span style="color:#C4BFB8">Domain Judgment</span>
+            <br>
+            <span style="color:{_ACCENT}99">Multi-Agent Debate</span>
+            &nbsp;&middot;&nbsp;
+            <span style="color:#C4BFB8">Human-in-the-Loop</span>
           </div>
         </div>""", unsafe_allow_html=True)
 
