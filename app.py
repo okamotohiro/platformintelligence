@@ -8,6 +8,7 @@ import anthropic
 import json
 import re
 import os
+import io
 import time
 from typing import Optional, Dict, List
 
@@ -795,22 +796,118 @@ def _checklist_items(items: list) -> None:
         </div>""", unsafe_allow_html=True)
 
 
-def _evidence_block(quotes: List[str]) -> None:
-    """Render evidence quotes extracted verbatim from the source policy text."""
+def _evidence_block(
+    quotes: List[str],
+    claim_tag: str = "Source Citation",
+    claim_color: str = "#0ABAB5",
+    agent_tag: str = "",
+    agent_color: str = "#9A9590",
+) -> None:
+    """Render evidence quotes with claim-level provenance tags (audit-grade)."""
     if not quotes:
         return
     st.markdown(f"""
     <div style="margin:1.8rem 0 0.6rem">
       <div style="font-family:'Montserrat',sans-serif;color:{_ACCENT};font-size:0.58rem;
-                  letter-spacing:0.28em;text-transform:uppercase;margin-bottom:0.7rem;
+                  letter-spacing:0.28em;text-transform:uppercase;margin-bottom:0.9rem;
                   display:flex;align-items:center;gap:10px">
         <span>◈</span>
-        <span>EVIDENCE — VERBATIM CITATIONS FROM SOURCE TEXT</span>
+        <span>EVIDENCE — CLAIM-LEVEL PROVENANCE</span>
         <div style="flex:1;height:1px;background:rgba(10,186,181,0.12)"></div>
       </div>
     </div>""", unsafe_allow_html=True)
+
     for q in quotes:
-        st.info(f'"{q}"')
+        agent_badge = (
+            f'<span style="background:rgba(154,149,144,0.12);color:{agent_color};'
+            f'border:1px solid rgba(154,149,144,0.22);font-family:Montserrat,sans-serif;'
+            f'font-size:0.50rem;letter-spacing:0.16em;text-transform:uppercase;'
+            f'padding:2px 7px;margin-left:6px">{agent_tag}</span>'
+            if agent_tag else ""
+        )
+        st.markdown(f"""
+        <div style="background:#0D0D0D;border:1px solid rgba(10,186,181,0.10);
+                    border-left:3px solid {claim_color};
+                    padding:13px 16px;margin:7px 0">
+          <div style="display:flex;align-items:center;margin-bottom:9px;flex-wrap:wrap;gap:4px">
+            <span style="background:rgba(10,186,181,0.08);color:{claim_color};
+                         border:1px solid {claim_color}44;font-family:Montserrat,sans-serif;
+                         font-size:0.50rem;letter-spacing:0.18em;text-transform:uppercase;
+                         padding:2px 8px">{claim_tag}</span>
+            {agent_badge}
+          </div>
+          <div style="color:rgba(240,237,230,0.90);font-family:'Montserrat',sans-serif;
+                      font-size:0.84rem;line-height:1.7;font-style:normal;font-weight:400">
+            &ldquo;{q}&rdquo;
+          </div>
+        </div>""", unsafe_allow_html=True)
+
+
+def _to_docx_bytes(title: str, body: str, domain: str, doc_id: str) -> bytes:
+    """Generate a styled Word (.docx) document from title + prose body."""
+    from docx import Document as DocxDocument
+    from docx.shared import Pt, RGBColor, Inches
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml.ns import qn
+    import docx.oxml as oxml
+
+    doc = DocxDocument()
+
+    # Page margins
+    for section in doc.sections:
+        section.top_margin    = Inches(1.0)
+        section.bottom_margin = Inches(1.0)
+        section.left_margin   = Inches(1.25)
+        section.right_margin  = Inches(1.25)
+
+    # Title
+    title_para = doc.add_paragraph()
+    title_run  = title_para.add_run(title)
+    title_run.bold      = True
+    title_run.font.size = Pt(16)
+    title_run.font.color.rgb = RGBColor(0x0A, 0xBA, 0xB5)
+
+    # Metadata block
+    meta_lines = [
+        f"Document ID: {doc_id}",
+        f"Domain: {domain}",
+        f"Grounding Sources: External Policy Text + Nikkei Internal DB",
+        f"Compliance Status: Pending Human Review (GC & CPO)",
+        f"Traceability: Claim-level provenance active",
+    ]
+    meta_para = doc.add_paragraph()
+    for line in meta_lines:
+        run = meta_para.add_run(line + "\n")
+        run.font.size = Pt(8.5)
+        run.font.color.rgb = RGBColor(0x77, 0x77, 0x77)
+
+    doc.add_paragraph()  # spacer
+
+    # Body — split on double newlines; render numbered items as list
+    for chunk in body.split("\n\n"):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        lines = chunk.split("\n")
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            p = doc.add_paragraph()
+            # Detect simple numbered list markers like "1." or "(1)"
+            import re as _re
+            if _re.match(r"^(\d+\.|[\(\[]\d+[\)\]])\s", line):
+                p.style = doc.styles["List Number"]
+                line = _re.sub(r"^(\d+\.|[\(\[]\d+[\)\]])\s+", "", line)
+            p.add_run(line).font.size = Pt(11)
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf.getvalue()
+
+
+_DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
 def _audit_block(doc_id: str) -> None:
@@ -1656,12 +1753,22 @@ def main() -> None:
         what_changed = step3_data.get("what_changed_brief", "")
         _prose_block(what_changed)
 
-        _evidence_block(step3_data.get("what_changed_quotes", []))
+        _evidence_block(
+            step3_data.get("what_changed_quotes", []),
+            claim_tag="🔵 Policy Delta",
+            claim_color="#0ABAB5",
+            agent_tag="Executive Summary",
+        )
 
         st.download_button(
-            "Download Delta Brief (.md)",
-            data=f"# Executive Delta Brief — {domain}\n\n**Overall Risk: {rl3_label}**\n\n{what_changed}",
-            file_name=_fn("delta_brief"), mime="text/markdown"
+            "Export to Word (.docx)",
+            data=_to_docx_bytes(
+                f"Executive Delta Brief — {domain}",
+                f"Overall Risk: {rl3_label}\n\n{what_changed}",
+                domain, doc_id,
+            ),
+            file_name=_fn("delta_brief").replace(".md", ".docx"),
+            mime=_DOCX_MIME,
         )
 
         _hitl_buttons("tab1")
@@ -1678,12 +1785,21 @@ def main() -> None:
         exposure = step3_data.get("business_exposure_memo", "")
         _prose_block(exposure)
 
-        _evidence_block(step3_data.get("business_exposure_quotes", []))
+        _evidence_block(
+            step3_data.get("business_exposure_quotes", []),
+            claim_tag="🟡 Revenue Impact",
+            claim_color="#A8892A",
+            agent_tag="Business Agent",
+        )
 
         st.download_button(
-            "Download Business Exposure Memo (.md)",
-            data=f"# Business Exposure Memo — {domain}\n\n{exposure}",
-            file_name=_fn("business_exposure"), mime="text/markdown"
+            "Export to Word (.docx)",
+            data=_to_docx_bytes(
+                f"Business Exposure Memo — {domain}",
+                exposure, domain, doc_id,
+            ),
+            file_name=_fn("business_exposure").replace(".md", ".docx"),
+            mime=_DOCX_MIME,
         )
 
         _hitl_buttons("tab2")
@@ -1700,12 +1816,21 @@ def main() -> None:
         negotiation = step3_data.get("negotiation_brief", "")
         _prose_block(negotiation)
 
-        _evidence_block(step3_data.get("negotiation_quotes", []))
+        _evidence_block(
+            step3_data.get("negotiation_quotes", []),
+            claim_tag="🔴 IP Risk",
+            claim_color="#8B2635",
+            agent_tag="Legal Agent",
+        )
 
         st.download_button(
-            "Download Legal & Negotiation Brief (.md)",
-            data=f"# Legal & Negotiation Brief — {domain}\n\n{negotiation}",
-            file_name=_fn("negotiation_brief"), mime="text/markdown"
+            "Export to Word (.docx)",
+            data=_to_docx_bytes(
+                f"Legal & Negotiation Brief — {domain}",
+                negotiation, domain, doc_id,
+            ),
+            file_name=_fn("negotiation_brief").replace(".md", ".docx"),
+            mime=_DOCX_MIME,
         )
 
         _hitl_buttons("tab3")
@@ -1722,12 +1847,21 @@ def main() -> None:
         board = step3_data.get("board_memo", "")
         _prose_block(board)
 
-        _evidence_block(step3_data.get("board_memo_quotes", []))
+        _evidence_block(
+            step3_data.get("board_memo_quotes", []),
+            claim_tag="🟠 Strategic Risk",
+            claim_color="#9A4520",
+            agent_tag="Board Level",
+        )
 
         st.download_button(
-            "Download Board Memo (.md)",
-            data=f"# Board Memorandum — {domain}\n\n{board}",
-            file_name=_fn("board_memo"), mime="text/markdown"
+            "Export to Word (.docx)",
+            data=_to_docx_bytes(
+                f"Board Memorandum — {domain}",
+                board, domain, doc_id,
+            ),
+            file_name=_fn("board_memo").replace(".md", ".docx"),
+            mime=_DOCX_MIME,
         )
 
         _hitl_buttons("tab4")
@@ -1760,11 +1894,15 @@ def main() -> None:
 
         if checklist:
             _checklist_items(checklist)
-            checklist_md = "\n".join(f"- [ ] {item}" for item in checklist)
+            checklist_body = "\n\n".join(f"{i}. {item}" for i, item in enumerate(checklist, 1))
             st.download_button(
-                "Download Product Checklist (.md)",
-                data=f"# Product Checklist — {domain}\n\n{checklist_md}",
-                file_name=_fn("product_checklist"), mime="text/markdown"
+                "Export to Word (.docx)",
+                data=_to_docx_bytes(
+                    f"Product Checklist — {domain}",
+                    checklist_body, domain, doc_id,
+                ),
+                file_name=_fn("product_checklist").replace(".md", ".docx"),
+                mime=_DOCX_MIME,
             )
         else:
             st.caption("No checklist items generated.")
