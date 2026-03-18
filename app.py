@@ -661,7 +661,7 @@ def _item_card(item: Dict, accent: str) -> None:
       {"<span style='color:"+_ACCENT+";font-family:Montserrat,sans-serif;font-weight:600;font-size:0.85rem;margin-left:10px'>"+val+"</span>" if val else ""}
       <div style="color:#C4BFB8;font-family:'Montserrat',sans-serif;
                   font-size:0.76rem;line-height:1.6;margin-top:5px">
-        {desc[:130]}{'…' if len(desc)>130 else ''}
+        {desc}
       </div>
     </div>""", unsafe_allow_html=True)
 
@@ -676,7 +676,7 @@ def _score_card(axis: str, info: Dict) -> None:
     <div style="background:#111111;padding:20px 16px;border-top:1px solid {lc};
                 border-left:1px solid rgba(10,186,181,0.08);
                 border-right:1px solid rgba(10,186,181,0.08);
-                border-bottom:1px solid rgba(10,186,181,0.08);min-height:230px">
+                border-bottom:1px solid rgba(10,186,181,0.08)">
       <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};
                   font-size:1.5rem;margin-bottom:6px">{icons.get(axis,'◆')}</div>
       <div style="font-family:'Montserrat',sans-serif;color:#9A9590;
@@ -687,10 +687,10 @@ def _score_card(axis: str, info: Dict) -> None:
                   font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;
                   margin-bottom:10px">{d}</div>
       <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
-                  font-size:0.74rem;line-height:1.6">
-        {ev[:100]}{'…' if len(ev)>100 else ''}
+                  font-size:0.74rem;line-height:1.7;word-break:break-word">
+        {ev}
       </div>
-      {''.join(f'<div style="font-family:Montserrat,sans-serif;color:#9A9590;font-size:0.70rem;margin-top:5px;padding-left:8px;border-left:1px solid {_ACCENT}33">▸ {a[:55]}</div>' for a in acts)}
+      {''.join(f'<div style="font-family:Montserrat,sans-serif;color:#9A9590;font-size:0.70rem;margin-top:5px;padding-left:8px;border-left:1px solid {_ACCENT}33;word-break:break-word">▸ {a}</div>' for a in acts)}
     </div>""", unsafe_allow_html=True)
 
 
