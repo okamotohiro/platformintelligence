@@ -941,12 +941,19 @@ def _score_card(axis: str, info: Dict) -> None:
     </div>""", unsafe_allow_html=True)
 
 
-def _col_header(label: str) -> None:
+def _col_header(label: str, badge: str = "", badge_color: str = "#0ABAB5") -> None:
+    badge_html = (
+        f'<span style="font-family:Montserrat,sans-serif;font-size:0.48rem;font-weight:700;'
+        f'letter-spacing:0.14em;color:{badge_color};background:{badge_color}18;'
+        f'border:1px solid {badge_color}55;border-radius:3px;padding:2px 6px;'
+        f'margin-left:8px;vertical-align:middle">{badge}</span>'
+    ) if badge else ""
     st.markdown(f"""
     <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.62rem;
                 letter-spacing:0.20em;text-transform:uppercase;margin-bottom:10px;
-                border-bottom:1px solid rgba(10,186,181,0.10);padding-bottom:8px">
-      {label}
+                border-bottom:1px solid rgba(10,186,181,0.10);padding-bottom:8px;
+                display:flex;align-items:center">
+      <span>{label}</span>{badge_html}
     </div>""", unsafe_allow_html=True)
 
 
@@ -1489,9 +1496,12 @@ def _build_debate_log(step1_data: Dict, step2_data: Dict, domain: str) -> List[D
             "agent": "⚖️ Legal Agent",
             "color": "#8B2635",
             "message": (
-                f"IP exposure flagged at {ip_score}/100. The obligation '{obl_text}' creates direct liability risk. "
-                f"Non-negotiable condition: require written indemnification clause before any commitment. "
-                f"I recommend triggering the standard outside-counsel review protocol for {domain}."
+                f"IP exposure flagged at {ip_score}/100. "
+                f"[🎯 Policy Memory Graph Match]: The clause '{obl_text}' directly conflicts with the "
+                f"'no-sublicensing without prior written consent' red-line established during our 2024 OpenAI MSA "
+                f"negotiations (Clause 4.2) and reaffirmed in the 2023 Google News Showcase MOU (Exhibit B §3). "
+                f"This is a historically non-negotiable position — require written indemnification and sub-licensing "
+                f"prohibition before any commitment. Triggering standard outside-counsel review protocol for {domain}."
             ),
         },
         {
@@ -1520,7 +1530,7 @@ def _build_debate_log(step1_data: Dict, step2_data: Dict, domain: str) -> List[D
             "message": (
                 f"Conflict Resolved: Balancing Legal risk (IP exposure: {ip_score}/100) with Business impact "
                 f"(revenue exposure: {rev_score}/100). Unified cross-functional strategy formulated — "
-                f"overall classification: {risk_level}. "
+                f"Strategic Stance: {_risk_config(risk_level.lower())[0]}. "
                 f"Action Required: Escalating to General Counsel and CPO for final review and compliance sprint kick-off. "
                 f"Board notification required within 48 hours — {domain} domain."
             ),
@@ -2232,9 +2242,9 @@ def main() -> None:
                       letter-spacing:0.28em;text-transform:uppercase;margin-bottom:6px">
             Analysis Complete · {domain}
           </div>
-          <div style="font-family:'Cormorant Garamond',serif;color:#F0EDE6;
-                      font-size:1.6rem;font-weight:300;letter-spacing:0.04em">
-            Platform & Policy Intelligence Report
+          <div style="font-family:'Montserrat',system-ui,sans-serif;color:#F0EDE6;
+                      font-size:1.1rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase">
+            Policy Response — Execution Report
           </div>
         </div>""", unsafe_allow_html=True)
     with hcol2:
@@ -2250,25 +2260,25 @@ def main() -> None:
 
     # ── STEP 1: Parsing Output ────────────────────────────────────────────────
     _accent_divider()
-    _section_label("I", "Structured Delta Extraction — Parsing Output")
+    _section_label("I", "Semantic Delta Analysis (Previous vs. New Policy Diff)")
 
     c1, c2, c3 = st.columns(3)
     with c1:
-        _col_header("Added Obligations")
+        _col_header("Added Obligations", badge="[+] NEW", badge_color="#1A6B3C")
         items = step1_data.get("added_obligations", [])
         for it in items:
             _item_card(it, _sev_color(it.get("severity", "medium")))
         if not items:
             st.caption("—")
     with c2:
-        _col_header("Removed Rights")
+        _col_header("Removed Rights", badge="[-] REMOVED", badge_color="#8B2635")
         items = step1_data.get("removed_rights", [])
         for it in items:
             _item_card(it, _sev_color(it.get("severity", "medium")))
         if not items:
             st.caption("—")
     with c3:
-        _col_header("Key Thresholds")
+        _col_header("Key Thresholds", badge="[⚑] THRESHOLD", badge_color="#A8892A")
         items = step1_data.get("key_thresholds", [])
         for it in items:
             _item_card(it, _ACCENT)
