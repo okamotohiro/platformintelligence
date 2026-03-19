@@ -1752,7 +1752,7 @@ def main() -> None:
           <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                       font-size:0.58rem;letter-spacing:0.30em;text-transform:uppercase;
                       margin-top:2px">
-            ENTERPRISE · CLAUDE {MODEL.upper()}
+            ENTERPRISE · {MODEL}
           </div>
           <div style="height:1px;background:linear-gradient(90deg,{_ACCENT}33,transparent);
                       margin-top:12px"></div>
@@ -1797,12 +1797,12 @@ def main() -> None:
           <div style="color:#C4BFB8">
             <span style="color:{_ACCENT};font-family:'Montserrat',system-ui,sans-serif;
                          font-size:0.72rem;font-weight:700;margin-right:6px">I</span>
-            Policy Ingestion &rarr; Structural Delta
+            Policy Ingestion &rarr; Semantic Delta
           </div>
           <div style="color:#C4BFB8">
             <span style="color:{_ACCENT};font-family:'Montserrat',system-ui,sans-serif;
                          font-size:0.72rem;font-weight:700;margin-right:6px">II</span>
-            Business Translation &rarr; 4-Axis Risk Profiling
+            Business Translation &rarr; Strategic Stance Mapping
           </div>
           <div style="color:#C4BFB8">
             <span style="color:{_ACCENT};font-family:'Montserrat',system-ui,sans-serif;
