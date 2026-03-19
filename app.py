@@ -2331,10 +2331,10 @@ def main() -> None:
     ch1, ch2 = st.columns(2)
     with ch1:
         st.markdown(
-            '<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;'
-            'letter-spacing:0.20em;text-transform:uppercase;margin-bottom:4px">'
+            '<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.80rem;'
+            'letter-spacing:0.24em;text-transform:uppercase;margin-bottom:6px;font-weight:600">'
             'Exposure Delta Radar</div>'
-            '<div style="font-family:Montserrat,sans-serif;color:#6B6560;font-size:0.52rem;'
+            '<div style="font-family:Montserrat,sans-serif;color:#A0A09A;font-size:0.90rem;'
             'margin-bottom:10px">Current Baseline vs. New Policy Exposure</div>',
             unsafe_allow_html=True,
         )
@@ -2342,10 +2342,10 @@ def main() -> None:
                         use_container_width=True, config={"displayModeBar": False})
     with ch2:
         st.markdown(
-            '<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;'
-            'letter-spacing:0.20em;text-transform:uppercase;margin-bottom:4px">'
+            '<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.80rem;'
+            'letter-spacing:0.24em;text-transform:uppercase;margin-bottom:6px;font-weight:600">'
             'Risk &amp; Urgency Matrix</div>'
-            '<div style="font-family:Montserrat,sans-serif;color:#6B6560;font-size:0.52rem;'
+            '<div style="font-family:Montserrat,sans-serif;color:#A0A09A;font-size:0.90rem;'
             'margin-bottom:10px">Key clauses by time-to-enactment × business severity</div>',
             unsafe_allow_html=True,
         )
