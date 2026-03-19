@@ -19,7 +19,7 @@ st.set_page_config(
     page_title="Policy Response",
     page_icon="◆",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ─── Luxury CSS (Tiffany Blue accent) ─────────────────────────────────────────
@@ -1647,8 +1647,17 @@ _LOGIN_PW  = "nikkei2030"
 def render_login() -> None:
     st.markdown("""
     <style>
-    [data-testid="stSidebar"]        { display: none !important; }
-    [data-testid="collapsedControl"] { display: none !important; }
+    [data-testid="stSidebar"],
+    [data-testid="stSidebarContent"],
+    [data-testid="collapsedControl"],
+    [data-testid="stSidebarCollapsedControl"],
+    section[data-testid="stSidebar"] {
+        display: none !important;
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+    }
+    .main .block-container { max-width: 680px !important; margin: 0 auto !important; }
     </style>
     """, unsafe_allow_html=True)
 
