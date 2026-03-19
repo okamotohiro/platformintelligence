@@ -2075,20 +2075,21 @@ def main() -> None:
         debate_log: List[Dict] = []
 
         # Progress bar lives outside st.status so it stays visible throughout
-        _prog = st.progress(0, text="◆  Initializing Autonomous Intelligence Pipeline...")
+        _prog = st.progress(0, text="◆  Initializing Autonomous Response Pipeline...")
         time.sleep(0.3)
 
         with st.status(
-            "◆  Autonomous Intelligence Pipeline — Running...",
+            "◆  Autonomous Response Pipeline — Running...",
             expanded=True,
         ) as pipeline_status:
             try:
-                # ── STEP I : Policy Ingestion & Structural Delta Extraction ────
-                _prog.progress(6, text="Step I · Policy Ingestion — Parsing document structure...")
+                # ── STEP I : Semantic Delta Analysis ──────────────────────────
+                _prog.progress(6, text="Step I · Semantic Delta Analysis — Parsing policy structure...")
                 st.write(
-                    "**Step I — Policy Ingestion & Structural Delta Extraction**  \n"
-                    "Deep-parsing source text to isolate added obligations, removed rights, "
-                    "penalty thresholds, and effective-date triggers..."
+                    "**Step I — Semantic Delta Analysis**  \n"
+                    "Deep-parsing source text to isolate meaning-level changes — added obligations, "
+                    "removed rights, penalty thresholds, and effective-date triggers. "
+                    "Mapping to Media Business Ontology..."
                 )
                 time.sleep(0.4)   # flush UI before blocking LLM call
 
@@ -2097,37 +2098,39 @@ def main() -> None:
                 n_obl = len(step1_data.get("added_obligations", []))
                 n_rem = len(step1_data.get("removed_rights", []))
                 n_thr = len(step1_data.get("key_thresholds", []))
-                _prog.progress(25, text="Step I Complete ✓ — Delta extraction finished")
+                _prog.progress(25, text="Step I Complete ✓ — Semantic delta extraction finished")
                 st.write(
-                    f"  ✓  Delta extraction complete — "
+                    f"  ✓  Semantic delta extraction complete — "
                     f"**{n_obl}** added obligations · "
                     f"**{n_rem}** removed rights · "
                     f"**{n_thr}** key thresholds identified"
                 )
                 time.sleep(0.3)
 
-                # ── STEP II : Domain-Calibrated Business Impact Mapping ────────
-                _prog.progress(30, text=f"Step II · Domain Calibration — Loading '{domain}' risk profile...")
+                # ── STEP II : Policy Memory Graph × Impact Mapping ─────────────
+                _prog.progress(30, text=f"Step II · Policy Memory Graph — Loading '{domain}' institutional memory...")
                 st.write(
-                    f"**Step II — Domain-Calibrated Business Impact Mapping**  \n"
-                    f"Cross-referencing extracted deltas against the *{domain}* domain profile. "
+                    f"**Step II — Policy Memory Graph × Impact Mapping**  \n"
+                    f"Cross-referencing extracted deltas against Policy Memory Graph: "
+                    f"340+ archived MSAs, Board red-lines, and prior negotiation records. "
                     f"Scoring across 4 axes: IP Exposure · Traffic Risk · Revenue Sensitivity · "
-                    f"Product Constraint. Consulting internal red-line register and prior MSA terms..."
+                    f"Product Constraint. Deriving Strategic Stance..."
                 )
                 time.sleep(0.4)   # flush before LLM
 
                 step2_data = run_step2_impact_mapping(client, step1_data, domain)
 
                 rl_raw = step2_data.get("overall_risk_level", "medium").upper()
+                stance_label = _risk_config(rl_raw.lower())[0]
                 scores = step2_data.get("scores", {})
                 score_str = "  ·  ".join(
                     f"{ax}: **{scores[ax]['score']}**/100"
                     for ax in ["IP", "Traffic", "Revenue", "Product"]
                     if ax in scores
                 )
-                _prog.progress(50, text=f"Step II Complete ✓ — Overall Risk: {rl_raw}")
+                _prog.progress(50, text=f"Step II Complete ✓ — Strategic Stance: {stance_label}")
                 st.write(
-                    f"  ✓  4-axis impact mapping complete — Overall Risk: **{rl_raw}**  \n"
+                    f"  ✓  Policy Memory Graph match complete — Strategic Stance: **{stance_label}**  \n"
                     f"  {score_str}"
                 )
                 time.sleep(0.3)
@@ -2137,7 +2140,8 @@ def main() -> None:
                 st.write(
                     "**Multi-Agent Debate — Virtual Expert Committee**  \n"
                     "Convening Legal Counsel, Business Strategy, Product Leadership, "
-                    "and Executive Alignment agents for structured adversarial review..."
+                    "and Executive Alignment agents for structured adversarial review against "
+                    "Policy Memory Graph red-lines..."
                 )
                 time.sleep(0.5)
 
@@ -2153,18 +2157,19 @@ def main() -> None:
 
                 _prog.progress(68, text="Multi-Agent Debate · Consensus reached ✓")
                 st.write(
-                    "  ✓  Committee consensus reached — "
-                    "coordinated escalation strategy confirmed by all agents"
+                    f"  ✓  Committee consensus reached — "
+                    f"Strategic Stance confirmed: **{stance_label}**"
                 )
                 time.sleep(0.3)
 
-                # ── STEP III : Role-Specific Deliverable Synthesis ─────────────
-                _prog.progress(72, text="Step III · Synthesizing 5 role-specific deliverables...")
+                # ── STEP III : Agentic Execution & Deliverable Synthesis ────────
+                _prog.progress(72, text="Step III · Agentic Execution — Generating 6 deliverables...")
                 st.write(
-                    "**Step III — Role-Specific Deliverable Synthesis**  \n"
-                    "Generating Executive Delta Brief · Business Exposure Memo · "
-                    "Legal & Negotiation Brief · Board Memo · Product Checklist — "
-                    "each grounded with verbatim evidence citations from the source text..."
+                    "**Step III — Agentic Execution & Deliverable Synthesis**  \n"
+                    "Generating 6 Deliverables: What Changed Brief · Business Exposure Memo · "
+                    "PPL Map · Negotiation Brief · Product / Legal Checklist · Board Memo — "
+                    "each grounded with verbatim evidence citations and Policy Memory Graph matches. "
+                    "Preparing execution payloads for Slack, Jira, and Docs..."
                 )
                 time.sleep(0.4)   # flush before the longest LLM call
 
@@ -2174,14 +2179,14 @@ def main() -> None:
 
                 _prog.progress(98, text="Step III · Finalizing audit metadata & document ID...")
                 st.write(
-                    "  ✓  5 role-specific deliverables generated — "
-                    "verbatim evidence citations extracted from source text"
+                    "  ✓  6 role-specific deliverables generated — "
+                    "Policy Memory Graph citations embedded · execution payloads ready"
                 )
                 time.sleep(0.4)
 
-                _prog.progress(100, text="◆  Intelligence Package Ready — All steps complete ✓")
+                _prog.progress(100, text="◆  Response Package Ready — All steps complete ✓")
                 pipeline_status.update(
-                    label="◆  Analysis Complete — 5 Role Deliverables Ready",
+                    label="◆  Execution Complete — 6 Deliverables Ready",
                     state="complete",
                     expanded=False,
                 )
@@ -2253,7 +2258,7 @@ def main() -> None:
             st.rerun()
 
     # ── Success Toast ─────────────────────────────────────────────────────────
-    st.toast("✅ Multi-Agent Synthesis Complete: Generated 5 role-specific actionable outputs.")
+    st.toast("✅ Multi-Agent Synthesis Complete: Generated 6 role-specific actionable outputs.")
 
     # ── Multi-Agent Debate Log ────────────────────────────────────────────────
     _debate_expander(debate_log)
