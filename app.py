@@ -2023,12 +2023,12 @@ def main() -> None:
             _accent_divider()
             c1, c2, c3 = st.columns(3)
             for col, icon, cap, sub in [
-                (c1, "◈", "Delta Extraction",
-                 "Identifies exactly what changed — added obligations, removed rights, key thresholds — as structured JSON"),
-                (c2, "◉", "4-Axis Impact Score",
-                 "Quantifies IP · Traffic · Revenue · Product exposure 0–100 with Adaptive Thinking"),
-                (c3, "◆", "5 Role Deliverables",
-                 "Generates Executive Delta · Business Exposure · Legal Brief · Board Memo · Product Checklist with evidence citations"),
+                (c1, "◈", "Semantic Delta Analysis",
+                 "Identifies meaning-level policy changes—not just text diffs. Maps added obligations and removed rights directly to your unique Media Business Ontology."),
+                (c2, "◉", "Policy Memory Graph",
+                 "Evaluates external threats against your institutional memory (past MSAs, board red-lines) to recommend 4 Strategic Stances: PROTECT, PROMOTE, LICENSE, or WAIT."),
+                (c3, "◆", "Agentic Execution",
+                 "Generates 6 role-specific outputs (incl. PPL Map & Board Memo) and autonomously routes approved cross-functional workflows to Jira, Slack, and Docs."),
             ]:
                 with col:
                     st.markdown(f"""
