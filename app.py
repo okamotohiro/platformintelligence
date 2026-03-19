@@ -1,5 +1,5 @@
 """
-Platform & Policy Intelligence — Enterprise PoC
+Policy Response — Enterprise PoC
 Agentic Workflow · Structured Output · Role-based Deliverables
 """
 
@@ -16,7 +16,7 @@ import plotly.graph_objects as go
 
 # ─── Page Configuration ──────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Platform & Policy Intelligence",
+    page_title="Policy Response",
     page_icon="◆",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -547,7 +547,7 @@ def _build_draft_context(domain: str, step1_data: Dict, step2_data: Dict) -> str
             f"{ax}: {scores[ax]['score']}/100 ({scores[ax]['direction']}) — {scores[ax]['evidence'][:80]}"
             for ax in ["IP", "Traffic", "Revenue", "Product"]
         )
-        + f"\nOverall Risk: {step2_data['overall_risk_level'].upper()}\n"
+        + f"\nStrategic Stance: {step2_data['overall_risk_level'].upper()}\n"
         f"Key Opportunities: {'; '.join(step2_data.get('key_opportunities', []))}\n"
         f"Key Threats:       {'; '.join(step2_data.get('key_threats', []))}"
     )
@@ -1628,13 +1628,13 @@ def _format_slack_export(board_memo: str, domain: str, risk_label: str) -> str:
         snippet += "..."
     risk_emoji = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🟢"}.get(risk_label.upper(), "⚪")
     return (
-        f"*{risk_emoji} Policy Intelligence Alert — {domain}*\n"
-        f"*Risk Level:* `{risk_label.upper()}`\n"
+        f"*{risk_emoji} Policy Response Alert — {domain}*\n"
+        f"*Strategic Stance:* `{risk_label.upper()}`\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{snippet}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"_Actions required — see full report in the enterprise dashboard._\n"
-        f"_Platform & Policy Intelligence · claude-opus-4-6_"
+        f"_Policy Response · claude-opus-4-6_"
     )
 
 
@@ -1821,19 +1821,19 @@ def main() -> None:
         <div style="text-align:center;padding:4rem 2rem 2.5rem">
           <div style="font-family:'Montserrat',sans-serif;color:{_ACCENT};font-size:0.62rem;
                       letter-spacing:0.42em;text-transform:uppercase;margin-bottom:1.8rem">
-            ◆ &nbsp; Agentic Workflow · Platform & Policy Intelligence &nbsp; ◆
+            ◆ &nbsp; Agentic Workflow · Policy Response &nbsp; ◆
           </div>
-          <h1 style="font-family:'Cormorant Garamond',serif !important;
-                     color:#F0EDE6 !important;font-size:3.4rem;font-weight:300;
-                     letter-spacing:0.06em;margin:0 0 0.6rem;line-height:1.1">
-            Platform & Policy<br>
-            <span style="color:{_ACCENT};font-style:italic">Intelligence</span>
+          <h1 style="font-family:'Montserrat',sans-serif !important;
+                     color:#F0EDE6 !important;font-size:3.4rem;font-weight:700;
+                     letter-spacing:0.04em;margin:0 0 0.6rem;line-height:1.1">
+            Policy<br>
+            <span style="color:{_ACCENT};">Response</span>
           </h1>
           <div style="width:80px;height:1px;background:linear-gradient(90deg,transparent,{_ACCENT},transparent);
                       margin:1.4rem auto"></div>
           <p style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.78rem;
                     letter-spacing:0.14em;text-transform:uppercase;margin:0">
-            External Change &nbsp;→&nbsp; 5 Role-Specific Actionable Outputs
+            External Change &nbsp;→&nbsp; 6 Role-Specific Actionable Outputs
           </p>
         </div>""", unsafe_allow_html=True)
 
@@ -1841,7 +1841,7 @@ def main() -> None:
         for col, num, label, desc in [
             (g1, "I",   "Set Context",       "Select the target business domain profile (e.g., AI Licensing) to align the engine with your company's revenue and IP structure."),
             (g2, "II",  "Ingest Data",       "Paste the external change—such as a new platform policy, draft agreement, or regulatory update."),
-            (g3, "III", "Run Intelligence",  "Execute the agentic pipeline to autonomously extract deltas and generate role-specific deliverables in seconds."),
+            (g3, "III", "Run Response Pipeline",  "Execute the agentic pipeline to autonomously extract deltas and generate role-specific deliverables in seconds."),
         ]:
             with col:
                 st.markdown(f"""
@@ -2004,7 +2004,7 @@ def main() -> None:
         _, btn_col, _ = st.columns([1, 2, 1])
         with btn_col:
             run_triggered = st.button(
-                "▶  EXECUTE INTELLIGENCE PIPELINE",
+                "▶  EXECUTE RESPONSE PIPELINE",
                 key="main_run",
                 use_container_width=True,
                 type="primary",
@@ -2370,7 +2370,7 @@ def main() -> None:
 
     # ── STEP 3: Role-Specific Deliverables (6 Tabs) ───────────────────────────
     _accent_divider()
-    _section_label("III", "Role-Specific Intelligence — 6 Actionable Deliverables")
+    _section_label("III", "Role-Specific Deliverables — 6 Actionable Outputs")
 
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "◆  What Changed Brief",
@@ -2400,8 +2400,8 @@ def main() -> None:
                         letter-spacing:0.22em;text-transform:uppercase;margin-bottom:5px">
               Strategic Stance
             </div>
-            <div style="font-family:'Cormorant Garamond',serif;color:{rl3_color};
-                        font-size:1.1rem;font-weight:300;letter-spacing:0.06em;line-height:1.2">
+            <div style="font-family:'Montserrat',sans-serif;color:{rl3_color};
+                        font-size:0.92rem;font-weight:700;letter-spacing:0.04em;line-height:1.2">
               {rl3_label}
             </div>
             <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.44rem;
@@ -2425,11 +2425,49 @@ def main() -> None:
             agent_tag="Executive Summary",
         )
 
+        # ── Policy Memory Graph evidence (mock institutional memory) ──────────
+        _PMG_EVIDENCE = {
+            "AI Licensing & Copyright": [
+                "Strictly aligns with the 'no-sublicensing without prior written consent' red-line "
+                "established during our 2024 OpenAI MSA negotiations (Clause 4.2). Previous position "
+                "required board-level sign-off before any sub-licensing of editorial content.",
+                "Mirrors the revenue-floor precedent from 2023 Google News Showcase MOU (Exhibit B §3): "
+                "minimum per-article compensation must not fall below ¥0.8 per impression.",
+            ],
+            "AI Search & Zero-Click": [
+                "Consistent with red-line position from 2023 Apple News+ renewal: attribution link "
+                "must remain clickable and must not be replaced by AI-generated summaries (§7.1).",
+                "Conflicts with internal policy memo (Legal, Nov 2024): zero-click results from "
+                "generative search must be classified as derivative works under J-Copyright Act Art. 21.",
+            ],
+            "Platform Distribution Policies": [
+                "Directly triggers the 'algorithmic reach guarantee' clause negotiated in 2022 Meta "
+                "Instant Articles exit agreement — any reach reduction >15% activates renegotiation right.",
+                "Matches threat pattern documented in 2023 internal IP audit (Board Minutes, Q3): "
+                "platform-controlled distribution reduces Nikkei's first-party data leverage to zero.",
+            ],
+        }
+        _pmg_quotes = _PMG_EVIDENCE.get(
+            domain,
+            [
+                "Historical institutional memory confirms this policy shift pattern was anticipated "
+                "in 2024 internal strategy documents. Board-approved response protocols apply.",
+                "Cross-referenced against 340+ archived MSAs: this clause type has a 73% success rate "
+                "when countered with the 'reciprocal data access' negotiation framework.",
+            ],
+        )
+        _evidence_block(
+            _pmg_quotes,
+            claim_tag="🎯 Policy Memory Graph",
+            claim_color="#9B59B6",
+            agent_tag="Institutional Memory",
+        )
+
         _download_row(
             label="📥  Export Executive Delta Brief (.docx)",
             data=_to_docx_bytes(
                 f"Executive Delta Brief — {domain}",
-                f"Overall Risk: {rl3_label}\n\n{what_changed}",
+                f"Strategic Stance: {rl3_label}\n\n{what_changed}",
                 domain, doc_id,
             ),
             file_name=_fn("delta_brief").replace(".md", ".docx"),
