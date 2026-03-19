@@ -1364,18 +1364,19 @@ def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
             <div style="background:#0D0D0D;border:1px solid {rl_color}44;
                         padding:14px 16px;text-align:center;height:100%">
               <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.48rem;
-                          letter-spacing:0.22em;text-transform:uppercase;margin-bottom:6px">
+                          letter-spacing:0.22em;text-transform:uppercase;margin-bottom:8px">
                 AI Strategic Stance
               </div>
-              <div style="font-family:'Cormorant Garamond',serif;color:{rl_color};
-                          font-size:1.15rem;font-weight:300;letter-spacing:0.06em;line-height:1.2">
+              <div style="font-family:'Montserrat',system-ui,sans-serif;color:{rl_color};
+                          font-size:0.72rem;font-weight:700;letter-spacing:0.12em;
+                          text-transform:uppercase;line-height:1.35">
                 {stance_label}
               </div>
-              <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.45rem;
-                          letter-spacing:0.06em;margin-top:8px;line-height:1.5;font-style:italic">
+              <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.44rem;
+                          letter-spacing:0.04em;margin-top:8px;line-height:1.5">
                 {stance_sub}
               </div>
-              <div style="font-family:'Montserrat',sans-serif;color:#6B6560;font-size:0.44rem;
+              <div style="font-family:'Montserrat',sans-serif;color:#6B6560;font-size:0.42rem;
                           letter-spacing:0.08em;margin-top:8px">
                 claude-opus-4-6 · adaptive thinking
               </div>
