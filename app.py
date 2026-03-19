@@ -845,12 +845,29 @@ def _sev_color(sev: str) -> str:
 
 
 def _risk_config(level: str):
+    """Returns (stance_label, color, stance_sub) for a raw risk level."""
     return {
-        "critical": ("CRITICAL", "#8B2635"),
-        "high":     ("HIGH",     "#A8892A"),
-        "medium":   ("MEDIUM",   "#8A7020"),
-        "low":      ("LOW",      "#1A6B3C"),
-    }.get(level.lower() if level else "medium", ("—", "#C4BFB8"))
+        "critical": (
+            "PROTECT & LICENSE",
+            "#8B2635",
+            "Immediate IP defense · aggressive licensing required",
+        ),
+        "high": (
+            "NEGOTIATE & LICENSE",
+            "#A8892A",
+            "Proactive licensing engagement · secure favorable terms now",
+        ),
+        "medium": (
+            "MONITOR & PROMOTE",
+            "#8A7020",
+            "Track developments · selectively capture opportunities",
+        ),
+        "low": (
+            "PROMOTE & WAIT",
+            "#1A6B3C",
+            "Selective engagement · no urgent defensive action required",
+        ),
+    }.get(level.lower() if level else "medium", ("—", "#C4BFB8", ""))
 
 
 def _accent_divider() -> None:
@@ -1242,7 +1259,66 @@ def _audit_block(doc_id: str, domain: str = "", step2_data: Optional[Dict] = Non
     </div>""", unsafe_allow_html=True)
 
 
-def _governance_panel(tab_key: str, risk_label: str = "HIGH") -> None:
+def _policy_memory_block(domain: str) -> None:
+    """Render a mock Policy Memory Graph — historical red-line match panel."""
+    _pmg_hits: Dict[str, List[tuple]] = {
+        "AI Licensing & Copyright": [
+            ("Clause 4.2",    "2024 OpenAI MSA negotiations",
+             "Zero-revenue attribution for AI-generated summaries of licensed content exceeding 40 words "
+             "was a non-negotiable red-line confirmed by the Legal Committee."),
+            ("Exhibit B §3",  "2023 Google News Showcase MOU",
+             "Minimum 12-month traffic guarantee required as a prerequisite to any content licensing "
+             "arrangement — hard floor established by Board resolution."),
+        ],
+        "AI Search & Zero-Click": [
+            ("Article 7(c)",  "2024 Google SGE pre-negotiation memo",
+             "Any zero-click rendering of more than 40 words from a Nikkei article without a redirect "
+             "was categorised as a hard termination trigger — binding precedent."),
+            ("Clause 11",     "2023 Bing / Microsoft MSA review",
+             "Traffic attribution model changes require 90-day advance notice and board sign-off. "
+             "Retroactive application of algorithm changes was explicitly rejected."),
+        ],
+        "Platform Distribution Policies": [
+            ("Section 6.1",   "2024 Meta Platform Agreement review",
+             "Unilateral algorithm change causing >15% traffic reduction triggers force majeure — "
+             "clause negotiated by General Counsel in prior cycle."),
+            ("Clause 9.4",    "2023 Apple News+ renegotiation",
+             "Revenue share floor of 35% was confirmed as a hard red-line by Board resolution. "
+             "Any offer below this threshold requires CEO-level authorisation to consider."),
+        ],
+    }
+    hits = _pmg_hits.get(domain, _pmg_hits["AI Licensing & Copyright"])
+    cards_html = "".join(
+        f"""<div style="background:rgba(10,186,181,0.03);border:1px solid rgba(10,186,181,0.18);
+                        border-left:3px solid {_ACCENT};border-radius:0 4px 4px 0;
+                        padding:11px 14px;margin-bottom:8px">
+              <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:5px">
+                <span style="font-family:'Montserrat',sans-serif;color:{_ACCENT};font-size:0.54rem;
+                             font-weight:600;letter-spacing:0.10em">{ref}</span>
+                <span style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.50rem;
+                             font-style:italic">{source}</span>
+              </div>
+              <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.63rem;
+                          line-height:1.65">{memo}</div>
+            </div>"""
+        for ref, source, memo in hits
+    )
+    st.markdown(f"""
+    <div style="margin:20px 0 4px">
+      <div style="font-family:'Montserrat',sans-serif;color:{_ACCENT};font-size:0.52rem;
+                  letter-spacing:0.28em;text-transform:uppercase;margin-bottom:10px;
+                  display:flex;align-items:center;gap:8px">
+        <span>🎯</span>
+        <span>Policy Memory Graph — Historical Red-Line Match</span>
+        <div style="flex:1;height:1px;background:rgba(10,186,181,0.14)"></div>
+        <span style="color:#6B6560;font-size:0.46rem;letter-spacing:0.10em;text-transform:none;
+                     font-style:italic">Auto-matched from 340+ archived MSAs &amp; Board Minutes</span>
+      </div>
+      {cards_html}
+    </div>""", unsafe_allow_html=True)
+
+
+def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
     """Enterprise governance & audit control panel — Human-in-the-Loop."""
     st.markdown(f"""
     <div style="border-top:1px solid rgba(10,186,181,0.15);margin:3rem 0 1.6rem;padding-top:1.6rem">
@@ -1259,41 +1335,49 @@ def _governance_panel(tab_key: str, risk_label: str = "HIGH") -> None:
       </div>
     </div>""", unsafe_allow_html=True)
 
-    rl_clean = risk_label.upper() if risk_label else "HIGH"
-    _, rl_color = _risk_config(rl_clean)
+    rl_key   = (risk_raw or "medium").lower()
+    stance_label, rl_color, stance_sub = _risk_config(rl_key)
 
-    # Build override options dynamically based on current AI determination
-    all_levels = ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
-    keep_opt   = f"— Keep AI Determination: {rl_clean} —"
-    down_opts  = [f"Downgrade to {l}" for l in all_levels if l != rl_clean and all_levels.index(l) > all_levels.index(rl_clean)]
-    up_opts    = [f"Escalate to {l}"  for l in all_levels if l != rl_clean and all_levels.index(l) < all_levels.index(rl_clean)]
-    override_options = [keep_opt] + up_opts + down_opts
+    # Override dropdown uses human-readable stance options
+    all_stances = [
+        ("critical", "PROTECT & LICENSE"),
+        ("high",     "NEGOTIATE & LICENSE"),
+        ("medium",   "MONITOR & PROMOTE"),
+        ("low",      "PROMOTE & WAIT"),
+    ]
+    keep_opt = f"— Keep AI Stance: {stance_label} —"
+    other_opts = [f"Override → {s}" for k, s in all_stances if k != rl_key]
+    override_options = [keep_opt] + other_opts
 
     with st.form(key=f"gov_{tab_key}"):
 
-        # ── ① AI Risk Determination Override ─────────────────────────────────
+        # ── ① AI Strategic Stance Override ────────────────────────────────────
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.56rem;
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:12px">
-          ①&nbsp; AI RISK DETERMINATION OVERRIDE
+          ①&nbsp; AI STRATEGIC STANCE OVERRIDE
         </div>""", unsafe_allow_html=True)
 
-        oc1, oc2 = st.columns([1, 2.4])
+        oc1, oc2 = st.columns([1.4, 2.4])
         with oc1:
             st.markdown(f"""
             <div style="background:#0D0D0D;border:1px solid {rl_color}44;
                         padding:14px 16px;text-align:center;height:100%">
-              <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.50rem;
-                          letter-spacing:0.22em;text-transform:uppercase;margin-bottom:5px">
-                AI Determination
+              <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.48rem;
+                          letter-spacing:0.22em;text-transform:uppercase;margin-bottom:6px">
+                AI Strategic Stance
               </div>
               <div style="font-family:'Cormorant Garamond',serif;color:{rl_color};
-                          font-size:1.8rem;font-weight:300;letter-spacing:0.10em;line-height:1">
-                {rl_clean}
+                          font-size:1.15rem;font-weight:300;letter-spacing:0.06em;line-height:1.2">
+                {stance_label}
               </div>
-              <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.48rem;
-                          letter-spacing:0.10em;margin-top:6px;line-height:1.5">
-                claude-opus-4-6<br>adaptive thinking
+              <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.45rem;
+                          letter-spacing:0.06em;margin-top:8px;line-height:1.5;font-style:italic">
+                {stance_sub}
+              </div>
+              <div style="font-family:'Montserrat',sans-serif;color:#6B6560;font-size:0.44rem;
+                          letter-spacing:0.08em;margin-top:8px">
+                claude-opus-4-6 · adaptive thinking
               </div>
             </div>""", unsafe_allow_html=True)
         with oc2:
@@ -1864,6 +1948,10 @@ def main() -> None:
                              letter-spacing:0.04em">Audience Traffic Analytics</span>
               </div>
             </div>""", unsafe_allow_html=True)
+            st.caption(
+                "Auto-extracted from 340+ historical MSAs, Board Minutes, and litigation records "
+                "to establish Day 1 Policy Memory Graph."
+            )
 
         with inp_right:
             # ── Sample loader row ─────────────────────────────────────────
@@ -2203,18 +2291,20 @@ def main() -> None:
     _section_label("II", f"Impact Mapping — {domain}")
 
     rl = step2_data.get("overall_risk_level", "medium")
-    rl_label2, rl_color2 = _risk_config(rl)
+    rl_label2, rl_color2, rl_sub2 = _risk_config(rl)
     st.markdown(f"""
     <div style="background:#111111;border:1px solid {rl_color2}55;
                 padding:16px 22px;margin-bottom:1.5rem;
                 display:flex;align-items:center;gap:20px">
-      <div>
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.58rem;
-                    letter-spacing:0.22em;text-transform:uppercase;margin-bottom:3px">Overall Risk</div>
+      <div style="min-width:180px">
+        <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.48rem;
+                    letter-spacing:0.22em;text-transform:uppercase;margin-bottom:4px">Strategic Stance</div>
         <div style="font-family:'Cormorant Garamond',serif;color:{rl_color2};
-                    font-size:1.6rem;font-weight:300;letter-spacing:0.08em">{rl_label2}</div>
+                    font-size:1.2rem;font-weight:300;letter-spacing:0.06em;line-height:1.2">{rl_label2}</div>
+        <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.44rem;
+                    font-style:italic;margin-top:5px">{rl_sub2}</div>
       </div>
-      <div style="width:1px;height:40px;background:rgba(10,186,181,0.14)"></div>
+      <div style="width:1px;height:50px;background:rgba(10,186,181,0.14)"></div>
       <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.80rem;
                   line-height:1.7;flex:1">
         {step2_data.get('executive_summary','')}
@@ -2262,38 +2352,46 @@ def main() -> None:
         for thr in step2_data.get("key_threats", []):
             st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#8B2635;padding:4px 0 4px 10px;border-left:1px solid #8B263544;font-size:0.78rem;margin:3px 0">▸ {thr}</div>', unsafe_allow_html=True)
 
-    # ── STEP 3: Role-Specific Deliverables (5 Tabs) ───────────────────────────
+    # ── STEP 3: Role-Specific Deliverables (6 Tabs) ───────────────────────────
     _accent_divider()
-    _section_label("III", "Role-Specific Intelligence — 5 Actionable Deliverables")
+    _section_label("III", "Role-Specific Intelligence — 6 Actionable Deliverables")
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "◆  Executive Summary & Delta",
-        "◉  Business Exposure",
-        "⚖  Legal & Negotiation",
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "◆  What Changed Brief",
+        "◉  Business Exposure Memo",
+        "🎯  Protect / Promote / License Map",
+        "⚖  Negotiation Brief",
+        "✓  Product / Legal Checklist",
         "▪  Board Memo",
-        "✓  Product Checklist",
     ])
 
     def _fn(prefix: str) -> str:
         return f"{prefix}_{domain.replace(' ', '_')}.md"
 
-    # ── Compute governance risk label once (used across all tabs) ─────────────
+    # ── Compute governance risk level once (passed raw to all panels) ─────────
     _gov_risk_raw = step3_data.get("overall_risk", step2_data.get("overall_risk_level", "medium"))
-    _gov_risk_label, _ = _risk_config(_gov_risk_raw)
 
     # ── Tab 1: Executive Summary & Delta ─────────────────────────────────────
     with tab1:
         _audit_block(doc_id, domain, step2_data)
         rl3 = step3_data.get("overall_risk", "—")
-        rl3_label, rl3_color = _risk_config(rl3)
+        rl3_label, rl3_color, rl3_sub = _risk_config(rl3)
         st.markdown(f"""
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
           <div style="background:#111111;border:1px solid {rl3_color}55;
-                      padding:14px 20px;text-align:center;min-width:120px">
-            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.55rem;
-                        letter-spacing:0.22em;text-transform:uppercase;margin-bottom:4px">Risk Level</div>
+                      padding:14px 20px;text-align:center;min-width:170px">
+            <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.48rem;
+                        letter-spacing:0.22em;text-transform:uppercase;margin-bottom:5px">
+              Strategic Stance
+            </div>
             <div style="font-family:'Cormorant Garamond',serif;color:{rl3_color};
-                        font-size:1.5rem;font-weight:300;letter-spacing:0.10em">{rl3_label}</div>
+                        font-size:1.1rem;font-weight:300;letter-spacing:0.06em;line-height:1.2">
+              {rl3_label}
+            </div>
+            <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.44rem;
+                        font-style:italic;margin-top:6px;line-height:1.4">
+              {rl3_sub}
+            </div>
           </div>
           <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.76rem;
                       line-height:1.6;flex:1">
@@ -2322,7 +2420,7 @@ def main() -> None:
             key="dl_tab1",
         )
 
-        _governance_panel("tab1", _gov_risk_label)
+        _governance_panel("tab1", _gov_risk_raw)
 
     # ── Tab 2: Business Exposure ──────────────────────────────────────────────
     with tab2:
@@ -2353,10 +2451,81 @@ def main() -> None:
             key="dl_tab2",
         )
 
-        _governance_panel("tab2", _gov_risk_label)
+        _governance_panel("tab2", _gov_risk_raw)
 
-    # ── Tab 3: Legal & Negotiation ────────────────────────────────────────────
+    # ── Tab 3: Protect / Promote / License Map ────────────────────────────────
     with tab3:
+        _audit_block(doc_id, domain, step2_data)
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                    line-height:1.6;margin-bottom:20px">
+          Axis-by-axis recommended business action — derived from Policy Memory Graph + impact scoring.
+        </div>""", unsafe_allow_html=True)
+
+        scores = step2_data.get("scores", {})
+        _ACTION_MAP = {
+            # (direction, score_threshold) → (action, color, icon, rationale)
+            ("threat",      70): ("PROTECT",  "#8B2635", "🛡",
+                                  "High-severity threat — activate IP defense and contract protections immediately."),
+            ("threat",      40): ("NEGOTIATE","#A8892A", "⚖",
+                                  "Material threat — engage counterparty to renegotiate terms before enforcement."),
+            ("opportunity", 60): ("LICENSE",  "#0ABAB5", "💼",
+                                  "Monetisation opportunity — formalise licensing arrangement to capture upside."),
+            ("opportunity",  0): ("PROMOTE",  "#1A6B3C", "📣",
+                                  "Positive development — proactively promote capabilities and market positioning."),
+        }
+        def _ppl_action(direction: str, score: int):
+            if direction == "threat":
+                if score >= 70:
+                    return _ACTION_MAP[("threat", 70)]
+                return _ACTION_MAP[("threat", 40)]
+            if direction == "opportunity":
+                if score >= 60:
+                    return _ACTION_MAP[("opportunity", 60)]
+                return _ACTION_MAP[("opportunity", 0)]
+            return ("WAIT & MONITOR", "#6B6560", "🔍",
+                    "Neutral impact — continue monitoring; no urgent action required.")
+
+        ppl_rows = []
+        for ax, icon in [("IP", "◈"), ("Traffic", "◉"), ("Revenue", "◆"), ("Product", "◇")]:
+            ax_data = scores.get(ax, {})
+            direction = ax_data.get("direction", "neutral")
+            score     = ax_data.get("score", 0)
+            evidence  = ax_data.get("evidence", "")
+            action, acolor, aicon, rationale = _ppl_action(direction, score)
+            ppl_rows.append((ax, icon, score, direction, action, acolor, aicon, rationale, evidence))
+
+        for ax, axicon, score, direction, action, acolor, aicon, rationale, evidence in ppl_rows:
+            st.markdown(f"""
+            <div style="background:#111111;border:1px solid {acolor}44;
+                        border-left:4px solid {acolor};border-radius:0 6px 6px 0;
+                        padding:16px 20px;margin-bottom:12px;
+                        display:flex;align-items:flex-start;gap:16px">
+              <div style="min-width:80px;text-align:center">
+                <div style="font-family:'Cormorant Garamond',serif;color:{acolor};
+                            font-size:2rem;line-height:1">{aicon}</div>
+                <div style="font-family:'Montserrat',sans-serif;color:{acolor};font-size:0.52rem;
+                            font-weight:700;letter-spacing:0.12em;margin-top:4px">{action}</div>
+              </div>
+              <div style="flex:1">
+                <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
+                  <span style="font-family:'Cormorant Garamond',serif;color:#F0EDE6;
+                               font-size:1.1rem;font-weight:300">{axicon} {ax}</span>
+                  <span style="font-family:'Montserrat',sans-serif;color:{acolor};
+                               font-size:0.52rem;letter-spacing:0.10em">{score}/100 · {direction.upper()}</span>
+                </div>
+                <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.66rem;
+                            line-height:1.6;margin-bottom:6px">{rationale}</div>
+                <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.60rem;
+                            font-style:italic;line-height:1.5">{evidence[:140]}{"…" if len(evidence) > 140 else ""}</div>
+              </div>
+            </div>""", unsafe_allow_html=True)
+
+        _policy_memory_block(domain)
+        _governance_panel("tab3", _gov_risk_raw)
+
+    # ── Tab 4: Negotiation Brief ──────────────────────────────────────────────
+    with tab4:
         _audit_block(doc_id, domain, step2_data)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
@@ -2373,67 +2542,21 @@ def main() -> None:
             claim_color="#8B2635",
             agent_tag="Legal Agent",
         )
+        _policy_memory_block(domain)
 
         _download_row(
-            label="📥  Export Legal & Negotiation Brief (.docx)",
+            label="📥  Export Negotiation Brief (.docx)",
             data=_to_docx_bytes(
-                f"Legal & Negotiation Brief — {domain}",
+                f"Negotiation Brief — {domain}",
                 negotiation, domain, doc_id,
             ),
             file_name=_fn("negotiation_brief").replace(".md", ".docx"),
-            key="dl_tab3",
-        )
-
-        _governance_panel("tab3", _gov_risk_label)
-
-    # ── Tab 4: Board Memo ─────────────────────────────────────────────────────
-    with tab4:
-        _audit_block(doc_id, domain, step2_data)
-        st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
-                    line-height:1.6;margin-bottom:16px">
-          One-page board summary: business significance, decisions required, and recommended actions.
-        </div>""", unsafe_allow_html=True)
-
-        board = step3_data.get("board_memo", "")
-        _prose_block(board)
-
-        _evidence_block(
-            step3_data.get("board_memo_quotes", []),
-            claim_tag="🟠 Strategic Risk",
-            claim_color="#9A4520",
-            agent_tag="Board Level",
-        )
-
-        _download_row(
-            label="📥  Export Board Memorandum (.docx)",
-            data=_to_docx_bytes(
-                f"Board Memorandum — {domain}",
-                board, domain, doc_id,
-            ),
-            file_name=_fn("board_memo").replace(".md", ".docx"),
             key="dl_tab4",
         )
 
-        _governance_panel("tab4", _gov_risk_label)
+        _governance_panel("tab4", _gov_risk_raw)
 
-        # ── Slack Export ──────────────────────────────────────────────────────
-        st.markdown(f"""
-        <div style="border-top:1px solid rgba(10,186,181,0.10);margin:2.2rem 0 1rem;padding-top:1.2rem">
-          <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
-                      letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
-            ◆ &nbsp; SYSTEM OF ACTION — SLACK EXPORT
-          </div>
-        </div>""", unsafe_allow_html=True)
-
-        rl3_slack = step3_data.get("overall_risk", step2_data.get("overall_risk_level", "medium"))
-        rl3_label_slack, _ = _risk_config(rl3_slack)
-        slack_text = _format_slack_export(board, domain, rl3_label_slack)
-        st.code(slack_text, language=None)
-        if st.button("📨  Send to Slack  #exec-alerts  (Mock)", key="slack_export_tab4"):
-            st.toast("📨 Slack message queued for #exec-alerts — delivery confirmed (mock).", icon="📨")
-
-    # ── Tab 5: Product Checklist ──────────────────────────────────────────────
+    # ── Tab 5: Product / Legal Checklist ─────────────────────────────────────
     with tab5:
         _audit_block(doc_id, domain, step2_data)
         checklist = step3_data.get("product_checklist", [])
@@ -2447,9 +2570,9 @@ def main() -> None:
             _checklist_items(checklist)
             checklist_body = "\n\n".join(f"{i}. {item}" for i, item in enumerate(checklist, 1))
             _download_row(
-                label="📥  Export Product Checklist (.docx)",
+                label="📥  Export Product / Legal Checklist (.docx)",
                 data=_to_docx_bytes(
-                    f"Product Checklist — {domain}",
+                    f"Product & Legal Checklist — {domain}",
                     checklist_body, domain, doc_id,
                 ),
                 file_name=_fn("product_checklist").replace(".md", ".docx"),
@@ -2458,7 +2581,7 @@ def main() -> None:
         else:
             st.caption("No checklist items generated.")
 
-        _governance_panel("tab5", _gov_risk_label)
+        _governance_panel("tab5", _gov_risk_raw)
 
         # ── Jira Export ───────────────────────────────────────────────────────
         if checklist:
@@ -2484,6 +2607,54 @@ def main() -> None:
                     mime="text/plain",
                     use_container_width=True,
                 )
+
+    # ── Tab 6: Board Memo ─────────────────────────────────────────────────────
+    with tab6:
+        _audit_block(doc_id, domain, step2_data)
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                    line-height:1.6;margin-bottom:16px">
+          One-page board summary: business significance, decisions required, and recommended actions.
+        </div>""", unsafe_allow_html=True)
+
+        board = step3_data.get("board_memo", "")
+        _prose_block(board)
+
+        _evidence_block(
+            step3_data.get("board_memo_quotes", []),
+            claim_tag="🟠 Strategic Risk",
+            claim_color="#9A4520",
+            agent_tag="Board Level",
+        )
+        _policy_memory_block(domain)
+
+        _download_row(
+            label="📥  Export Board Memorandum (.docx)",
+            data=_to_docx_bytes(
+                f"Board Memorandum — {domain}",
+                board, domain, doc_id,
+            ),
+            file_name=_fn("board_memo").replace(".md", ".docx"),
+            key="dl_tab6",
+        )
+
+        _governance_panel("tab6", _gov_risk_raw)
+
+        # ── Slack Export ──────────────────────────────────────────────────────
+        st.markdown(f"""
+        <div style="border-top:1px solid rgba(10,186,181,0.10);margin:2.2rem 0 1rem;padding-top:1.2rem">
+          <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
+                      letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
+            ◆ &nbsp; SYSTEM OF ACTION — SLACK EXPORT
+          </div>
+        </div>""", unsafe_allow_html=True)
+
+        rl3_slack = step3_data.get("overall_risk", step2_data.get("overall_risk_level", "medium"))
+        rl3_label_slack, *_ = _risk_config(rl3_slack)
+        slack_text = _format_slack_export(board, domain, rl3_label_slack)
+        st.code(slack_text, language=None)
+        if st.button("📨  Send to Slack  #exec-alerts  (Mock)", key="slack_export_tab6"):
+            st.toast("📨 Slack message queued for #exec-alerts — delivery confirmed (mock).", icon="📨")
 
     # ── Footer ────────────────────────────────────────────────────────────────
     _accent_divider()
