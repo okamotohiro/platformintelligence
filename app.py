@@ -779,8 +779,8 @@ def create_risk_urgency_matrix(scores: Dict) -> go.Figure:
                   fillcolor="rgba(168,137,42,0.05)", line=dict(width=0), layer="below")
     # Quadrant labels
     for txt, qx, qy, col in [
-        ("CRITICAL & URGENT", 15, 97, "rgba(139,38,53,0.55)"),
-        ("CRITICAL", 50, 97, "rgba(168,137,42,0.40)"),
+        ("PROTECT & LICENSE", 15, 97, "rgba(139,38,53,0.55)"),
+        ("HIGH EXPOSURE", 50, 97, "rgba(168,137,42,0.40)"),
         ("MONITOR", 50, 22, "rgba(100,100,100,0.35)"),
     ]:
         fig.add_annotation(x=qx, y=qy, text=txt, showarrow=False,
@@ -880,13 +880,13 @@ def _accent_divider() -> None:
 def _section_label(num: str, title: str) -> None:
     st.markdown(f"""
     <div style="display:flex;align-items:center;gap:16px;margin:2rem 0 1.4rem">
-      <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};font-size:1.6rem;
-                  font-weight:300;line-height:1;min-width:28px">{num}</div>
+      <div style="font-family:'Montserrat',system-ui,sans-serif;color:{_ACCENT};font-size:1.4rem;
+                  font-weight:700;line-height:1;min-width:28px">{num}</div>
       <div>
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.62rem;
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:2px">Step</div>
-        <div style="font-family:'Cormorant Garamond',serif;color:#F0EDE6;font-size:1.15rem;
-                    font-weight:400;letter-spacing:0.04em">{title}</div>
+        <div style="font-family:'Montserrat',system-ui,sans-serif;color:#F0EDE6;font-size:1.05rem;
+                    font-weight:600;letter-spacing:0.04em">{title}</div>
       </div>
       <div style="flex:1;height:1px;background:rgba(10,186,181,0.12);margin-left:8px"></div>
     </div>""", unsafe_allow_html=True)
@@ -924,12 +924,12 @@ def _score_card(axis: str, info: Dict) -> None:
                 border-left:1px solid rgba(10,186,181,0.08);
                 border-right:1px solid rgba(10,186,181,0.08);
                 border-bottom:1px solid rgba(10,186,181,0.08)">
-      <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};
-                  font-size:1.5rem;margin-bottom:6px">{icons.get(axis,'◆')}</div>
+      <div style="font-family:'Montserrat',system-ui,sans-serif;color:{_ACCENT};
+                  font-size:1.2rem;margin-bottom:6px">{icons.get(axis,'◆')}</div>
       <div style="font-family:'Montserrat',sans-serif;color:#9A9590;
                   font-size:0.60rem;letter-spacing:0.22em;text-transform:uppercase">{axis}</div>
-      <div style="font-family:'Cormorant Garamond',serif;color:{lc};
-                  font-size:3rem;font-weight:300;line-height:1;margin:6px 0 2px">{info['score']}</div>
+      <div style="font-family:'Montserrat',system-ui,sans-serif;color:{lc};
+                  font-size:2.8rem;font-weight:700;line-height:1;margin:6px 0 2px">{info['score']}</div>
       <div style="font-family:'Montserrat',sans-serif;color:{lc};
                   font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;
                   margin-bottom:10px">{d}</div>
@@ -1049,8 +1049,8 @@ def _checklist_items(items: list) -> None:
         st.markdown(f"""
         <div style="background:#111111;border-left:2px solid {_ACCENT};
                     padding:12px 16px;margin:6px 0;display:flex;gap:12px;align-items:flex-start">
-          <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};
-                      font-size:1.0rem;font-weight:300;min-width:20px;margin-top:1px">{i:02d}</div>
+          <div style="font-family:'Montserrat',system-ui,sans-serif;color:{_ACCENT};
+                      font-size:0.80rem;font-weight:700;min-width:20px;margin-top:1px">{i:02d}</div>
           <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                       font-size:0.82rem;line-height:1.6">{item}</div>
         </div>""", unsafe_allow_html=True)
@@ -1597,7 +1597,7 @@ def _format_jira_export(checklist: List[str], domain: str) -> str:
     lines = [
         f"EPIC: Policy Compliance Sprint — {domain}",
         f"Epic Description: Implement required product, legal, and engineering changes",
-        f"  per Policy Intelligence analysis. Priority: HIGH. Owner: CPO + Legal.",
+        f"  per Policy Response analysis. Priority: HIGH. Owner: CPO + Legal.",
         "",
     ]
     for i, item in enumerate(checklist, 1):
@@ -1660,8 +1660,8 @@ def render_login() -> None:
         <div style="background:#111111;border:1px solid rgba(10,186,181,0.18);
                     padding:44px 44px 36px;">
           <div style="text-align:center;margin-bottom:32px;">
-            <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};
-                        font-size:1.1rem;font-weight:300;letter-spacing:0.16em;">
+            <div style="font-family:'Montserrat',system-ui,sans-serif;color:{_ACCENT};
+                        font-size:1.1rem;font-weight:700;letter-spacing:0.16em;">
               POLICY RESPONSE
             </div>
             <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
@@ -1736,8 +1736,8 @@ def main() -> None:
     with st.sidebar:
         st.markdown(f"""
         <div style="margin-bottom:2rem;">
-          <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};
-                      font-size:1.05rem;font-weight:300;letter-spacing:0.12em;">
+          <div style="font-family:'Montserrat',system-ui,sans-serif;color:{_ACCENT};
+                      font-size:1.05rem;font-weight:700;letter-spacing:0.12em;">
             POLICY RESPONSE
           </div>
           <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
@@ -1786,18 +1786,18 @@ def main() -> None:
             AGENTIC WORKFLOW PIPELINE
           </div>
           <div style="color:#C4BFB8">
-            <span style="color:{_ACCENT};font-family:'Cormorant Garamond',serif;
-                         font-size:0.85rem;font-weight:300;margin-right:6px">I</span>
+            <span style="color:{_ACCENT};font-family:'Montserrat',system-ui,sans-serif;
+                         font-size:0.72rem;font-weight:700;margin-right:6px">I</span>
             Policy Ingestion &rarr; Structural Delta
           </div>
           <div style="color:#C4BFB8">
-            <span style="color:{_ACCENT};font-family:'Cormorant Garamond',serif;
-                         font-size:0.85rem;font-weight:300;margin-right:6px">II</span>
+            <span style="color:{_ACCENT};font-family:'Montserrat',system-ui,sans-serif;
+                         font-size:0.72rem;font-weight:700;margin-right:6px">II</span>
             Business Translation &rarr; 4-Axis Risk Profiling
           </div>
           <div style="color:#C4BFB8">
-            <span style="color:{_ACCENT};font-family:'Cormorant Garamond',serif;
-                         font-size:0.85rem;font-weight:300;margin-right:6px">III</span>
+            <span style="color:{_ACCENT};font-family:'Montserrat',system-ui,sans-serif;
+                         font-size:0.72rem;font-weight:700;margin-right:6px">III</span>
             Multi-Agent Synthesis &rarr; Role-Specific Actions
           </div>
           <div style="margin-top:12px;padding-top:10px;
@@ -1829,6 +1829,7 @@ def main() -> None:
                      letter-spacing:0.04em;margin:0 0 0.6rem;line-height:1.1">
             Policy<br>
             <span style="color:{_ACCENT};">Response</span>
+            <span style="color:#C4BFB8;font-size:1.4rem;font-weight:300;letter-spacing:0.12em"> OS</span>
           </h1>
           <div style="width:80px;height:1px;background:linear-gradient(90deg,transparent,{_ACCENT},transparent);
                       margin:1.4rem auto"></div>
@@ -1848,8 +1849,8 @@ def main() -> None:
                 st.markdown(f"""
                 <div style="background:#111111;border:1px solid rgba(10,186,181,0.12);
                             padding:28px 22px;text-align:center;min-height:180px">
-                  <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};
-                              font-size:2.2rem;font-weight:300;margin-bottom:12px">{num}</div>
+                  <div style="font-family:'Montserrat',system-ui,sans-serif;color:{_ACCENT};
+                              font-size:1.8rem;font-weight:700;margin-bottom:12px">{num}</div>
                   <div style="font-family:'Montserrat',sans-serif;color:#F0EDE6;
                               font-size:0.72rem;font-weight:600;letter-spacing:0.18em;
                               text-transform:uppercase;margin-bottom:12px">{label}</div>
@@ -2034,8 +2035,8 @@ def main() -> None:
                 with col:
                     st.markdown(f"""
                     <div style="padding:0 8px">
-                      <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};
-                                  font-size:1.4rem;margin-bottom:8px">{icon}</div>
+                      <div style="font-family:'Montserrat',system-ui,sans-serif;color:{_ACCENT};
+                                  font-size:1.2rem;font-weight:700;margin-bottom:8px">{icon}</div>
                       <div style="font-family:'Montserrat',sans-serif;color:#9A9590;
                                   font-size:0.68rem;font-weight:600;letter-spacing:0.14em;
                                   text-transform:uppercase;margin-bottom:8px">{cap}</div>
@@ -2557,15 +2558,15 @@ def main() -> None:
                         padding:16px 20px;margin-bottom:12px;
                         display:flex;align-items:flex-start;gap:16px">
               <div style="min-width:80px;text-align:center">
-                <div style="font-family:'Cormorant Garamond',serif;color:{acolor};
-                            font-size:2rem;line-height:1">{aicon}</div>
+                <div style="font-family:'Montserrat',system-ui,sans-serif;color:{acolor};
+                            font-size:1.6rem;line-height:1">{aicon}</div>
                 <div style="font-family:'Montserrat',sans-serif;color:{acolor};font-size:0.52rem;
                             font-weight:700;letter-spacing:0.12em;margin-top:4px">{action}</div>
               </div>
               <div style="flex:1">
                 <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
-                  <span style="font-family:'Cormorant Garamond',serif;color:#F0EDE6;
-                               font-size:1.1rem;font-weight:300">{axicon} {ax}</span>
+                  <span style="font-family:'Montserrat',system-ui,sans-serif;color:#F0EDE6;
+                               font-size:0.95rem;font-weight:600">{axicon} {ax}</span>
                   <span style="font-family:'Montserrat',sans-serif;color:{acolor};
                                font-size:0.52rem;letter-spacing:0.10em">{score}/100 · {direction.upper()}</span>
                 </div>
