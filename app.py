@@ -1496,8 +1496,9 @@ def _build_debate_log(step1_data: Dict, step2_data: Dict, domain: str) -> List[D
             "agent": "⚖️ Legal Agent",
             "color": "#8B2635",
             "message": (
+                f"[🎯 Policy Memory Graph Match: 2024 MSA Red-lines] "
                 f"IP exposure flagged at {ip_score}/100. "
-                f"[🎯 Policy Memory Graph Match]: The clause '{obl_text}' directly conflicts with the "
+                f"The clause '{obl_text}' directly conflicts with the "
                 f"'no-sublicensing without prior written consent' red-line established during our 2024 OpenAI MSA "
                 f"negotiations (Clause 4.2) and reaffirmed in the 2023 Google News Showcase MOU (Exhibit B §3). "
                 f"This is a historically non-negotiable position — require written indemnification and sub-licensing "
@@ -2315,8 +2316,8 @@ def main() -> None:
       <div style="min-width:180px">
         <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.48rem;
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:4px">Strategic Stance</div>
-        <div style="font-family:'Cormorant Garamond',serif;color:{rl_color2};
-                    font-size:1.2rem;font-weight:300;letter-spacing:0.06em;line-height:1.2">{rl_label2}</div>
+        <div style="font-family:'Montserrat',sans-serif;color:{rl_color2};
+                    font-size:0.92rem;font-weight:700;letter-spacing:0.04em;line-height:1.2">{rl_label2}</div>
         <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.44rem;
                     font-style:italic;margin-top:5px">{rl_sub2}</div>
       </div>
