@@ -1661,7 +1661,7 @@ def render_login() -> None:
           <div style="text-align:center;margin-bottom:32px;">
             <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};
                         font-size:1.1rem;font-weight:300;letter-spacing:0.16em;">
-              PLATFORM & POLICY INTELLIGENCE
+              POLICY RESPONSE
             </div>
             <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                         font-size:0.55rem;letter-spacing:0.34em;text-transform:uppercase;
@@ -1737,7 +1737,7 @@ def main() -> None:
         <div style="margin-bottom:2rem;">
           <div style="font-family:'Cormorant Garamond',serif;color:{_ACCENT};
                       font-size:1.05rem;font-weight:300;letter-spacing:0.12em;">
-            PLATFORM & POLICY INTELLIGENCE
+            POLICY RESPONSE
           </div>
           <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                       font-size:0.58rem;letter-spacing:0.30em;text-transform:uppercase;
