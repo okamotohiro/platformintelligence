@@ -1382,7 +1382,7 @@ def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
             </div>""", unsafe_allow_html=True)
         with oc2:
             st.selectbox(
-                "Human Risk Override",
+                "Strategic Stance Override (Human-in-the-Loop)",
                 options=override_options,
                 key=f"override_{tab_key}",
             )
