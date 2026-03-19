@@ -1829,7 +1829,6 @@ def main() -> None:
                      letter-spacing:0.04em;margin:0 0 0.6rem;line-height:1.1">
             Policy<br>
             <span style="color:{_ACCENT};">Response</span>
-            <span style="color:#C4BFB8;font-size:1.4rem;font-weight:300;letter-spacing:0.12em"> OS</span>
           </h1>
           <div style="width:80px;height:1px;background:linear-gradient(90deg,transparent,{_ACCENT},transparent);
                       margin:1.4rem auto"></div>
