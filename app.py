@@ -1926,6 +1926,26 @@ def main() -> None:
                 "      annual turnover or EUR 15,000,000, whichever is higher. Repeat violations\n"
                 "      within 24 months: up to 6% or EUR 30,000,000."
             ),
+            "usai": (
+                "Draft US AI Copyright Transparency and Fair Compensation Act of 2026:\n"
+                "- Requires all foundation model developers to disclose copyrighted material used in\n"
+                "  training within 30 days of model deployment.\n"
+                "- Grants copyright holders a statutory right to demand retroactive licensing fees or\n"
+                "  mandatory unlearning (weight adjustments) for unauthorized use of proprietary\n"
+                "  media archives.\n"
+                "- Statutory damages: $150,000 per infringed work for intentional evasion of\n"
+                "  machine-readable opt-outs."
+            ),
+            "jp304": (
+                "Japan Agency for Cultural Affairs - Copyright Act Art. 30-4 Revision (Public Comment Draft):\n"
+                "- Establishes a legally binding opt-out mechanism for commercial AI training. If a news\n"
+                "  publisher provides a machine-readable opt-out, unauthorized scraping strictly\n"
+                "  constitutes copyright infringement.\n"
+                "- RAG (Retrieval-Augmented Generation) summaries that significantly substitute original\n"
+                "  publisher traffic and provide 'Direct Answers' without adequate attribution are\n"
+                "  presumed to 'unreasonably prejudice the interests of the copyright owner.'\n"
+                "- Target enforcement: October 2026."
+            ),
         }
 
         with inp_left:
@@ -1974,14 +1994,13 @@ def main() -> None:
             )
 
         with inp_right:
-            # ── Sample loader row ─────────────────────────────────────────
-            _lbl_col, _b1_col, _b2_col = st.columns([2.2, 2, 2])
-            with _lbl_col:
-                st.markdown(f"""
-                <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.52rem;
-                            letter-spacing:0.24em;text-transform:uppercase;padding-top:6px">
-                  Policy / Regulatory Text
-                </div>""", unsafe_allow_html=True)
+            # ── Sample loader rows ────────────────────────────────────────
+            st.markdown(f"""
+            <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.52rem;
+                        letter-spacing:0.24em;text-transform:uppercase;margin-bottom:6px">
+              Policy / Regulatory Text
+            </div>""", unsafe_allow_html=True)
+            _b1_col, _b2_col = st.columns(2)
             with _b1_col:
                 if st.button("⬇ GAIF v3.0 Draft", key="_load_gaif",
                              use_container_width=True, help="Load GAIF v3.0 Article 12 sample"):
@@ -1991,6 +2010,17 @@ def main() -> None:
                 if st.button("⬇ EU AI Act Art.53", key="_load_euai",
                              use_container_width=True, help="Load EU AI Act Article 53 amendment sample"):
                     st.session_state["policy_text"] = _SAMPLES["euai"]
+                    st.rerun()
+            _b3_col, _b4_col = st.columns(2)
+            with _b3_col:
+                if st.button("⬇ US AI Copyright Act Draft", key="_load_usai",
+                             use_container_width=True, help="Load US AI Copyright Transparency Act 2026 draft"):
+                    st.session_state["policy_text"] = _SAMPLES["usai"]
+                    st.rerun()
+            with _b4_col:
+                if st.button("⬇ JP Art. 30-4 Revision Draft", key="_load_jp304",
+                             use_container_width=True, help="Load Japan Copyright Act Art.30-4 revision draft"):
+                    st.session_state["policy_text"] = _SAMPLES["jp304"]
                     st.rerun()
 
             policy_text = st.text_area(
