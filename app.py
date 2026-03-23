@@ -1663,24 +1663,24 @@ def render_login() -> None:
     }
     .block-container {
         padding-top: 15vh !important;
-        max-width: 600px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-    _, card_col, _ = st.columns([1, 2, 1])
+    _, card_col, _ = st.columns([1, 4, 1])
     with card_col:
         st.markdown(f"""
         <div style="background:#111111;border:1px solid rgba(10,186,181,0.18);
                     padding:44px 44px 36px;">
           <div style="text-align:center;margin-bottom:32px;">
             <div style="font-family:'Montserrat',system-ui,sans-serif;color:{_ACCENT};
-                        font-size:1.1rem;font-weight:700;letter-spacing:0.16em;">
+                        font-size:1.1rem;font-weight:700;letter-spacing:0.16em;
+                        white-space:nowrap;">
               POLICY RESPONSE
             </div>
             <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
                         font-size:0.55rem;letter-spacing:0.34em;text-transform:uppercase;
-                        margin-top:4px;">
+                        margin-top:4px;white-space:nowrap;">
               ENTERPRISE · RESTRICTED ACCESS
             </div>
             <div style="width:48px;height:1px;
