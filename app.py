@@ -1923,12 +1923,6 @@ def main() -> None:
             ),
         }
 
-        # Pre-fill session state when a sample button is clicked
-        for _sk, _sv in _SAMPLES.items():
-            if st.session_state.get(f"_load_{_sk}"):
-                st.session_state["policy_text"] = _sv
-                st.session_state[f"_load_{_sk}"] = False
-
         with inp_left:
             st.markdown(f"""
             <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.52rem;
