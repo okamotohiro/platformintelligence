@@ -1647,23 +1647,28 @@ _LOGIN_PW  = "nikkei2030"
 def render_login() -> None:
     st.markdown("""
     <style>
+    .stApp {
+        background-color: #0a0a0a !important;
+    }
     [data-testid="stSidebar"],
     [data-testid="stSidebarContent"],
     [data-testid="collapsedControl"],
     [data-testid="stSidebarCollapsedControl"],
-    section[data-testid="stSidebar"] {
+    section[data-testid="stSidebar"],
+    header[data-testid="stHeader"] {
         display: none !important;
         width: 0 !important;
         min-width: 0 !important;
         max-width: 0 !important;
     }
-    .main .block-container { max-width: 680px !important; margin: 0 auto !important; }
+    .block-container {
+        padding-top: 15vh !important;
+        max-width: 600px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div style='height:10vh'></div>", unsafe_allow_html=True)
-
-    _, card_col, _ = st.columns([1, 1.2, 1])
+    _, card_col, _ = st.columns([1, 2, 1])
     with card_col:
         st.markdown(f"""
         <div style="background:#111111;border:1px solid rgba(10,186,181,0.18);
