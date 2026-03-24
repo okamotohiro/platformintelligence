@@ -388,7 +388,7 @@ DOMAIN_PROFILES: Dict[str, str] = {
     "AI Search & Zero-Click": (
         "Core business: Japan's leading digital subscription media, dependent on organic search traffic "
         "for subscriber acquisition and ad revenue. "
-        "Primary risk vectors: AI Overviews and zero-click SERP features reducing article click-through rates, "
+        "Primary risk vectors: AI Overviews and Zero-click AI Answers reducing article click-through rates, "
         "AI-generated summaries displacing direct content consumption, "
         "algorithm changes deprioritizing premium paywalled content. "
         "Key objectives: maintain referral traffic integrity, defend against AI summary cannibalization, "
@@ -1289,7 +1289,7 @@ def _policy_memory_block(domain: str) -> None:
         ],
         "AI Search & Zero-Click": [
             ("Article 7(c)",  "2024 Google SGE pre-negotiation memo",
-             "Any zero-click rendering of more than 40 words from a Nikkei article without a redirect "
+             "Any Zero-click AI Answers rendering of more than 40 words from a Nikkei article without a redirect "
              "was categorised as a hard termination trigger — binding precedent."),
             ("Clause 11",     "2023 Bing / Microsoft partner contract review",
              "Traffic attribution model changes require 90-day advance notice and board sign-off. "
@@ -1337,7 +1337,7 @@ def _policy_memory_block(domain: str) -> None:
 
 _COUNTERPARTY_PROFILES: Dict[str, Dict[str, str]] = {
     "AI Search & Zero-Click": {
-        "label":           "Global Search Gatekeeper",
+        "label":           "Dominant Search Platform",
         "traffic_pct":     "85%",
         "traffic_level":   "CRITICAL",
         "traffic_color":   "#8B2635",
@@ -1376,11 +1376,11 @@ def _counterparty_panel(domain: str) -> None:
                 display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <div style="font-family:'Montserrat',sans-serif;color:#6B6560;font-size:0.46rem;
                   letter-spacing:0.22em;text-transform:uppercase;margin-right:4px;
-                  white-space:nowrap">Counterparty Profile</div>
+                  white-space:nowrap">Target Platform Profile</div>
       <span style="font-family:'Montserrat',sans-serif;font-size:0.62rem;color:#C4BFB8;
                    border:1px solid #333;border-radius:3px;padding:3px 10px;
                    white-space:nowrap">
-        Counterparty: <strong style="color:#F0EDE6">{profile["label"]}</strong>
+        Platform: <strong style="color:#F0EDE6">{profile["label"]}</strong>
       </span>
       <span style="font-family:'Montserrat',sans-serif;font-size:0.62rem;
                    border:1px solid {tc}55;border-radius:3px;padding:3px 10px;
@@ -1981,7 +1981,7 @@ def main() -> None:
           <div style="color:#C4BFB8">
             <span style="color:{_ACCENT};font-family:'Montserrat',system-ui,sans-serif;
                          font-size:0.72rem;font-weight:700;margin-right:6px">I</span>
-            Policy Ingestion &rarr; Semantic Delta
+            Policy Ingestion &rarr; Substantive Changes
           </div>
           <div style="color:#C4BFB8">
             <span style="color:{_ACCENT};font-family:'Montserrat',system-ui,sans-serif;
@@ -2082,15 +2082,15 @@ def main() -> None:
                 "- Mandates that any generative AI system providing 'Direct Answers' that substantially\n"
                 "  substitute original publisher content must provide prominent, above-the-fold\n"
                 "  hyperlinks to the source.\n"
-                "- Classifies zero-click AI summaries without explicit publisher licensing agreements\n"
+                "- Classifies Zero-click AI Answers without explicit publisher licensing agreements\n"
                 "  as presumptive copyright infringement.\n"
                 "- Statutory damages apply per un-attributed search query."
             ),
             "eu": (
                 "EU Commission Draft Guidance on AI Search & DMA:\n"
-                "- Designates AI-powered search overviews by 'gatekeeper' platforms as core platform\n"
+                "- Designates AI-powered search overviews by dominant platforms as core platform\n"
                 "  services.\n"
-                "- Gatekeepers are prohibited from using publisher data for zero-click generative\n"
+                "- Dominant platforms are prohibited from using publisher data for Zero-click AI Answers\n"
                 "  summaries without offering fair, proportionate, and non-discriminatory compensation.\n"
                 "- Publishers must be given granular technical controls to allow traditional search\n"
                 "  indexing without implicitly consenting to generative AI training."
@@ -2205,7 +2205,7 @@ def main() -> None:
             _accent_divider()
             c1, c2, c3 = st.columns(3)
             for col, icon, cap, sub in [
-                (c1, "◈", "Semantic Delta Analysis",
+                (c1, "◈", "Substantive Change Analysis",
                  "Identifies meaning-level policy changes—not just text diffs. Maps added obligations and removed rights directly to your unique Media Business Ontology."),
                 (c2, "◉", "Policy Memory Graph",
                  "Evaluates external threats against your institutional memory (past partner contracts, board red-lines) to recommend 4 Strategic Stances: PROTECT, PROMOTE, LICENSE, or WAIT."),
@@ -2265,10 +2265,10 @@ def main() -> None:
             expanded=True,
         ) as pipeline_status:
             try:
-                # ── STEP I : Semantic Delta Analysis ──────────────────────────
-                _prog.progress(6, text="Step I · Semantic Delta Analysis — Parsing policy structure...")
+                # ── STEP I : Substantive Change Analysis ──────────────────────────
+                _prog.progress(6, text="Step I · Substantive Change Analysis — Parsing policy structure...")
                 st.write(
-                    "**Step I — Semantic Delta Analysis**  \n"
+                    "**Step I — Substantive Change Analysis**  \n"
                     "Deep-parsing source text to isolate meaning-level changes — added obligations, "
                     "removed rights, penalty thresholds, and effective-date triggers. "
                     "Mapping to Media Business Ontology..."
@@ -2449,7 +2449,7 @@ def main() -> None:
 
     # ── STEP 1: Parsing Output ────────────────────────────────────────────────
     _accent_divider()
-    _section_label("I", "Semantic Delta Analysis (Previous vs. New Policy Diff)")
+    _section_label("I", "Substantive Change Analysis (Previous vs. New Policy Diff)")
     st.markdown(_engine_badge("Semantic Chunker &amp; Alignment Model"), unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
@@ -2644,7 +2644,7 @@ def main() -> None:
             "AI Search & Zero-Click": [
                 "Consistent with red-line position from 2023 Apple News+ renewal: attribution link "
                 "must remain clickable and must not be replaced by AI-generated summaries (§7.1).",
-                "Conflicts with internal policy memo (Legal, Nov 2024): zero-click results from "
+                "Conflicts with internal policy memo (Legal, Nov 2024): Zero-click AI Answers from "
                 "generative search must be classified as derivative works under J-Copyright Act Art. 21.",
             ],
             "Platform Distribution Policies": [
