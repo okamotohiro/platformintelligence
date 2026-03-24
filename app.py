@@ -1205,9 +1205,9 @@ def _audit_block(doc_id: str, domain: str = "", step2_data: Optional[Dict] = Non
 
     # ── Grounding Sources: domain-specific policy doc + internal contract ref ──
     _grounding_map = {
-        "AI Licensing & Copyright":     "GAIF Draft (v3.0) · OpenAI MSA 2024 (Contract #882-A)",
-        "AI Search & Zero-Click":       "Google SGE Policy Rev.4 · Search Distribution MSA (Contract #441-B)",
-        "Platform Distribution Policies": "Meta Content Policy Rev.9 · Platform Framework MSA (Contract #773-C)",
+        "AI Licensing & Copyright":     "GAIF Draft (v3.0) · OpenAI Partner Agreement 2024 (Contract #882-A)",
+        "AI Search & Zero-Click":       "Google SGE Policy Rev.4 · Search Distribution Partner Agreement (Contract #441-B)",
+        "Platform Distribution Policies": "Meta Content Policy Rev.9 · Platform Framework Partner Agreement (Contract #773-C)",
     }
     grounding = _grounding_map.get(domain, "External Policy Text · Contract Repository (Internal)")
 
@@ -1219,7 +1219,7 @@ def _audit_block(doc_id: str, domain: str = "", step2_data: Optional[Dict] = Non
         due_str   = due_date.strftime("%b %-d, 12:00 JST")   # e.g. "Mar 20, 12:00 JST"
     except Exception:
         due_str = "Mar 20, 12:00 JST"
-    compliance_html = f"🟡 Pending GC Approval &nbsp;<span style='color:#6B6560'>(Due: {due_str})</span>"
+    compliance_html = f"🟡 Pending Legal Approval &nbsp;<span style='color:#6B6560'>(Due: {due_str})</span>"
 
     # ── Traceability: derive confidence from avg axis score ──────────────────
     if step2_data:
@@ -1280,7 +1280,7 @@ def _policy_memory_block(domain: str) -> None:
     """Render a mock Policy Memory Graph — historical red-line match panel."""
     _pmg_hits: Dict[str, List[tuple]] = {
         "AI Licensing & Copyright": [
-            ("Clause 4.2",    "2024 OpenAI MSA negotiations",
+            ("Clause 4.2",    "2024 OpenAI partner contract negotiations",
              "Zero-revenue attribution for AI-generated summaries of licensed content exceeding 40 words "
              "was a non-negotiable red-line confirmed by the Legal Committee."),
             ("Exhibit B §3",  "2023 Google News Showcase MOU",
@@ -1291,7 +1291,7 @@ def _policy_memory_block(domain: str) -> None:
             ("Article 7(c)",  "2024 Google SGE pre-negotiation memo",
              "Any zero-click rendering of more than 40 words from a Nikkei article without a redirect "
              "was categorised as a hard termination trigger — binding precedent."),
-            ("Clause 11",     "2023 Bing / Microsoft MSA review",
+            ("Clause 11",     "2023 Bing / Microsoft partner contract review",
              "Traffic attribution model changes require 90-day advance notice and board sign-off. "
              "Retroactive application of algorithm changes was explicitly rejected."),
         ],
@@ -1329,7 +1329,7 @@ def _policy_memory_block(domain: str) -> None:
         <span>Policy Memory Graph — Historical Red-Line Match</span>
         <div style="flex:1;height:1px;background:rgba(10,186,181,0.14)"></div>
         <span style="color:#6B6560;font-size:0.46rem;letter-spacing:0.10em;text-transform:none;
-                     font-style:italic">Auto-matched from 340+ archived MSAs &amp; Board Minutes</span>
+                     font-style:italic">Auto-matched from 340+ archived partner contracts &amp; Board Minutes</span>
       </div>
       {cards_html}
     </div>""", unsafe_allow_html=True)
@@ -1672,10 +1672,10 @@ def _build_debate_log(step1_data: Dict, step2_data: Dict, domain: str) -> List[D
             "agent": "⚖️ Legal Agent",
             "color": "#8B2635",
             "message": (
-                f"[🎯 Policy Memory Graph Match: 2024 MSA Red-lines] "
+                f"[🎯 Policy Memory Graph Match: 2024 partner contract Red-lines] "
                 f"IP exposure flagged at {ip_score}/100. "
                 f"The clause '{obl_text}' directly conflicts with the "
-                f"'no-sublicensing without prior written consent' red-line established during our 2024 OpenAI MSA "
+                f"'no-sublicensing without prior written consent' red-line established during our 2024 OpenAI partner contract "
                 f"negotiations (Clause 4.2) and reaffirmed in the 2023 Google News Showcase MOU (Exhibit B §3). "
                 f"This is a historically non-negotiable position — require written indemnification and sub-licensing "
                 f"prohibition before any commitment. Triggering standard outside-counsel review protocol for {domain}."
@@ -1697,7 +1697,7 @@ def _build_debate_log(step1_data: Dict, step2_data: Dict, domain: str) -> List[D
                 f"Product surface exposure at {prod_score}/100. Consent UI and audit logging are hard requirements — "
                 f"estimate 4–6 weeks engineering lead time for full compliance stack. "
                 f"Recommend phased delivery: consent gate first, audit trail second. "
-                f"Legal sign-off required at each milestone before feature GA."
+                f"Legal sign-off required at each milestone before public release."
             ),
         },
         {
@@ -1708,7 +1708,7 @@ def _build_debate_log(step1_data: Dict, step2_data: Dict, domain: str) -> List[D
                 f"Conflict Resolved: Balancing Legal risk (IP exposure: {ip_score}/100) with Business impact "
                 f"(revenue exposure: {rev_score}/100). Unified cross-functional strategy formulated — "
                 f"Strategic Stance: {_risk_config(risk_level.lower())[0]}. "
-                f"Action Required: Escalating to General Counsel and CPO for final review and compliance sprint kick-off. "
+                f"Action Required: Escalating to Legal and Product leadership for final review and compliance sprint kick-off. "
                 f"Board notification required within 48 hours — {domain} domain."
             ),
         },
@@ -1950,7 +1950,7 @@ def main() -> None:
           </div>
           <div style="color:#9A9590;font-size:0.57rem;letter-spacing:0.08em;
                       margin-bottom:10px;line-height:1.5">
-            RAG-linked sources · AI Licensing domain
+            AI-linked sources · AI Licensing domain
           </div>
           <div style="color:#C4BFB8;line-height:2.2;font-size:0.64rem">
             <span style="color:#1A6B3C;margin-right:5px">🟢</span>
@@ -1965,7 +1965,7 @@ def main() -> None:
           <div style="color:#C4BFB8;line-height:2.2;font-size:0.64rem">
             <span style="color:#1A6B3C;margin-right:5px">🟢</span>
             Contract Repository
-            <span style="color:#9A9590;font-size:0.54rem;margin-left:4px">(Existing AI MSAs linked)</span>
+            <span style="color:#9A9590;font-size:0.54rem;margin-left:4px">(Existing AI partner contracts linked)</span>
           </div>
         </div>""", unsafe_allow_html=True)
 
@@ -2129,7 +2129,7 @@ def main() -> None:
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="font-size:0.55rem;line-height:1">🟢</span>
                 <span style="font-family:'Montserrat',sans-serif;color:#C8C3BD;font-size:0.60rem;
-                             letter-spacing:0.04em">Active MSA Contract DB</span>
+                             letter-spacing:0.04em">Active Partner Contract DB</span>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="font-size:0.55rem;line-height:1">🟢</span>
@@ -2138,7 +2138,7 @@ def main() -> None:
               </div>
             </div>""", unsafe_allow_html=True)
             st.caption(
-                "Auto-extracted from 340+ historical MSAs, Board Minutes, and litigation records "
+                "Auto-extracted from 340+ historical partner contracts, Board Minutes, and litigation records "
                 "to establish Day 1 Policy Memory Graph."
             )
 
@@ -2208,7 +2208,7 @@ def main() -> None:
                 (c1, "◈", "Semantic Delta Analysis",
                  "Identifies meaning-level policy changes—not just text diffs. Maps added obligations and removed rights directly to your unique Media Business Ontology."),
                 (c2, "◉", "Policy Memory Graph",
-                 "Evaluates external threats against your institutional memory (past MSAs, board red-lines) to recommend 4 Strategic Stances: PROTECT, PROMOTE, LICENSE, or WAIT."),
+                 "Evaluates external threats against your institutional memory (past partner contracts, board red-lines) to recommend 4 Strategic Stances: PROTECT, PROMOTE, LICENSE, or WAIT."),
                 (c3, "◆", "Agentic Execution",
                  "Generates 6 role-specific outputs (incl. PPL Map & Board Memo) and autonomously routes approved cross-functional workflows to Jira, Slack, and Docs."),
             ]:
@@ -2294,7 +2294,7 @@ def main() -> None:
                 st.write(
                     f"**Step II — Policy Memory Graph × Impact Mapping**  \n"
                     f"Cross-referencing extracted deltas against Policy Memory Graph: "
-                    f"340+ archived MSAs, Board red-lines, and prior negotiation records. "
+                    f"340+ archived partner contracts, Board red-lines, and prior negotiation records. "
                     f"Scoring across 4 axes: IP Exposure · Traffic Risk · Revenue Sensitivity · "
                     f"Product Constraint. Deriving Strategic Stance..."
                 )
@@ -2636,7 +2636,7 @@ def main() -> None:
         _PMG_EVIDENCE = {
             "AI Licensing & Copyright": [
                 "Strictly aligns with the 'no-sublicensing without prior written consent' red-line "
-                "established during our 2024 OpenAI MSA negotiations (Clause 4.2). Previous position "
+                "established during our 2024 OpenAI partner contract negotiations (Clause 4.2). Previous position "
                 "required board-level sign-off before any sub-licensing of editorial content.",
                 "Mirrors the revenue-floor precedent from 2023 Google News Showcase MOU (Exhibit B §3): "
                 "minimum per-article compensation must not fall below ¥0.8 per impression.",
@@ -2659,7 +2659,7 @@ def main() -> None:
             [
                 "Historical institutional memory confirms this policy shift pattern was anticipated "
                 "in 2024 internal strategy documents. Board-approved response protocols apply.",
-                "Cross-referenced against 340+ archived MSAs: this clause type has a 73% success rate "
+                "Cross-referenced against 340+ archived partner contracts: this clause type has a 73% success rate "
                 "when countered with the 'reciprocal data access' negotiation framework.",
             ],
         )
