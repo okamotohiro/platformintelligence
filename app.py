@@ -877,6 +877,16 @@ def _accent_divider() -> None:
     )
 
 
+def _engine_badge(label: str) -> str:
+    """Return an inline HTML engine badge span."""
+    return (
+        f'<span style="font-size:0.7rem;color:#888;border:1px solid #333;'
+        f'padding:2px 6px;border-radius:4px;margin-left:10px;'
+        f'font-family:\'Montserrat\',sans-serif;font-weight:400;'
+        f'letter-spacing:0.04em;vertical-align:middle">[Engine: {label}]</span>'
+    )
+
+
 def _section_label(num: str, title: str) -> None:
     st.markdown(f"""
     <div style="display:flex;align-items:center;gap:16px;margin:2rem 0 1.4rem">
@@ -1427,6 +1437,9 @@ def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
                   display:flex;align-items:center;gap:10px">
         <span>◆</span>
         <span>GOVERNANCE &amp; AUDIT CONTROL PANEL</span>
+        <span style="font-size:0.7rem;color:#888;border:1px solid #333;padding:2px 6px;
+                     border-radius:4px;font-weight:400;letter-spacing:0.04em;
+                     text-transform:none">[Engine: Tool-Calling State Machine]</span>
         <div style="flex:1;height:1px;background:rgba(10,186,181,0.14)"></div>
       </div>
       <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.56rem;
@@ -1522,8 +1535,8 @@ def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
             )
         with rc3:
             st.checkbox(
-                "Escalate Legal Brief to Outside Counsel Portal",
-                value=False, key=f"r_counsel_{tab_key}",
+                "Generate Policy Response Draft in Google Docs",
+                value=True, key=f"r_docs_{tab_key}",
             )
 
         st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
@@ -1568,6 +1581,7 @@ def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
             )
 
         if submitted:
+            st.session_state["workflow_executed"] = True
             st.toast(
                 "✅ Sign-off recorded. Cross-functional workflows executing — "
                 "Audit ID GC-8921 logged. (mock)",
@@ -1646,11 +1660,14 @@ def _debate_expander(debate_log: List[Dict]) -> None:
     if not debate_log:
         return
     with st.expander("◆  Multi-Agent Debate Log — Virtual Expert Committee", expanded=False):
-        st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.60rem;
-                    letter-spacing:0.22em;text-transform:uppercase;margin-bottom:1.2rem">
-          Internal reasoning trace — autonomous committee deliberation prior to output generation
-        </div>""", unsafe_allow_html=True)
+        st.markdown(
+            _engine_badge("Opus-4 Reasoning") +
+            f'<div style="font-family:\'Montserrat\',sans-serif;color:#C4BFB8;font-size:0.60rem;'
+            f'letter-spacing:0.22em;text-transform:uppercase;margin:10px 0 1.2rem">'
+            f'Internal reasoning trace — autonomous committee deliberation prior to output generation'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
         for entry in debate_log:
             is_final = entry.get("final", False)
             if is_final:
@@ -2396,6 +2413,7 @@ def main() -> None:
     with hcol2:
         if st.button("← New Analysis", key="clear"):
             st.session_state.results = None
+            st.session_state["workflow_executed"] = False
             st.rerun()
 
     # ── Success Toast ─────────────────────────────────────────────────────────
@@ -2408,6 +2426,7 @@ def main() -> None:
     # ── STEP 1: Parsing Output ────────────────────────────────────────────────
     _accent_divider()
     _section_label("I", "Semantic Delta Analysis (Previous vs. New Policy Diff)")
+    st.markdown(_engine_badge("Semantic Chunker &amp; Alignment Model"), unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
     with c1:
@@ -2447,6 +2466,7 @@ def main() -> None:
     # ── STEP 2: Impact Mapping ────────────────────────────────────────────────
     _accent_divider()
     _section_label("II", f"Impact Mapping — {domain}")
+    st.markdown(_engine_badge("Composite Embedding Search"), unsafe_allow_html=True)
 
     rl = step2_data.get("overall_risk_level", "medium")
     rl_label2, rl_color2, rl_sub2 = _risk_config(rl)
@@ -2513,6 +2533,26 @@ def main() -> None:
     # ── STEP 3: Role-Specific Deliverables (6 Tabs) ───────────────────────────
     _accent_divider()
     _section_label("III", "Role-Specific Deliverables — 6 Actionable Outputs")
+
+    _wf_executed = st.session_state.get("workflow_executed", False)
+    if _wf_executed:
+        st.markdown("""
+        <div style="display:inline-block;background:#0D1A0D;border:1px solid #1A6B3C;
+                    border-radius:4px;padding:5px 14px;margin-bottom:14px">
+          <span style="font-family:'Montserrat',sans-serif;color:#2ECC71;
+                       font-size:0.68rem;font-weight:700;letter-spacing:0.12em">
+            🟢 STATUS: EXECUTED — ROUTED TO SLACK / DOCS / JIRA
+          </span>
+        </div>""", unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style="display:inline-block;background:#1A1500;border:1px solid #A8892A;
+                    border-radius:4px;padding:5px 14px;margin-bottom:14px">
+          <span style="font-family:'Montserrat',sans-serif;color:#C9A84C;
+                       font-size:0.68rem;font-weight:700;letter-spacing:0.12em">
+            🟡 STATUS: DRAFT — PENDING EXECUTIVE REVIEW
+          </span>
+        </div>""", unsafe_allow_html=True)
 
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "◆  What Changed Brief",
