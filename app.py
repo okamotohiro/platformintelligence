@@ -1335,6 +1335,66 @@ def _policy_memory_block(domain: str) -> None:
     </div>""", unsafe_allow_html=True)
 
 
+_COUNTERPARTY_PROFILES: Dict[str, Dict[str, str]] = {
+    "AI Search & Zero-Click": {
+        "label":           "Global Search Gatekeeper",
+        "traffic_pct":     "85%",
+        "traffic_level":   "CRITICAL",
+        "traffic_color":   "#8B2635",
+        "substitutability":"LOW",
+        "sub_color":       "#8B2635",
+    },
+    "AI Licensing & Copyright": {
+        "label":           "Foundation Model Provider",
+        "traffic_pct":     "60%",
+        "traffic_level":   "HIGH",
+        "traffic_color":   "#A8892A",
+        "substitutability":"MEDIUM",
+        "sub_color":       "#A8892A",
+    },
+    "Platform Distribution Policies": {
+        "label":           "Social / Distribution Platform",
+        "traffic_pct":     "45%",
+        "traffic_level":   "MEDIUM",
+        "traffic_color":   "#0ABAB5",
+        "substitutability":"MEDIUM",
+        "sub_color":       "#A8892A",
+    },
+}
+
+
+def _counterparty_panel(domain: str) -> None:
+    """Render a counterparty market-power profile badge panel for Impact Mapping."""
+    profile = _COUNTERPARTY_PROFILES.get(
+        domain, _COUNTERPARTY_PROFILES["AI Licensing & Copyright"]
+    )
+    tc = profile["traffic_color"]
+    sc = profile["sub_color"]
+    st.markdown(f"""
+    <div style="background:#0D0D0D;border:1px solid #2A2A2A;
+                padding:12px 18px;margin-bottom:18px;
+                display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="font-family:'Montserrat',sans-serif;color:#6B6560;font-size:0.46rem;
+                  letter-spacing:0.22em;text-transform:uppercase;margin-right:4px;
+                  white-space:nowrap">Counterparty Profile</div>
+      <span style="font-family:'Montserrat',sans-serif;font-size:0.62rem;color:#C4BFB8;
+                   border:1px solid #333;border-radius:3px;padding:3px 10px;
+                   white-space:nowrap">
+        Counterparty: <strong style="color:#F0EDE6">{profile["label"]}</strong>
+      </span>
+      <span style="font-family:'Montserrat',sans-serif;font-size:0.62rem;
+                   border:1px solid {tc}55;border-radius:3px;padding:3px 10px;
+                   color:{tc};white-space:nowrap">
+        Traffic Dependency: <strong>{profile["traffic_pct"]} ({profile["traffic_level"]})</strong>
+      </span>
+      <span style="font-family:'Montserrat',sans-serif;font-size:0.62rem;
+                   border:1px solid {sc}55;border-radius:3px;padding:3px 10px;
+                   color:{sc};white-space:nowrap">
+        Substitutability: <strong>{profile["substitutability"]}</strong>
+      </span>
+    </div>""", unsafe_allow_html=True)
+
+
 def _pplw_map_block(risk_raw: str = "high") -> None:
     """Render PPLW (Protect / Promote / License / Wait) 4-stance visual mapping."""
     active_map = {
@@ -2009,61 +2069,31 @@ def main() -> None:
         # ── Sample text payloads ──────────────────────────────────────────
         _SAMPLES: Dict[str, str] = {
             "gaif": (
-                "GAIF Draft v3.0 — Article 12: Content Licensing & AI Training\n"
-                "Effective Date: 2026-07-01 | Jurisdiction: G7 + EU\n\n"
-                "12.1 Mandatory Prior Notice: Any AI developer deploying a foundation model trained on\n"
-                "      copyrighted editorial or structured-data content must provide written notice to\n"
-                "      the rights holder no fewer than 90 days before first commercial use.\n\n"
-                "12.2 Compensation Framework: A minimum per-token royalty of USD 0.0008 per 1,000\n"
-                "      training tokens derived from licensed sources shall apply. Parties may negotiate\n"
-                "      alternative lump-sum arrangements subject to a floor equal to 120% of the\n"
-                "      per-token baseline.\n\n"
-                "12.3 Zero-Click & Summary Display Prohibition: Reproduction of more than 40 words\n"
-                "      from a licensed article in any AI-generated search snippet, summary card, or\n"
-                "      conversational response is prohibited without an active revenue-share agreement.\n\n"
-                "12.4 Enforcement: Non-compliant operators face suspension from GAIF-certified\n"
-                "      distribution networks and fines up to 4% of global annual turnover.\n\n"
-                "12.5 Audit Rights: Rights holders may request quarterly token-usage reports with\n"
-                "      source attribution logs. Operators must retain logs for a minimum of 36 months."
-            ),
-            "euai": (
-                "EU AI Act — Article 53 Amendment (Trilogue Consolidated Text, March 2026)\n"
-                "Scope: General-Purpose AI Models with Systemic Risk\n\n"
-                "53(a) Obligation to Disclose Training Data Provenance: Providers of GPAI models\n"
-                "      classified as 'systemic risk' (cumulative compute > 10^25 FLOPs) must publish\n"
-                "      a standardised data provenance report listing all content categories used in\n"
-                "      pre-training, fine-tuning, and RLHF phases within 60 days of model release.\n\n"
-                "53(b) Content Opt-Out Registry: Member States shall establish a centralised AI\n"
-                "      Training Content Opt-Out Registry by Q3 2026. GPAI providers must honour\n"
-                "      opt-out flags within 14 days of registry update and purge flagged content\n"
-                "      from future training cycles.\n\n"
-                "53(c) Search & Retrieval Augmentation: AI-powered search services that retrieve,\n"
-                "      summarise, or display news and editorial content must enter into licensing\n"
-                "      agreements with qualifying press publishers as defined under Directive 2019/790.\n"
-                "      Failure to comply triggers an interim injunction mechanism.\n\n"
-                "53(d) Penalties: Infringement of Article 53 obligations: up to 3% of worldwide\n"
-                "      annual turnover or EUR 15,000,000, whichever is higher. Repeat violations\n"
-                "      within 24 months: up to 6% or EUR 30,000,000."
+                "GAIF Publisher Ecosystem Terms Update (v3.1):\n"
+                "- To improve user experience, GAIF 'Direct Answers' will now provide comprehensive\n"
+                "  inline AI summaries. Publisher source links will be consolidated and moved to a\n"
+                "  separate 'References' tab below the fold.\n"
+                "- Publishers who implement machine-readable opt-outs for AI training will\n"
+                "  simultaneously be excluded from all GAIF search indexing and discovery surfaces.\n"
+                "- Revenue share for inline summary impressions is discontinued."
             ),
             "usai": (
-                "Draft US AI Copyright Transparency and Fair Compensation Act of 2026:\n"
-                "- Requires all foundation model developers to disclose copyrighted material used in\n"
-                "  training within 30 days of model deployment.\n"
-                "- Grants copyright holders a statutory right to demand retroactive licensing fees or\n"
-                "  mandatory unlearning (weight adjustments) for unauthorized use of proprietary\n"
-                "  media archives.\n"
-                "- Statutory damages: $150,000 per infringed work for intentional evasion of\n"
-                "  machine-readable opt-outs."
+                "US AI Search & Attribution Act (Draft):\n"
+                "- Mandates that any generative AI system providing 'Direct Answers' that substantially\n"
+                "  substitute original publisher content must provide prominent, above-the-fold\n"
+                "  hyperlinks to the source.\n"
+                "- Classifies zero-click AI summaries without explicit publisher licensing agreements\n"
+                "  as presumptive copyright infringement.\n"
+                "- Statutory damages apply per un-attributed search query."
             ),
-            "jp304": (
-                "Japan Agency for Cultural Affairs - Copyright Act Art. 30-4 Revision (Public Comment Draft):\n"
-                "- Establishes a legally binding opt-out mechanism for commercial AI training. If a news\n"
-                "  publisher provides a machine-readable opt-out, unauthorized scraping strictly\n"
-                "  constitutes copyright infringement.\n"
-                "- RAG (Retrieval-Augmented Generation) summaries that significantly substitute original\n"
-                "  publisher traffic and provide 'Direct Answers' without adequate attribution are\n"
-                "  presumed to 'unreasonably prejudice the interests of the copyright owner.'\n"
-                "- Target enforcement: October 2026."
+            "eu": (
+                "EU Commission Draft Guidance on AI Search & DMA:\n"
+                "- Designates AI-powered search overviews by 'gatekeeper' platforms as core platform\n"
+                "  services.\n"
+                "- Gatekeepers are prohibited from using publisher data for zero-click generative\n"
+                "  summaries without offering fair, proportionate, and non-discriminatory compensation.\n"
+                "- Publishers must be given granular technical controls to allow traditional search\n"
+                "  indexing without implicitly consenting to generative AI training."
             ),
         }
 
@@ -2119,27 +2149,21 @@ def main() -> None:
                         letter-spacing:0.24em;text-transform:uppercase;margin-bottom:6px">
               Policy / Regulatory Text
             </div>""", unsafe_allow_html=True)
-            _b1_col, _b2_col = st.columns(2)
+            _b1_col, _b2_col, _b3_col = st.columns(3)
             with _b1_col:
-                if st.button("⬇ GAIF v3.0 Draft", key="_load_gaif",
-                             use_container_width=True, help="Load GAIF v3.0 Article 12 sample"):
+                if st.button("⬇ GAIF Publisher Terms v3.1", key="_load_gaif",
+                             use_container_width=True, help="Load GAIF Publisher Ecosystem Terms v3.1"):
                     st.session_state["policy_text"] = _SAMPLES["gaif"]
                     st.rerun()
             with _b2_col:
-                if st.button("⬇ EU AI Act Art.53", key="_load_euai",
-                             use_container_width=True, help="Load EU AI Act Article 53 amendment sample"):
-                    st.session_state["policy_text"] = _SAMPLES["euai"]
-                    st.rerun()
-            _b3_col, _b4_col = st.columns(2)
-            with _b3_col:
-                if st.button("⬇ US AI Copyright Act Draft", key="_load_usai",
-                             use_container_width=True, help="Load US AI Copyright Transparency Act 2026 draft"):
+                if st.button("⬇ US AI Search & Attribution Act", key="_load_usai",
+                             use_container_width=True, help="Load US AI Search & Attribution Act draft"):
                     st.session_state["policy_text"] = _SAMPLES["usai"]
                     st.rerun()
-            with _b4_col:
-                if st.button("⬇ JP Art. 30-4 Revision Draft", key="_load_jp304",
-                             use_container_width=True, help="Load Japan Copyright Act Art.30-4 revision draft"):
-                    st.session_state["policy_text"] = _SAMPLES["jp304"]
+            with _b3_col:
+                if st.button("⬇ EU DMA Draft Guidance on AI Search", key="_load_eu",
+                             use_container_width=True, help="Load EU Commission DMA draft guidance on AI search"):
+                    st.session_state["policy_text"] = _SAMPLES["eu"]
                     st.rerun()
 
             policy_text = st.text_area(
@@ -2467,6 +2491,7 @@ def main() -> None:
     _accent_divider()
     _section_label("II", f"Impact Mapping — {domain}")
     st.markdown(_engine_badge("Composite Embedding Search"), unsafe_allow_html=True)
+    _counterparty_panel(domain)
 
     rl = step2_data.get("overall_risk_level", "medium")
     rl_label2, rl_color2, rl_sub2 = _risk_config(rl)
