@@ -1325,6 +1325,99 @@ def _policy_memory_block(domain: str) -> None:
     </div>""", unsafe_allow_html=True)
 
 
+def _pplw_map_block(risk_raw: str = "high") -> None:
+    """Render PPLW (Protect / Promote / License / Wait) 4-stance visual mapping."""
+    active_map = {
+        "critical": "PROTECT",
+        "high":     "LICENSE",
+        "medium":   "PROMOTE",
+        "low":      "WAIT",
+    }
+    active = active_map.get((risk_raw or "high").lower(), "LICENSE")
+    stances = [
+        ("PROTECT", "#8B2635", "Immediate IP defense"),
+        ("PROMOTE", "#0ABAB5", "Brand visibility & discovery"),
+        ("LICENSE", "#A8892A", "Revenue & contract leverage"),
+        ("WAIT",    "#6B6560", "Pending further clarity"),
+    ]
+    badges_html = ""
+    for label, color, desc in stances:
+        is_active = label == active
+        opacity   = "1" if is_active else "0.32"
+        border    = f"border:1.5px solid {color}" if is_active else f"border:1px solid {color}44"
+        prefix    = "▶ " if is_active else ""
+        badges_html += (
+            f'<div style="display:inline-flex;flex-direction:column;align-items:center;'
+            f'margin-right:12px;opacity:{opacity}">'
+            f'<div style="background:{color}1A;{border};border-radius:4px;'
+            f'padding:7px 18px;font-family:\'Montserrat\',sans-serif;color:{color};'
+            f'font-size:0.62rem;font-weight:700;letter-spacing:0.16em;white-space:nowrap">'
+            f'{prefix}{label}</div>'
+            f'<div style="font-family:\'Montserrat\',sans-serif;color:#9A9590;'
+            f'font-size:0.46rem;margin-top:5px;text-align:center;letter-spacing:0.04em">'
+            f'{desc}</div></div>'
+        )
+    st.markdown(f"""
+    <div style="background:#0D0D0D;border:1px solid rgba(10,186,181,0.14);
+                padding:16px 20px;margin-bottom:20px;border-radius:2px">
+      <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.48rem;
+                  letter-spacing:0.28em;text-transform:uppercase;margin-bottom:12px">
+        ◈ &nbsp; PPLW Strategic Stance Classification
+      </div>
+      <div style="display:flex;align-items:flex-start;flex-wrap:wrap;gap:4px">
+        {badges_html}
+      </div>
+    </div>""", unsafe_allow_html=True)
+
+
+def _uncertainty_alert(step2_data: Dict, domain: str) -> None:
+    """Render legal/technical uncertainty alert box derived from analysis data."""
+    scores     = step2_data.get("scores", {})
+    risk_level = step2_data.get("overall_risk_level", "high")
+    # Collect axes with medium/low confidence (score ≤ 55) as uncertain items
+    uncertain_axes = [
+        ax for ax, info in scores.items()
+        if isinstance(info, dict) and int(info.get("score", 100)) <= 55
+    ]
+    if uncertain_axes:
+        items_html = "".join(
+            f'<li style="margin-bottom:4px">'
+            f'<span style="color:#A8892A;font-weight:600">[WAIT]</span> '
+            f'{ax.replace("_", " ").title()} — '
+            f'specific regulatory threshold not yet defined in current draft; '
+            f'pending official guidance before final implementation scope can be determined.'
+            f'</li>'
+            for ax in uncertain_axes[:3]
+        )
+    else:
+        items_html = (
+            '<li style="margin-bottom:4px">'
+            '<span style="color:#A8892A;font-weight:600">[WAIT]</span> '
+            f'The specific technical standard for the machine-readable opt-out format '
+            f'is not strictly defined in the current draft for <em>{domain}</em>. '
+            f'Final engineering effort estimates are marked as [WAIT] pending official '
+            f'regulatory guidelines.'
+            '</li>'
+        )
+    st.markdown(f"""
+    <div style="background:#1A1200;border-left:3px solid #A8892A;
+                padding:14px 18px;margin:16px 0 20px;border-radius:0 2px 2px 0">
+      <div style="font-family:'Montserrat',sans-serif;color:#A8892A;font-size:0.60rem;
+                  font-weight:700;letter-spacing:0.10em;margin-bottom:10px">
+        ⚠️ &nbsp;Identified Legal &amp; Technical Uncertainties
+      </div>
+      <ul style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.62rem;
+                 line-height:1.75;margin:0;padding-left:18px">
+        {items_html}
+        <li style="margin-bottom:4px">
+          <span style="color:#6B6560;font-weight:600">[PENDING]</span>
+          Enforcement timeline and jurisdictional scope may change before final enactment.
+          All [WAIT]-classified items should be re-evaluated upon next scheduled policy review.
+        </li>
+      </ul>
+    </div>""", unsafe_allow_html=True)
+
+
 def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
     """Enterprise governance & audit control panel — Human-in-the-Loop."""
     st.markdown(f"""
@@ -1443,6 +1536,15 @@ def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
                     border-top:1px solid rgba(10,186,181,0.08)">
           ③&nbsp; AUDIT SIGN-OFF &amp; EXECUTION
         </div>""", unsafe_allow_html=True)
+
+        st.checkbox(
+            "☑ Update Policy Memory Graph with this approved decision and human context"
+            " to improve future inference",
+            value=True,
+            key=f"r_pmg_{tab_key}",
+        )
+
+        st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
 
         sc1, sc2 = st.columns([3, 1.2])
         with sc1:
@@ -2301,6 +2403,7 @@ def main() -> None:
 
     # ── Multi-Agent Debate Log ────────────────────────────────────────────────
     _debate_expander(debate_log)
+    _uncertainty_alert(step2_data, domain)
 
     # ── STEP 1: Parsing Output ────────────────────────────────────────────────
     _accent_divider()
@@ -2523,6 +2626,7 @@ def main() -> None:
                     line-height:1.6;margin-bottom:16px">
           Impact on traffic, revenue, IP rights, product capabilities, and competitive position.
         </div>""", unsafe_allow_html=True)
+        _pplw_map_block(_gov_risk_raw)
 
         exposure = step3_data.get("business_exposure_memo", "")
         _prose_block(exposure)
