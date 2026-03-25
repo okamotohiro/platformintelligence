@@ -493,7 +493,37 @@ def analyze_policy_with_claude(
             "Your role combines deep regulatory law expertise with senior business strategy. "
             "Given a policy text, produce one single comprehensive JSON intelligence report "
             "covering structural analysis, business impact scoring, strategic recommendations, "
-            "and role-specific deliverables — all grounded with verbatim evidence citations. "
+            "and role-specific deliverables — all grounded with verbatim evidence citations.\n\n"
+
+            "━━━ STRICT GROUNDING RULES (non-negotiable) ━━━\n"
+
+            "RULE 1 — EVIDENCE-ONLY ANALYSIS: Every obligation, risk, threshold, and "
+            "recommendation MUST be explicitly stated or directly implied by the source text. "
+            "NEVER invent obligations, penalty amounts, engineering timelines (e.g. '4–6 weeks'), "
+            "consent-UI specifications, or compliance deadlines that are absent from the source. "
+            "If information is not in the text, acknowledge uncertainty rather than fabricate detail.\n\n"
+
+            "RULE 2 — DOCUMENT-TYPE CALIBRATION: Classify the input using the document_type field. "
+            "For NON-BINDING documents (government_statement, consultation_paper, industry_guideline): "
+            "the agent_debate_messages MUST focus on strategic positioning, lobbying preparation, "
+            "working-group engagement, and monitoring — NOT immediate UI development, engineering sprints, "
+            "or urgent compliance tasks. "
+            "For BINDING documents (binding_regulation, platform_terms_update, draft_legislation with "
+            "stated effective dates): specific implementation tasks with timelines are appropriate ONLY "
+            "when grounded in the source text's explicit requirements.\n\n"
+
+            "RULE 3 — POLICY MEMORY GRAPH RELEVANCE: Include entries in policy_memory_graph ONLY when "
+            "the source text genuinely triggers those institutional concerns. "
+            "Do NOT force-fit licensing contract red-lines onto a non-binding government statement or "
+            "consultation paper. If no genuine historical red-line is triggered, return an empty array.\n\n"
+
+            "RULE 4 — AGENT DEBATE GROUNDING: Each agent in agent_debate_messages MUST base arguments "
+            "solely on the extracted substantive_changes and the document_type. "
+            "Legal, Business, and Product agents must not reference specific historical contract clauses, "
+            "dollar amounts, or engineering estimates unless they appear in the source text. "
+            "Tone must match the document_type: advisory and strategic for non-binding texts, "
+            "operational and urgent only for binding obligations with clear effective dates.\n\n"
+
             "Return ONLY a valid JSON object — no preamble, no explanation, no markdown code fences. "
             "All text fields must be in professional business English."
         ),
@@ -509,6 +539,7 @@ def analyze_policy_with_claude(
                 f"{{\n"
                 f'  "strategic_stance": "e.g. PROTECT & LICENSE",\n'
                 f'  "jurisdiction": "e.g. European Union / EMEA or Global",\n'
+                f'  "document_type": "binding_regulation|draft_legislation|platform_terms_update|government_statement|consultation_paper|industry_guideline",\n'
                 f'  "overall_risk_level": "critical|high|medium|low",\n'
                 f'  "executive_summary": "2-3 sentence C-suite summary",\n'
                 f'  "key_opportunities": ["...", "..."],\n'
@@ -543,11 +574,32 @@ def analyze_policy_with_claude(
                 f'  "board_memo": "one-page board summary: (1) What happened, (2) Financial exposure, (3) Board decisions, (4) Recommended actions with owners/deadlines, (5) Best/base/worst scenarios",\n'
                 f'  "board_memo_quotes": ["verbatim quote supporting board concern"],\n'
                 f'  "product_checklist": [\n'
-                f'    "[CONSENT MECHANISM] Team — opt-in/opt-out spec, trigger, data captured, user segment",\n'
-                f'    "[CONSENT UI] Team — component type, placement, timing, dark-pattern anti-patterns with regulation citation",\n'
-                f'    "[LEGAL DISCLOSURE] Team — notification pattern, link placement, changelog requirement",\n'
-                f'    "[FEATURE CHANGE] Team — specific product change with implementation detail and deadline",\n'
-                f'    "[AUDIT LOGGING] Team — events, retention period, format, consent record requirements"\n'
+                f'    "ONLY include items explicitly required by the source text. Use format: [CATEGORY] Team — specific action grounded in source text.",\n'
+                f'    "For non-binding documents: items should be strategic/preparatory (e.g. [MONITORING] — track next policy revision). Do NOT invent UI or engineering tasks.",\n'
+                f'    "For binding documents: include only concrete obligations stated in the source (consent, disclosure, logging, etc.)"\n'
+                f'  ],\n'
+                f'  "agent_debate_messages": [\n'
+                f'    {{\n'
+                f'      "agent": "⚖️ Legal Agent",\n'
+                f'      "color": "#8B2635",\n'
+                f'      "message": "Ground argument STRICTLY in substantive_changes. Cite only obligations present in the source. For non-binding texts, focus on monitoring and legal positioning rather than immediate compliance. No invented contract clauses or penalty amounts."\n'
+                f'    }},\n'
+                f'    {{\n'
+                f'      "agent": "💰 Business Agent",\n'
+                f'      "color": "#A8892A",\n'
+                f'      "message": "Ground revenue/partnership impact in extracted changes. For non-binding texts, focus on strategic engagement and lobbying rather than financial exposure from imminent enforcement."\n'
+                f'    }},\n'
+                f'    {{\n'
+                f'      "agent": "🧩 Product Agent",\n'
+                f'      "color": "#1A6B3C",\n'
+                f'      "message": "For non-binding texts, do NOT claim specific engineering timelines or UI changes are required. Instead discuss monitoring and preparedness. For binding texts, scope product changes only to what the source explicitly mandates."\n'
+                f'    }},\n'
+                f'    {{\n'
+                f'      "agent": "🏛️ Executive Alignment",\n'
+                f'      "color": "#0ABAB5",\n'
+                f'      "final": true,\n'
+                f'      "message": "Synthesise the three agents into a unified strategic stance. Match urgency level to document_type. Non-binding texts → strategic positioning and monitoring. Binding texts → clear escalation path and action owners derived from the source."\n'
+                f'    }}\n'
                 f'  ]\n'
                 f"}}"
             ),
@@ -1706,53 +1758,90 @@ def _governance_panel(tab_key: str, risk_raw: str = "high", step2_data: Optional
 
 # ─── Multi-Agent Debate Helpers ───────────────────────────────────────────────
 
-def _build_debate_log(step1_data: Dict, step2_data: Dict, domain: str) -> List[Dict]:
-    """Build a virtual expert-committee debate transcript from analysis data (no API call)."""
-    scores    = step2_data.get("scores", {})
-    obligations = step1_data.get("added_obligations", [])
-    threats     = step2_data.get("key_threats", [])
+def _build_debate_log(
+    step1_data: Dict,
+    step2_data: Dict,
+    domain: str,
+    analysis: Optional[Dict] = None,
+) -> List[Dict]:
+    """Return the multi-agent debate transcript.
+
+    Primary source: Claude-generated ``agent_debate_messages`` in *analysis* — these are
+    grounded in the extracted substantive_changes and calibrated to the document_type.
+
+    Fallback (no API key or missing field): rule-based construction derived strictly from
+    the analysis data — no hardcoded contract clauses, penalty amounts, or engineering
+    timelines are injected.
+    """
+    # ── Primary: use Claude-generated debate messages ─────────────────────────
+    if analysis:
+        claude_msgs = analysis.get("agent_debate_messages", [])
+        if claude_msgs and isinstance(claude_msgs, list):
+            result: List[Dict] = []
+            for i, m in enumerate(claude_msgs):
+                if not isinstance(m, dict) or not m.get("message"):
+                    continue
+                entry: Dict = {
+                    "agent":   m.get("agent",   f"Agent {i + 1}"),
+                    "color":   m.get("color",   "#0ABAB5"),
+                    "message": m["message"],
+                }
+                if m.get("final", False) or i == len(claude_msgs) - 1:
+                    entry["final"] = True
+                result.append(entry)
+            if result:
+                return result
+
+    # ── Fallback: rule-based, strictly grounded in extracted data ─────────────
+    scores        = step2_data.get("scores", {})
+    obligations   = step1_data.get("added_obligations", [])
+    threats       = step2_data.get("key_threats", [])
     opportunities = step2_data.get("key_opportunities", [])
-    risk_level  = step2_data.get("overall_risk_level", "medium").upper()
+    risk_level    = step2_data.get("overall_risk_level", "medium").upper()
 
-    ip_score   = scores.get("IP",      {}).get("score", 50)
-    rev_score  = scores.get("Revenue", {}).get("score", 50)
-    prod_score = scores.get("Product", {}).get("score", 50)
+    def _gs(key: str) -> int:
+        v = scores.get(key, 50)
+        return v.get("score", 50) if isinstance(v, dict) else int(v)
 
-    obl_text = obligations[0].get("title", obligations[0].get("item", "new compliance obligations")) if obligations else "new compliance obligations"
-    threat_text = threats[0]   if threats      else "potential operational disruption"
-    opp_text    = opportunities[0] if opportunities else "strategic repositioning opportunity"
+    ip_score   = _gs("IP")
+    rev_score  = _gs("Revenue")
+    prod_score = _gs("Product")
+    stance     = _risk_config(risk_level.lower())[0]
+
+    obl_text    = (obligations[0].get("title", obligations[0].get("item", "identified policy change"))
+                   if obligations else "identified policy change")
+    threat_text = threats[0]      if threats      else "potential business impact"
+    opp_text    = opportunities[0] if opportunities else "strategic engagement opportunity"
 
     return [
         {
             "agent": "⚖️ Legal Agent",
             "color": "#8B2635",
             "message": (
-                f"[🎯 Policy Memory Graph Match: 2024 partner contract Red-lines] "
-                f"IP exposure flagged at {ip_score}/100. "
-                f"The clause '{obl_text}' directly conflicts with the "
-                f"'no-sublicensing without prior written consent' red-line established during our 2024 OpenAI partner contract "
-                f"negotiations (Clause 4.2) and reaffirmed in the 2023 Google News Showcase MOU (Exhibit B §3). "
-                f"This is a historically non-negotiable position — require written indemnification and sub-licensing "
-                f"prohibition before any commitment. Triggering standard outside-counsel review protocol for {domain}."
+                f"IP exposure scored at {ip_score}/100 based on extracted obligations. "
+                f"Key concern: '{obl_text}'. "
+                f"Recommend legal review to confirm whether existing partner agreements are "
+                f"affected and whether outside-counsel review is warranted for {domain}."
             ),
         },
         {
             "agent": "💰 Business Agent",
             "color": "#A8892A",
             "message": (
-                f"Revenue impact at {rev_score}/100 is material. Primary threat: '{threat_text}'. "
-                f"Counter-position: '{opp_text}' is a genuine leverage point. "
-                f"I disagree with full escalation — negotiated compliance with phased timelines protects both revenue and the partnership."
+                f"Revenue exposure at {rev_score}/100. Primary risk: '{threat_text}'. "
+                f"Strategic upside: '{opp_text}'. "
+                f"Recommend negotiated engagement as the preferred path to protect "
+                f"partnership value before considering unilateral compliance measures."
             ),
         },
         {
             "agent": "🧩 Product Agent",
             "color": "#1A6B3C",
             "message": (
-                f"Product surface exposure at {prod_score}/100. Consent UI and audit logging are hard requirements — "
-                f"estimate 4–6 weeks engineering lead time for full compliance stack. "
-                f"Recommend phased delivery: consent gate first, audit trail second. "
-                f"Legal sign-off required at each milestone before public release."
+                f"Product surface exposure at {prod_score}/100. "
+                f"Scope of required product changes should be confirmed after legal review "
+                f"establishes which obligations are binding. No implementation timelines "
+                f"assumed until obligation scope and effective dates are verified."
             ),
         },
         {
@@ -1760,11 +1849,10 @@ def _build_debate_log(step1_data: Dict, step2_data: Dict, domain: str) -> List[D
             "color": "#0ABAB5",
             "final": True,
             "message": (
-                f"Conflict Resolved: Balancing Legal risk (IP exposure: {ip_score}/100) with Business impact "
-                f"(revenue exposure: {rev_score}/100). Unified cross-functional strategy formulated — "
-                f"Strategic Stance: {_risk_config(risk_level.lower())[0]}. "
-                f"Action Required: Escalating to Legal and Product leadership for final review and compliance sprint kick-off. "
-                f"Board notification required within 48 hours — {domain} domain."
+                f"Cross-functional assessment complete. Strategic Stance: {stance}. "
+                f"Legal, Business, and Product inputs consolidated from extracted policy changes. "
+                f"Next action: domain lead to confirm binding scope and escalate to executive "
+                f"team for final decision — {domain}."
             ),
         },
     ]
@@ -2398,7 +2486,7 @@ def main() -> None:
                 )
                 time.sleep(0.4)
 
-                debate_log = _build_debate_log(step1_data, step2_data, domain)
+                debate_log = _build_debate_log(step1_data, step2_data, domain, analysis)
 
                 _debate_progress_steps = [56, 59, 62, 65]
                 for i, entry in enumerate(debate_log):
