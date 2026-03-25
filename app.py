@@ -459,16 +459,37 @@ def _safe_json_parse(text: str) -> Dict:
     if not text or not text.strip():
         return {}
     try:
-        # 1. Fenced block
-        fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
-        if fence:
-            return json.loads(fence.group(1).strip())
-        # 2. Greedy first-{ last-} extraction (handles preamble / postamble prose)
-        m = re.search(r"\{.*\}", text, re.DOTALL)
+        # ── Step 0: Strip markdown code fences if present ─────────────────────
+        clean = text.strip()
+        if clean.startswith("```json"):
+            clean = clean.split("```json", 1)[1]
+        elif clean.startswith("```"):
+            clean = clean.split("```", 1)[1]
+        if clean.endswith("```"):
+            clean = clean.rsplit("```", 1)[0]
+        clean = clean.strip()
+
+        # ── Step 1: Try direct parse on stripped text ─────────────────────────
+        if clean.startswith("{"):
+            try:
+                return json.loads(clean)
+            except json.JSONDecodeError:
+                pass
+
+        # ── Step 2: Greedy first-{ last-} extraction (handles surrounding prose) ──
+        m = re.search(r"\{.*\}", clean, re.DOTALL)
         if m:
-            return json.loads(m.group(0))
-        # 3. Fallback: bare parse
-        return json.loads(text.strip())
+            try:
+                return json.loads(m.group(0))
+            except json.JSONDecodeError:
+                pass
+
+        # ── Step 3: Same extraction on original text as last resort ───────────
+        m2 = re.search(r"\{.*\}", text, re.DOTALL)
+        if m2:
+            return json.loads(m2.group(0))
+
+        return {}
     except Exception:
         return {}
 
@@ -501,7 +522,7 @@ def analyze_policy_with_claude(
     try:
       response = client.messages.create(
         model=MODEL,
-        max_tokens=16000,
+        max_tokens=32000,   # 32K: generous headroom for adaptive thinking + large JSON payload
         thinking={"type": "adaptive"},
         system=(
             "You are the Chief Policy Intelligence Analyst for a major media enterprise. "
