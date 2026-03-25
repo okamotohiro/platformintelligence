@@ -524,7 +524,7 @@ def analyze_policy_with_claude(
     try:
       with client.messages.stream(
         model=MODEL,
-        max_tokens=4096,    # Hard cap: ensures <60s completion; UI needs no more than 4K tokens
+        max_tokens=16000,   # 16K: thinking blocks need headroom; prompt constraints keep text output lean
         thinking={"type": "adaptive"},
         system=(
             "You are the Chief Policy Intelligence Analyst for a major media enterprise. "
@@ -563,8 +563,8 @@ def analyze_policy_with_claude(
             "operational and urgent only for binding obligations with clear effective dates.\n\n"
 
             "RULE 5 — HIGH-DENSITY OUTPUT WITH STRICT BOUNDING (non-negotiable): "
-            "This is a time-critical enterprise pipeline — total JSON output MUST complete within "
-            "4096 tokens. Achieve maximum information density: every word must carry analytical weight.\n"
+            "This is a time-critical enterprise pipeline — JSON text output MUST be compact. "
+            "Achieve maximum information density: every word must carry analytical weight.\n"
             "RULE 5A — ARRAY LIMITS: added_obligations, removed_rights, and key_thresholds arrays "
             "MUST each contain at most 3 items. Select only the highest-impact entries. "
             "key_opportunities and key_threats: at most 3 items each. "
@@ -658,9 +658,13 @@ def analyze_policy_with_claude(
             ),
         }],
       ) as stream:
-            # Collect text chunks — thinking deltas are skipped automatically by .text_stream
-            for text_chunk in stream.text_stream:
-                full_response_text += text_chunk
+            # Explicitly filter for text_delta events only — thinking deltas are discarded
+            for event in stream:
+                if (
+                    event.type == "content_block_delta"
+                    and event.delta.type == "text_delta"
+                ):
+                    full_response_text += event.delta.text
     except anthropic.APIError as api_err:
         raise RuntimeError(
             f"[Anthropic API Error — {type(api_err).__name__}] {api_err}"
