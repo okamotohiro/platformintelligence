@@ -519,6 +519,24 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
                 "Precedent risk: accepting v3.1 terms sets industry baseline for all future AI platform deals",
                 "90-day opt-in deadline creates artificial urgency for an unfavourable decision",
             ],
+            "card_scores": {
+                "IP":      {"score": 75, "direction": "threat",
+                            "evidence": "AI training linkage",
+                            "priority_actions": ["Invoke Clause 4.2 opt-out right immediately", "Escalate to outside IP counsel"]},
+                "Traffic": {"score": 15, "direction": "threat",
+                            "evidence": "Critical Threat: Total loss of referral traffic due to zero-click",
+                            "priority_actions": ["Activate Article 7(c) termination clause", "Begin direct audience migration strategy"]},
+                "Revenue": {"score": 20, "direction": "threat",
+                            "evidence": "Loss of revenue share",
+                            "priority_actions": ["Reject v3.1 terms pending renegotiation", "Prepare alternative monetisation roadmap"]},
+                "Product": {"score": 65, "direction": "opportunity",
+                            "evidence": "Need to build new consent gates",
+                            "priority_actions": ["Audit current API endpoints", "Estimate 6-week engineering sprint for compliance stack"]},
+            },
+            "pmg_evidence": [
+                "Violates the 'minimum traffic referral baseline' established during our 2023 Search Partnership Renewal.",
+                "Board explicitly rejected zero-click expansion without compensation in Q4 2024 strategy meetings.",
+            ],
         }
         step3 = {
             "what_changed_brief": (
@@ -724,6 +742,24 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
                 "Ambiguous territorial scope: unclear whether non-US AI deployments are covered",
                 "60/100 traffic risk if AI operators implement conservative content avoidance strategy",
             ],
+            "card_scores": {
+                "IP":      {"score": 92, "direction": "opportunity",
+                            "evidence": "Strong legal basis",
+                            "priority_actions": ["File preemptive licensing demand with all US AI operators within 30 days", "Engage US Publisher Coalition to coordinate enforcement strategy"]},
+                "Traffic": {"score": 60, "direction": "opportunity",
+                            "evidence": "Mandated links",
+                            "priority_actions": ["Monitor referral traffic impact over 90-day observation window", "Negotiate traffic guarantee as part of licensing settlement"]},
+                "Revenue": {"score": 85, "direction": "opportunity",
+                            "evidence": "Leverage for licensing",
+                            "priority_actions": ["Quantify un-attributed query volume to establish damages claim", "Prepare licensing term sheet with statutory-backed floor rates"]},
+                "Product": {"score": 50, "direction": "neutral",
+                            "evidence": "Standard UI updates",
+                            "priority_actions": ["Audit current AI operator API integrations for attribution compliance", "Design attribution tracking dashboard for licensing audit trail"]},
+            },
+            "pmg_evidence": [
+                "Aligns perfectly with our US Publisher Coalition lobbying strategy (Memo #2025-A).",
+                "Triggers immediate IP enforcement protocols established by the Legal team in late 2024.",
+            ],
         }
         step3 = {
             "what_changed_brief": (
@@ -926,6 +962,24 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
                 "80/100 traffic risk during platform compliance transition (30-day opt-out response window)",
                 "Dominant platforms may challenge DMA designation through EU courts — 12–18 month litigation risk",
             ],
+            "card_scores": {
+                "IP":      {"score": 85, "direction": "opportunity",
+                            "evidence": "Consent unbundling",
+                            "priority_actions": ["File for DMA article 6(i) designation review", "Prepare granular consent architecture spec"]},
+                "Traffic": {"score": 80, "direction": "opportunity",
+                            "evidence": "Fair search display",
+                            "priority_actions": ["Negotiate traffic floor clause in DMA compensation settlement", "Audit current search placement vs. platform baseline"]},
+                "Revenue": {"score": 95, "direction": "opportunity",
+                            "evidence": "Critical Opportunity: Fair compensation mandate",
+                            "priority_actions": ["Quantify Zero-click AI Answers impression volume for compensation claim", "Draft per-article compensation rate schedule"]},
+                "Product": {"score": 85, "direction": "threat",
+                            "evidence": "High compliance engineering load",
+                            "priority_actions": ["Reuse GDPR Article 17 opt-out infrastructure (60% reuse estimate)", "Plan 3-sprint compliance engineering roadmap"]},
+            },
+            "pmg_evidence": [
+                "Follows the exact compliance architecture we built for GDPR Article 17 in 2022.",
+                "Mirrors the revenue-floor precedent from 2023 Showcase MOU: minimum per-article compensation applies.",
+            ],
         }
         step3 = {
             "what_changed_brief": (
@@ -1127,6 +1181,24 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
                 "Voluntary framework delays binding UK enforcement — reduces publisher leverage in bilateral platform negotiations",
                 "Platform operators may use voluntary status to defer compensation discussions indefinitely",
                 "12-month review creates regulatory uncertainty — difficult to plan long-term UK licensing strategy",
+            ],
+            "card_scores": {
+                "IP":      {"score": 50, "direction": "neutral",
+                            "evidence": "Awaiting finalized technical codes.",
+                            "priority_actions": ["Monitor CMA consultation updates", "No immediate action required"]},
+                "Traffic": {"score": 55, "direction": "neutral",
+                            "evidence": "Awaiting finalized technical codes.",
+                            "priority_actions": ["Maintain standard traffic monitoring cadence", "No immediate action required"]},
+                "Revenue": {"score": 40, "direction": "neutral",
+                            "evidence": "Awaiting finalized technical codes.",
+                            "priority_actions": ["Defer UK licensing renegotiation until statutory instruments introduced", "No immediate action required"]},
+                "Product": {"score": 30, "direction": "neutral",
+                            "evidence": "Awaiting finalized technical codes.",
+                            "priority_actions": ["No immediate engineering action required", "Document current consent architecture for potential future compliance"]},
+            },
+            "pmg_evidence": [
+                "Matches the historical trajectory of the 2021 UK CMA voluntary tech agreements.",
+                "Enforcement risk remains low until statutory instruments are introduced.",
             ],
         }
         step3 = {
@@ -3498,9 +3570,10 @@ def main() -> None:
 
     st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin:1rem 0 12px">Evidence & Priority Actions</div>', unsafe_allow_html=True)
     sc1, sc2, sc3, sc4 = st.columns(4)
+    _card_scores = step2_data.get("card_scores", step2_data["scores"])
     for col, axis in [(sc1, "IP"), (sc2, "Traffic"), (sc3, "Revenue"), (sc4, "Product")]:
         with col:
-            _score_card(axis, step2_data["scores"][axis])
+            _score_card(axis, _card_scores[axis])
 
     st.markdown("<div style='height:1.2rem'></div>", unsafe_allow_html=True)
     op_col, th_col = st.columns(2)
@@ -3590,8 +3663,8 @@ def main() -> None:
             agent_tag="Executive Summary",
         )
 
-        # ── Policy Memory Graph evidence (mock institutional memory) ──────────
-        _PMG_EVIDENCE = {
+        # ── Policy Memory Graph evidence — scenario-driven or domain fallback ──
+        _pmg_fallback = {
             "AI Licensing & Copyright": [
                 "Strictly aligns with the 'no-sublicensing without prior written consent' red-line "
                 "established during our 2024 OpenAI partner contract negotiations (Clause 4.2). Previous position "
@@ -3612,14 +3685,15 @@ def main() -> None:
                 "platform-controlled distribution reduces Nikkei's first-party data leverage to zero.",
             ],
         }
-        _pmg_quotes = _PMG_EVIDENCE.get(
-            domain,
-            [
+        _pmg_quotes = (
+            step2_data.get("pmg_evidence")
+            or _pmg_fallback.get(domain)
+            or [
                 "Historical institutional memory confirms this policy shift pattern was anticipated "
                 "in 2024 internal strategy documents. Board-approved response protocols apply.",
                 "Cross-referenced against 340+ archived partner contracts: this clause type has a 73% success rate "
                 "when countered with the 'reciprocal data access' negotiation framework.",
-            ],
+            ]
         )
         _evidence_block(
             _pmg_quotes,
