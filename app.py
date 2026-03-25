@@ -522,7 +522,8 @@ def analyze_policy_with_claude(
     try:
       response = client.messages.create(
         model=MODEL,
-        max_tokens=32000,   # 32K: generous headroom for adaptive thinking + large JSON payload
+        max_tokens=16000,   # 16K: below SDK's ~18,750 sync threshold to avoid ValueError
+        timeout=300.0,      # 5-min explicit timeout — bypasses SDK default estimation
         thinking={"type": "adaptive"},
         system=(
             "You are the Chief Policy Intelligence Analyst for a major media enterprise. "
