@@ -2395,11 +2395,11 @@ def main() -> None:
             expanded=True,
         ) as pipeline_status:
             try:
-                # ── Step I+II: Extract substantive changes and map business impact ──
-                _prog.progress(6, text="Step I+II · Claude AI — Parsing policy and mapping business impact...")
+                # ── Step I: Extract substantive changes and map business impact ──
+                _prog.progress(6, text="Step I · Claude Sonnet 4.6 — Parsing policy and mapping business impact...")
                 st.write(
-                    "**Step I — Substantive Change Analysis + Impact Mapping**  \n"
-                    "Claude AI is deep-parsing source text to isolate meaning-level changes — "
+                    "**Step I — Substantive Change Analysis & Impact Mapping**  \n"
+                    "Claude Sonnet 4.6 is deep-parsing source text to isolate meaning-level changes — "
                     "added obligations, removed rights, penalty thresholds, and effective-date triggers. "
                     "Simultaneously cross-referencing against Policy Memory Graph: "
                     "340+ archived partner contracts, Board red-lines, and prior negotiation records. "
@@ -2412,7 +2412,7 @@ def main() -> None:
                 else:
                     st.warning(
                         "⚠️  ANTHROPIC_API_KEY not configured — showing rule-based keyword scan only. "
-                        "Set the environment variable or add it to st.secrets for full Claude AI analysis."
+                        "Set the environment variable or add it to st.secrets for full Claude Sonnet 4.6 analysis."
                     )
                     analysis = _rule_based_fallback(policy_text, domain)
                 # Derive backward-compat shims from the unified analysis dict
@@ -2467,7 +2467,7 @@ def main() -> None:
                     for ax in ["IP", "Traffic", "Revenue", "Product"]
                     if ax in scores
                 )
-                _prog.progress(50, text=f"Step I+II Complete ✓ — Strategic Stance: {stance_label}")
+                _prog.progress(50, text=f"Step I Complete ✓ — Impact Scoring done — Strategic Stance: {stance_label}")
                 st.write(
                     f"  ✓  Extraction complete — "
                     f"**{n_obl}** added obligations · **{n_rem}** removed rights · "
@@ -2477,12 +2477,15 @@ def main() -> None:
                 )
                 time.sleep(0.3)
 
-                _prog.progress(54, text="Multi-Agent Debate · Convening virtual expert committee...")
+                _prog.progress(54, text="Step II · Claude Sonnet 4.6 — Multi-Agent Deliberation — Convening virtual expert committee...")
                 st.write(
-                    "**Multi-Agent Debate — Virtual Expert Committee**  \n"
+                    "**Step II — Multi-Agent Deliberation**  \n"
+                    "Virtual Expert Committee (Legal, Business, Product) is currently debating trade-offs "
+                    "and formulating the final strategic stance based on extracted changes. "
+                    "Agents are grounded exclusively in Step I substantive_changes — no hallucinated "
+                    "obligations or timelines will be introduced. "
                     "Convening Legal Counsel, Business Strategy, Product Leadership, "
-                    "and Executive Alignment agents for structured adversarial review against "
-                    "Policy Memory Graph red-lines..."
+                    "and Executive Alignment for structured adversarial review..."
                 )
                 time.sleep(0.4)
 
@@ -2496,7 +2499,7 @@ def main() -> None:
                     st.write(f"  {entry['agent']}: _{short}..._")
                     time.sleep(0.5)
 
-                _prog.progress(68, text="Multi-Agent Debate · Consensus reached ✓")
+                _prog.progress(68, text="Step II Complete ✓ — Multi-Agent Deliberation consensus reached")
                 st.write(
                     f"  ✓  Committee consensus reached — "
                     f"Strategic Stance confirmed: **{stance_label}**"
