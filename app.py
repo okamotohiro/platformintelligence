@@ -1199,17 +1199,27 @@ def _download_row(label: str, data: bytes, file_name: str, key: str) -> None:
         )
 
 
-def _audit_block(doc_id: str, domain: str = "", step2_data: Optional[Dict] = None) -> None:
-    """Render compact audit-metadata header — contextual data derived from domain & analysis."""
+def _audit_block(doc_id: str, domain: str = "", step2_data: Optional[Dict] = None, policy_text: str = "") -> None:
+    """Render compact audit-metadata header — contextual data derived from input text & analysis."""
     import datetime as _dt
 
-    # ── Grounding Sources: domain-specific policy doc + internal contract ref ──
-    _grounding_map = {
-        "AI Licensing & Copyright":     "GAIF Draft (v3.0) · OpenAI Partner Agreement 2024 (Contract #882-A)",
-        "AI Search & Zero-Click":       "Google SGE Policy Rev.4 · Search Distribution Partner Agreement (Contract #441-B)",
-        "Platform Distribution Policies": "Meta Content Policy Rev.9 · Platform Framework Partner Agreement (Contract #773-C)",
-    }
-    grounding = _grounding_map.get(domain, "External Policy Text · Contract Repository (Internal)")
+    # ── Grounding Sources & Document ID: keyword-based on input policy text ──
+    _txt = policy_text.upper()
+    if "UK" in _txt or "PARLIAMENT" in _txt:
+        grounding  = "UK Parliament Written Statement (HCWS1416) · Active Partner Contract DB"
+        doc_id     = "REQ-2026-UK-1416"
+    elif "GAIF" in _txt:
+        grounding  = "GAIF Publisher Terms (v3.1) · Active Partner Contract DB"
+        doc_id     = "REQ-2026-GAIF-3100"
+    elif "US" in _txt or "ACT" in _txt:
+        grounding  = "US AI Search & Attribution Act Draft · Active Partner Contract DB"
+        doc_id     = "REQ-2026-US-0900"
+    elif "EU" in _txt or "DMA" in _txt:
+        grounding  = "EU DMA Draft Guidance · Active Partner Contract DB"
+        doc_id     = "REQ-2026-EU-0400"
+    else:
+        grounding  = "External Policy Update · Active Partner Contract DB"
+        doc_id     = "REQ-2026-GEN-0001"
 
     # ── Compliance Status: parse date from doc_id → add 2 calendar days ────────
     try:
@@ -2405,6 +2415,7 @@ def main() -> None:
             "elapsed": elapsed,
             "debate_log": debate_log if debate_log else [],
             "doc_id": doc_id,
+            "policy_text": policy_text,
         }
 
     # ── Display Results ───────────────────────────────────────────────────────
@@ -2415,10 +2426,11 @@ def main() -> None:
     step1_data = res["step1"]
     step2_data = res["step2"]
     step3_data = res["step3"]
-    domain     = res["domain"]
-    elapsed    = res.get("elapsed", 0)
-    debate_log = res.get("debate_log", [])
-    doc_id     = res.get("doc_id", "REQ-—")
+    domain      = res["domain"]
+    elapsed     = res.get("elapsed", 0)
+    debate_log  = res.get("debate_log", [])
+    doc_id      = res.get("doc_id", "REQ-—")
+    policy_text = res.get("policy_text", "")
 
     # ── Header ────────────────────────────────────────────────────────────────
     hcol1, hcol2 = st.columns([4, 1])
@@ -2596,7 +2608,7 @@ def main() -> None:
 
     # ── Tab 1: Executive Summary & Delta ─────────────────────────────────────
     with tab1:
-        _audit_block(doc_id, domain, step2_data)
+        _audit_block(doc_id, domain, step2_data, policy_text)
         rl3 = step3_data.get("overall_risk", "—")
         rl3_label, rl3_color, rl3_sub = _risk_config(rl3)
         st.markdown(f"""
@@ -2685,7 +2697,7 @@ def main() -> None:
 
     # ── Tab 2: Business Exposure ──────────────────────────────────────────────
     with tab2:
-        _audit_block(doc_id, domain, step2_data)
+        _audit_block(doc_id, domain, step2_data, policy_text)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:16px">
@@ -2717,7 +2729,7 @@ def main() -> None:
 
     # ── Tab 3: Protect / Promote / License Map ────────────────────────────────
     with tab3:
-        _audit_block(doc_id, domain, step2_data)
+        _audit_block(doc_id, domain, step2_data, policy_text)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:20px">
@@ -2788,7 +2800,7 @@ def main() -> None:
 
     # ── Tab 4: Negotiation Brief ──────────────────────────────────────────────
     with tab4:
-        _audit_block(doc_id, domain, step2_data)
+        _audit_block(doc_id, domain, step2_data, policy_text)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:16px">
@@ -2820,7 +2832,7 @@ def main() -> None:
 
     # ── Tab 5: Product / Legal Checklist ─────────────────────────────────────
     with tab5:
-        _audit_block(doc_id, domain, step2_data)
+        _audit_block(doc_id, domain, step2_data, policy_text)
         checklist = step3_data.get("product_checklist", [])
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
@@ -2872,7 +2884,7 @@ def main() -> None:
 
     # ── Tab 6: Board Memo ─────────────────────────────────────────────────────
     with tab6:
-        _audit_block(doc_id, domain, step2_data)
+        _audit_block(doc_id, domain, step2_data, policy_text)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:16px">
