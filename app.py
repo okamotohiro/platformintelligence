@@ -519,11 +519,12 @@ def analyze_policy_with_claude(
     domain_focus   = DOMAIN_RISK_FOCUS.get(domain, "")
     snippet        = policy_text[:3500]
 
+    # ── Stream the response — chunks keep WebSocket alive during long reasoning ──
+    full_response_text = ""
     try:
-      response = client.messages.create(
+      with client.messages.stream(
         model=MODEL,
-        max_tokens=16000,   # 16K: below SDK's ~18,750 sync threshold to avoid ValueError
-        timeout=300.0,      # 5-min explicit timeout — bypasses SDK default estimation
+        max_tokens=16000,   # 16K; streaming removes the sync 10-min SDK threshold
         thinking={"type": "adaptive"},
         system=(
             "You are the Chief Policy Intelligence Analyst for a major media enterprise. "
@@ -651,27 +652,27 @@ def analyze_policy_with_claude(
                 f"}}"
             ),
         }],
-      )
+      ) as stream:
+            # Collect text chunks — thinking deltas are skipped automatically by .text_stream
+            for text_chunk in stream.text_stream:
+                full_response_text += text_chunk
     except anthropic.APIError as api_err:
         raise RuntimeError(
             f"[Anthropic API Error — {type(api_err).__name__}] {api_err}"
         ) from api_err
 
-    # ── Extract the text block (skip thinking blocks) ──────────────────────────
-    text_blocks = [b for b in response.content if b.type == "text"]
-    if not text_blocks:
-        block_types = [b.type for b in response.content]
+    # ── Guard: stream must have produced text output ────────────────────────────
+    if not full_response_text.strip():
         raise ValueError(
-            f"Claude returned no text block. "
-            f"Block types received: {block_types}. "
-            f"This usually means the model ran out of tokens or only returned thinking output."
+            "Claude returned empty text output. The stream may have contained only "
+            "thinking blocks or was interrupted before producing JSON. "
+            "Try re-running — adaptive thinking occasionally produces no text on the first pass."
         )
-    raw = text_blocks[0].text
 
-    # ── Parse JSON ─────────────────────────────────────────────────────────────
-    result = _safe_json_parse(raw)
+    # ── Parse JSON from accumulated stream text ─────────────────────────────────
+    result = _safe_json_parse(full_response_text)
     if not result:
-        preview = raw[:600].replace("\n", " ")
+        preview = full_response_text[:600].replace("\n", " ")
         raise ValueError(
             f"JSON extraction failed — Claude did not return parseable JSON.\n"
             f"Raw response preview (first 600 chars): {preview}"
