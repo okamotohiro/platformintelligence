@@ -2554,18 +2554,41 @@ def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
               </span>
             </div>""", unsafe_allow_html=True)
         with sc2:
-            submitted = st.form_submit_button(
-                "◆  Sign-off & Execute Workflows",
-                use_container_width=True,
-            )
+            _already_executed = st.session_state.get("workflow_executed", False)
+            if _already_executed:
+                st.markdown("""
+                <div style="background:#0D1A0D;border:1px solid #1A6B3C;border-radius:4px;
+                            padding:10px 14px;text-align:center">
+                  <div style="font-family:'Montserrat',sans-serif;color:#2ECC71;
+                              font-size:0.78rem;font-weight:700;letter-spacing:0.10em">
+                    ✅ Executed Successfully
+                  </div>
+                  <div style="font-family:'Montserrat',sans-serif;color:#1A6B3C;
+                              font-size:0.54rem;letter-spacing:0.08em;margin-top:4px">
+                    Slack · Jira · Docs · Memory Graph Updated
+                  </div>
+                </div>""", unsafe_allow_html=True)
+                submitted = False
+            else:
+                submitted = st.form_submit_button(
+                    "Approve & Execute Selected Actions",
+                    use_container_width=True,
+                )
+                st.markdown("""
+                <div style="font-family:'Montserrat',sans-serif;color:#6B6560;
+                            font-size:0.52rem;letter-spacing:0.06em;text-align:center;
+                            margin-top:4px">
+                  (Triggers Slack, Jira, Docs &amp; Updates Memory Graph)
+                </div>""", unsafe_allow_html=True)
 
         if submitted:
             st.session_state["workflow_executed"] = True
             st.toast(
-                "✅ Sign-off recorded. Cross-functional workflows executing — "
-                "Audit ID GC-8921 logged. (mock)",
+                "✅ Approved & executing — Slack, Jira, Docs and Memory Graph updating. "
+                "Audit ID GC-8921 logged.",
                 icon="✅",
             )
+            st.rerun()
 
 
 # ─── Multi-Agent Debate Helpers ───────────────────────────────────────────────
@@ -3593,20 +3616,30 @@ def main() -> None:
     _wf_executed = st.session_state.get("workflow_executed", False)
     if _wf_executed:
         st.markdown("""
-        <div style="display:inline-block;background:#0D1A0D;border:1px solid #1A6B3C;
-                    border-radius:4px;padding:5px 14px;margin-bottom:14px">
+        <div style="display:inline-flex;align-items:center;gap:10px;
+                    background:#0D1A0D;border:1px solid #1A6B3C;
+                    border-radius:4px;padding:6px 16px;margin-bottom:14px">
           <span style="font-family:'Montserrat',sans-serif;color:#2ECC71;
                        font-size:0.68rem;font-weight:700;letter-spacing:0.12em">
-            🟢 STATUS: EXECUTED — ROUTED TO SLACK / DOCS / JIRA
+            🟢 STATUS: EXECUTED
+          </span>
+          <span style="font-family:'Montserrat',sans-serif;color:#1A6B3C;
+                       font-size:0.58rem;letter-spacing:0.08em">
+            — ROUTED TO SLACK / DOCS / JIRA · MEMORY GRAPH UPDATED
           </span>
         </div>""", unsafe_allow_html=True)
     else:
         st.markdown("""
-        <div style="display:inline-block;background:#1A1500;border:1px solid #A8892A;
-                    border-radius:4px;padding:5px 14px;margin-bottom:14px">
+        <div style="display:inline-flex;align-items:center;gap:10px;
+                    background:#1A1500;border:1px solid #A8892A;
+                    border-radius:4px;padding:6px 16px;margin-bottom:14px">
           <span style="font-family:'Montserrat',sans-serif;color:#C9A84C;
                        font-size:0.68rem;font-weight:700;letter-spacing:0.12em">
-            🟡 STATUS: DRAFT — PENDING EXECUTIVE REVIEW
+            🟡 STATUS: DRAFT
+          </span>
+          <span style="font-family:'Montserrat',sans-serif;color:#A8892A;
+                       font-size:0.58rem;letter-spacing:0.08em">
+            — PENDING EXECUTIVE REVIEW
           </span>
         </div>""", unsafe_allow_html=True)
 
