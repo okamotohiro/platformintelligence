@@ -485,6 +485,11 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
                 "The update forces binary indexing opt-ins and caps revenue share, representing a "
                 "critical structural shift in the publisher-platform relationship."
             ),
+            "parsed_claims": [
+                "GAIF 'Direct Answers' will now provide comprehensive inline AI summaries, replacing traditional blue-link search results for all informational queries.",
+                "Publisher source links will be consolidated and moved to a separate 'References' tab, eliminating above-the-fold attribution for all Zero-click AI Answer formats.",
+                "Publishers who implement machine-readable opt-outs via the GAIF Publisher Portal will be excluded from all GAIF search indexing within 90 days of opt-out submission.",
+            ],
         }
         step2 = {
             "scores": {
@@ -716,6 +721,11 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
                 "lacking prominent above-the-fold attribution. Statutory damages create significant "
                 "leverage for publishers to enforce licensing floors against AI operators."
             ),
+            "parsed_claims": [
+                "Any generative AI system providing 'Direct Answers' that substantially substitute original publisher content must display a prominent, above-the-fold hyperlink to the source publication.",
+                "Zero-click AI Answers delivered without an explicit, written publisher licensing agreement shall constitute presumptive copyright infringement under this Act.",
+                "Statutory damages of not less than $500 per un-attributed search query shall apply, without requirement to prove actual damages, rising to $150,000 per query for wilful infringement.",
+            ],
         }
         step2 = {
             "scores": {
@@ -943,6 +953,11 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
                 "fair compensation for Zero-click AI summaries. This creates the most comprehensive "
                 "publisher protection framework in the EU digital regulatory landscape."
             ),
+            "parsed_claims": [
+                "Designated gatekeepers shall not use data obtained from publishers for the purpose of providing AI-generated overviews without offering fair, proportionate, and non-discriminatory remuneration to the originating publisher.",
+                "Publishers shall be provided with granular technical controls enabling separate, explicit consent for search indexing and AI training data use — bundled consent agreements are hereby prohibited.",
+                "Compliance with remuneration obligations shall be subject to annual independent audit; results shall be submitted to the Commission within 30 days of audit completion.",
+            ],
         }
         step2 = {
             "scores": {
@@ -1171,6 +1186,11 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
                 "Enforcement risk is low in the near term; however, the 12-month review creates "
                 "an opportunity to shape the eventual legislative framework through voluntary compliance leadership."
             ),
+            "parsed_claims": [
+                "The Government invites publishers and platform operators to participate voluntarily in the development of a multi-stakeholder code of conduct governing AI use of news and journalistic content.",
+                "Participating organisations are encouraged, but not required, to publish annual transparency reports covering AI content licensing arrangements and revenue-sharing terms.",
+                "The Government will review the effectiveness of this voluntary framework after 12 months and will consider whether legislative measures are necessary if sufficient industry progress has not been achieved.",
+            ],
         }
         step2 = {
             "scores": {
@@ -3009,7 +3029,7 @@ def main() -> None:
         for col, num, label, desc in [
             (g1, "I",   "Set Context",       "Select the target business domain profile (e.g., AI Licensing) to align the engine with your company's revenue and IP structure."),
             (g2, "II",  "Ingest Data",       "Paste the external change—such as a new platform policy, draft agreement, or regulatory update."),
-            (g3, "III", "Run Response Pipeline",  "Execute the agentic pipeline to autonomously extract deltas and generate role-specific deliverables in seconds."),
+            (g3, "III", "Run Response Pipeline",  "Execute the agentic pipeline to autonomously extract substantive changes and generate role-specific deliverables in seconds."),
         ]:
             with col:
                 st.markdown(f"""
@@ -3720,6 +3740,16 @@ def main() -> None:
 
         what_changed = step3_data.get("what_changed_brief", "")
         _prose_block(what_changed)
+
+        # ── Parsed Claims — verbatim extracts from source policy document ──────
+        _parsed_claims = step1_data.get("parsed_claims", [])
+        if _parsed_claims:
+            _evidence_block(
+                _parsed_claims,
+                claim_tag="📄 Parsed Claim",
+                claim_color="#6B8F71",
+                agent_tag="Policy Parser",
+            )
 
         _evidence_block(
             step3_data.get("what_changed_quotes", []),
