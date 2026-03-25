@@ -371,7 +371,7 @@ hr { border: none !important; border-top: 1px solid var(--accent-border) !import
 """, unsafe_allow_html=True)
 
 # ─── Constants ────────────────────────────────────────────────────────────────
-MODEL = "claude-opus-4-6"
+MODEL = "claude-sonnet-4-6"
 
 DOMAIN_PROFILES: Dict[str, str] = {
     "AI Search & Distribution": (
@@ -610,76 +610,6 @@ def _rule_based_fallback(policy_text: str, domain: str) -> tuple:
     }
     return step1_data, step2_data
 
-
-
-def run_step1_parsing(client: anthropic.Anthropic, policy_text: str) -> Dict:
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=4096,
-        system=(
-            "You are an expert in regulatory law and platform policy analysis. "
-            "Extract changes and risk factors precisely from the provided text, "
-            "focusing on elements relevant to media companies and AI operators.\n"
-            "Return ONLY a valid JSON object — no preamble, no explanation, no markdown code fences."
-        ),
-        messages=[{
-            "role": "user",
-            "content": (
-                f"Analyze the following Policy/Platform Event text and extract structured data "
-                f"from the perspective of media company intellectual property and copyright management.\n\n"
-                f"[TEXT]\n{policy_text}\n\n"
-                f"Return ONLY the following JSON structure (no extra text whatsoever):\n"
-                f"{{\n"
-                f'  "added_obligations": [{{"item": "...", "severity": "high|medium|low", "description": "..."}}],\n'
-                f'  "removed_rights":    [{{"item": "...", "severity": "high|medium|low", "description": "..."}}],\n'
-                f'  "key_thresholds":    [{{"item": "...", "value": "...", "description": "..."}}],\n'
-                f'  "context_summary":   "2-3 sentence summary of the entire text"\n'
-                f"}}"
-            ),
-        }],
-    )
-    raw = next(b.text for b in response.content if b.type == "text")
-    return _safe_json_parse(raw)
-
-
-def run_step2_impact_mapping(client: anthropic.Anthropic, step1_data: Dict, domain: str) -> Dict:
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=4096,
-        thinking={"type": "adaptive"},
-        system=(
-            "You are a senior business strategy and risk assessment expert for a major media enterprise. "
-            "Evaluate the quantitative, multi-dimensional business impact of regulatory changes. "
-            "Scores are 0–100: 50 is neutral; higher scores indicate greater impact magnitude "
-            "(direction is expressed separately via the 'direction' field).\n"
-            "Return ONLY a valid JSON object — no preamble, no explanation, no markdown code fences. "
-            "All text fields must be in professional business English."
-        ),
-        messages=[{
-            "role": "user",
-            "content": (
-                f"Evaluate the business impact for the '{domain}' domain.\n\n"
-                f"[Domain Profile]\n{DOMAIN_PROFILES[domain]}\n\n"
-                f"[Domain-Specific Risk Calibration]\n{DOMAIN_RISK_FOCUS.get(domain, '')}\n\n"
-                f"[Step 1 Structured Data]\n{json.dumps(step1_data, ensure_ascii=False, indent=2)}\n\n"
-                f"Return ONLY the following JSON structure (no extra text whatsoever):\n"
-                f"{{\n"
-                f'  "scores": {{\n'
-                f'    "IP":      {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}},\n'
-                f'    "Traffic": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}},\n'
-                f'    "Revenue": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}},\n'
-                f'    "Product": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}}\n'
-                f'  }},\n'
-                f'  "overall_risk_level": "critical|high|medium|low",\n'
-                f'  "executive_summary": "...",\n'
-                f'  "key_opportunities": ["..."],\n'
-                f'  "key_threats": ["..."]\n'
-                f"}}"
-            ),
-        }],
-    )
-    raw = next(b.text for b in response.content if b.type == "text")
-    return _safe_json_parse(raw)
 
 
 def _build_draft_context(domain: str, step1_data: Dict, step2_data: Dict) -> str:
@@ -1354,35 +1284,20 @@ def _download_row(label: str, data: bytes, file_name: str, key: str) -> None:
 
 
 def _audit_block(doc_id: str, domain: str = "", step2_data: Optional[Dict] = None, policy_text: str = "") -> None:
-    """Render compact audit-metadata header — contextual data derived from input text & analysis."""
+    """Render compact audit-metadata header — contextual data derived from live analysis."""
     import datetime as _dt
 
-    # ── Grounding Sources & Document ID: keyword-based on input policy text ──
-    _txt = policy_text.upper()
-    if "UK" in _txt or "PARLIAMENT" in _txt:
-        grounding  = "UK Parliament Written Statement (HCWS1416) · Active Partner Contract DB"
-        doc_id     = "REQ-2026-UK-1416"
-    elif "GAIF" in _txt:
-        grounding  = "GAIF Publisher Terms (v3.1) · Active Partner Contract DB"
-        doc_id     = "REQ-2026-GAIF-3100"
-    elif "US" in _txt or "ACT" in _txt:
-        grounding  = "US AI Search & Attribution Act Draft · Active Partner Contract DB"
-        doc_id     = "REQ-2026-US-0900"
-    elif "EU" in _txt or "DMA" in _txt:
-        grounding  = "EU DMA Draft Guidance · Active Partner Contract DB"
-        doc_id     = "REQ-2026-EU-0400"
-    else:
-        grounding  = "External Policy Update · Active Partner Contract DB"
-        doc_id     = "REQ-2026-GEN-0001"
+    # ── Grounding Sources: domain-derived, not keyword-dependent ──────────────
+    grounding = f"{domain} Policy Source · Active Partner Contract DB" if domain else "External Policy Source · Active Partner Contract DB"
 
-    # ── Compliance Status: parse date from doc_id → add 2 calendar days ────────
+    # ── Compliance Status: derive due date from doc_id timestamp segment ──────
     try:
         date_part = doc_id.split("-")[1]          # e.g. "20260318"
         req_date  = _dt.datetime.strptime(date_part, "%Y%m%d")
         due_date  = req_date + _dt.timedelta(days=2)
-        due_str   = due_date.strftime("%b %-d, 12:00 JST")   # e.g. "Mar 20, 12:00 JST"
+        due_str   = due_date.strftime("%b %-d, 12:00 JST")
     except Exception:
-        due_str = "Mar 20, 12:00 JST"
+        due_str = (_dt.datetime.now() + _dt.timedelta(days=2)).strftime("%b %-d, 12:00 JST")
     compliance_html = f"🟡 Pending Legal Approval &nbsp;<span style='color:#6B6560'>(Due: {due_str})</span>"
 
     # ── Traceability: derive confidence from avg axis score ──────────────────
@@ -1441,8 +1356,8 @@ def _audit_block(doc_id: str, domain: str = "", step2_data: Optional[Dict] = Non
 
 
 def _policy_memory_block(domain: str, pmg_hits: Optional[List[tuple]] = None) -> None:
-    """Render a mock Policy Memory Graph — historical red-line match panel.
-    pmg_hits, when provided by the Scenario Router, overrides the domain-keyed defaults.
+    """Render Policy Memory Graph — historical red-line match panel.
+    pmg_hits from Claude AI analysis overrides the domain-keyed institutional memory defaults.
     """
     if pmg_hits is None:
         _fallback: Dict[str, List[tuple]] = {
@@ -1722,7 +1637,7 @@ def _governance_panel(tab_key: str, risk_raw: str = "high", step2_data: Optional
               </div>
               <div style="font-family:'Montserrat',sans-serif;color:#6B6560;font-size:0.42rem;
                           letter-spacing:0.08em;margin-top:8px">
-                claude-opus-4-6 · adaptive thinking
+                claude-sonnet-4-6 · adaptive thinking
               </div>
             </div>""", unsafe_allow_html=True)
         with oc2:
@@ -2006,7 +1921,7 @@ def _format_slack_export(board_memo: str, domain: str, risk_label: str) -> str:
         f"{snippet}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"_Actions required — see full report in the enterprise dashboard._\n"
-        f"_Policy Response · claude-opus-4-6_"
+        f"_Policy Response · claude-sonnet-4-6_"
     )
 
 
