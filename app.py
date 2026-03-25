@@ -561,6 +561,16 @@ def analyze_policy_with_claude(
             "Tone must match the document_type: advisory and strategic for non-binding texts, "
             "operational and urgent only for binding obligations with clear effective dates.\n\n"
 
+            "RULE 5 — COMPREHENSIVE AND DETAILED REASONING (non-negotiable): "
+            "Every text field — agent_debate_messages, board_memo, business_exposure_memo, "
+            "negotiation_brief, what_changed_brief, and executive_summary — MUST be written "
+            "in full, professional, long-form prose. Do NOT summarize, truncate, or abbreviate. "
+            "Each agent's message in agent_debate_messages must be a substantive paragraph "
+            "of at least 3–5 sentences with specific references to extracted obligations or changes. "
+            "Board memo and business exposure memo must use numbered section headings and cover "
+            "every sub-point in depth. This is an enterprise intelligence product — shallow or "
+            "concise outputs are explicitly prohibited. Take the time needed to reason thoroughly.\n\n"
+
             "Return ONLY a valid JSON object — no preamble, no explanation, no markdown code fences. "
             "All text fields must be in professional business English."
         ),
@@ -2451,19 +2461,22 @@ def main() -> None:
         time.sleep(0.3)
 
         with st.status(
-            "◆  Autonomous Response Pipeline — Running...",
+            "◆  Deep-Parsing & Multi-Agent Deliberation in Progress...",
             expanded=True,
         ) as pipeline_status:
             try:
                 # ── Step I: Extract substantive changes and map business impact ──
-                _prog.progress(6, text="Step I · Claude Sonnet 4.6 — Parsing policy and mapping business impact...")
+                _prog.progress(6, text="Step I · Claude Sonnet 4.6 — Deep-parsing policy · Cross-referencing 340+ Policy Memory Graph entries...")
                 st.write(
-                    "**Step I — Substantive Change Analysis & Impact Mapping**  \n"
-                    "Claude Sonnet 4.6 is deep-parsing source text to isolate meaning-level changes — "
-                    "added obligations, removed rights, penalty thresholds, and effective-date triggers. "
-                    "Simultaneously cross-referencing against Policy Memory Graph: "
-                    "340+ archived partner contracts, Board red-lines, and prior negotiation records. "
-                    "Scoring across 4 axes: IP · Traffic · Revenue · Product..."
+                    "**Step I — Deep-Parsing & Multi-Agent Deliberation in Progress...**  \n"
+                    "Claude Sonnet 4.6 is fully utilizing its reasoning capacity to cross-reference "
+                    "the 340+ Policy Memory Graph entries against the new regulation, isolating "
+                    "meaning-level changes — added obligations, removed rights, penalty thresholds, "
+                    "and effective-date triggers. The Virtual Expert Committee (Legal, Business, Product) "
+                    "is currently debating complex legal and business trade-offs in comprehensive, "
+                    "long-form reasoning.  \n\n"
+                    "⏱  **Expected reasoning time: 60–90 seconds.** "
+                    "Do not close or sleep the window — deep enterprise-grade analysis is running."
                 )
                 time.sleep(0.3)
 
@@ -2538,18 +2551,18 @@ def main() -> None:
                 time.sleep(0.3)
 
                 pipeline_status.update(
-                    label="◆  Step II — Multi-Agent Deliberation — Running...",
+                    label="◆  Step II — Virtual Expert Committee Deliberation — Running...",
                     state="running",
                 )
-                _prog.progress(54, text="Step II · Claude Sonnet 4.6 — Multi-Agent Deliberation — Convening virtual expert committee...")
+                _prog.progress(54, text="Step II · Claude Sonnet 4.6 — Virtual Expert Committee formulating final strategic stance...")
                 st.write(
-                    "**Step II — Multi-Agent Deliberation**  \n"
-                    "Virtual Expert Committee (Legal, Business, Product) is currently debating trade-offs "
-                    "and formulating the final strategic stance based on extracted changes. "
-                    "Agents are grounded exclusively in Step I substantive_changes — no hallucinated "
-                    "obligations or timelines will be introduced. "
-                    "Convening Legal Counsel, Business Strategy, Product Leadership, "
-                    "and Executive Alignment for structured adversarial review..."
+                    "**Step II — Virtual Expert Committee Deliberation**  \n"
+                    "Legal Counsel, Business Strategy, Product Leadership, and Executive Alignment agents "
+                    "are producing comprehensive, long-form adversarial debate grounded exclusively in "
+                    "the extracted substantive changes from Step I. "
+                    "Each agent is writing substantive paragraphs — not bullet summaries — "
+                    "covering specific obligations, revenue exposure, and strategic positioning.  \n\n"
+                    "⏱  Generating expert-level deliberation — this depth of reasoning takes time."
                 )
                 time.sleep(0.4)
 
