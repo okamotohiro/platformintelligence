@@ -2406,8 +2406,10 @@ def _uncertainty_alert(step2_data: Dict, domain: str) -> None:
     </div>""", unsafe_allow_html=True)
 
 
-def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
+def _governance_panel(tab_key: str, risk_raw: str = "high", step2_data: Optional[Dict] = None) -> None:
     """Enterprise governance & audit control panel — Human-in-the-Loop."""
+    if step2_data is None:
+        step2_data = {}
     st.markdown(f"""
     <div style="border-top:1px solid rgba(10,186,181,0.15);margin:3rem 0 1.6rem;padding-top:1.6rem">
       <div style="font-family:'Montserrat',sans-serif;color:{_ACCENT};font-size:0.58rem;
@@ -2443,11 +2445,11 @@ def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
 
     with st.form(key=f"gov_{tab_key}"):
 
-        # ── ① AI Strategic Stance Override ────────────────────────────────────
+        # ── ① Executive Review & Stance Adjustment ────────────────────────────
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.56rem;
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:12px">
-          ①&nbsp; AI STRATEGIC STANCE OVERRIDE
+          ①&nbsp; EXECUTIVE REVIEW &amp; STANCE ADJUSTMENT
         </div>""", unsafe_allow_html=True)
 
         oc1, oc2 = st.columns([1.4, 2.4])
@@ -2475,7 +2477,7 @@ def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
             </div>""", unsafe_allow_html=True)
         with oc2:
             st.selectbox(
-                "Strategic Stance Override (Human-in-the-Loop)",
+                "Final Strategic Decision (Human-in-the-Loop)",
                 options=override_options,
                 key=f"override_{tab_key}",
             )
@@ -2492,16 +2494,16 @@ def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
 
         st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
 
-        # ── ② Cross-functional Routing ────────────────────────────────────────
+        # ── ② Automated Workflow Execution ────────────────────────────────────
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.56rem;
                     letter-spacing:0.22em;text-transform:uppercase;
                     margin:18px 0 10px;padding-top:14px;
                     border-top:1px solid rgba(10,186,181,0.08)">
-          ②&nbsp; CROSS-FUNCTIONAL ROUTING — WORKFLOW DESTINATIONS
+          ②&nbsp; AUTOMATED WORKFLOW EXECUTION
         </div>""", unsafe_allow_html=True)
 
-        rc1, rc2, rc3 = st.columns(3)
+        rc1, rc2, rc3, rc4 = st.columns(4)
         with rc1:
             st.checkbox(
                 "Push Product Checklist to Jira  (Epic)",
@@ -2517,6 +2519,11 @@ def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
                 "Generate Policy Response Draft in Google Docs",
                 value=True, key=f"r_docs_{tab_key}",
             )
+        with rc4:
+            st.checkbox(
+                "Update Policy Memory Graph with this approved decision (Data Flywheel)",
+                value=True, key=f"r_pmg_{tab_key}",
+            )
 
         st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
 
@@ -2528,13 +2535,6 @@ def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
                     border-top:1px solid rgba(10,186,181,0.08)">
           ③&nbsp; AUDIT SIGN-OFF &amp; EXECUTION
         </div>""", unsafe_allow_html=True)
-
-        st.checkbox(
-            "☑ Update Policy Memory Graph with this approved decision and human context"
-            " to improve future inference",
-            value=True,
-            key=f"r_pmg_{tab_key}",
-        )
 
         st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
 
@@ -3746,7 +3746,7 @@ def main() -> None:
             key="dl_tab1",
         )
 
-        _governance_panel("tab1", _gov_risk_raw)
+        _governance_panel("tab1", _gov_risk_raw, step2_data)
 
     # ── Tab 2: Business Exposure ──────────────────────────────────────────────
     with tab2:
@@ -3778,7 +3778,7 @@ def main() -> None:
             key="dl_tab2",
         )
 
-        _governance_panel("tab2", _gov_risk_raw)
+        _governance_panel("tab2", _gov_risk_raw, step2_data)
 
     # ── Tab 3: Protect / Promote / License Map ────────────────────────────────
     with tab3:
@@ -3849,7 +3849,7 @@ def main() -> None:
             </div>""", unsafe_allow_html=True)
 
         _policy_memory_block(domain, pmg_hits)
-        _governance_panel("tab3", _gov_risk_raw)
+        _governance_panel("tab3", _gov_risk_raw, step2_data)
 
     # ── Tab 4: Negotiation Brief ──────────────────────────────────────────────
     with tab4:
@@ -3881,7 +3881,7 @@ def main() -> None:
             key="dl_tab4",
         )
 
-        _governance_panel("tab4", _gov_risk_raw)
+        _governance_panel("tab4", _gov_risk_raw, step2_data)
 
     # ── Tab 5: Product / Legal Checklist ─────────────────────────────────────
     with tab5:
@@ -3908,7 +3908,7 @@ def main() -> None:
         else:
             st.caption("No checklist items generated.")
 
-        _governance_panel("tab5", _gov_risk_raw)
+        _governance_panel("tab5", _gov_risk_raw, step2_data)
 
         # ── Jira Export ───────────────────────────────────────────────────────
         if checklist:
@@ -3965,7 +3965,7 @@ def main() -> None:
             key="dl_tab6",
         )
 
-        _governance_panel("tab6", _gov_risk_raw)
+        _governance_panel("tab6", _gov_risk_raw, step2_data)
 
         # ── Slack Export ──────────────────────────────────────────────────────
         st.markdown(f"""
