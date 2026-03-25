@@ -10,6 +10,7 @@ import re
 import os
 import io
 import time
+import traceback
 from typing import Optional, Dict, List
 
 import plotly.graph_objects as go
@@ -445,15 +446,28 @@ STRATEGIST_SYSTEM = (
 
 # ─── Pipeline Functions ───────────────────────────────────────────────────────
 def _safe_json_parse(text: str) -> Dict:
-    """Extract and parse JSON from LLM response text. Returns {} on any failure."""
+    """Extract and parse JSON from LLM response text.
+
+    Extraction order:
+    1. Fenced code block  ```json … ```
+    2. First { … last }  (re.DOTALL greedy extraction)
+    3. Bare json.loads on stripped text
+
+    Returns {} on any failure — callers that need to distinguish empty-from-error
+    should check `not result` after calling this function.
+    """
+    if not text or not text.strip():
+        return {}
     try:
-        match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
-        if match:
-            return json.loads(match.group(1).strip())
-        start = text.find("{")
-        end = text.rfind("}")
-        if start != -1 and end != -1 and end > start:
-            return json.loads(text[start : end + 1])
+        # 1. Fenced block
+        fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
+        if fence:
+            return json.loads(fence.group(1).strip())
+        # 2. Greedy first-{ last-} extraction (handles preamble / postamble prose)
+        m = re.search(r"\{.*\}", text, re.DOTALL)
+        if m:
+            return json.loads(m.group(0))
+        # 3. Fallback: bare parse
         return json.loads(text.strip())
     except Exception:
         return {}
@@ -484,7 +498,8 @@ def analyze_policy_with_claude(
     domain_focus   = DOMAIN_RISK_FOCUS.get(domain, "")
     snippet        = policy_text[:3500]
 
-    response = client.messages.create(
+    try:
+      response = client.messages.create(
         model=MODEL,
         max_tokens=16000,
         thinking={"type": "adaptive"},
@@ -604,9 +619,32 @@ def analyze_policy_with_claude(
                 f"}}"
             ),
         }],
-    )
-    raw = next(b.text for b in response.content if b.type == "text")
-    return _safe_json_parse(raw)
+      )
+    except anthropic.APIError as api_err:
+        raise RuntimeError(
+            f"[Anthropic API Error — {type(api_err).__name__}] {api_err}"
+        ) from api_err
+
+    # ── Extract the text block (skip thinking blocks) ──────────────────────────
+    text_blocks = [b for b in response.content if b.type == "text"]
+    if not text_blocks:
+        block_types = [b.type for b in response.content]
+        raise ValueError(
+            f"Claude returned no text block. "
+            f"Block types received: {block_types}. "
+            f"This usually means the model ran out of tokens or only returned thinking output."
+        )
+    raw = text_blocks[0].text
+
+    # ── Parse JSON ─────────────────────────────────────────────────────────────
+    result = _safe_json_parse(raw)
+    if not result:
+        preview = raw[:600].replace("\n", " ")
+        raise ValueError(
+            f"JSON extraction failed — Claude did not return parseable JSON.\n"
+            f"Raw response preview (first 600 chars): {preview}"
+        )
+    return result
 
 
 def _rule_based_fallback(policy_text: str, domain: str) -> Dict:
@@ -2477,6 +2515,10 @@ def main() -> None:
                 )
                 time.sleep(0.3)
 
+                pipeline_status.update(
+                    label="◆  Step II — Multi-Agent Deliberation — Running...",
+                    state="running",
+                )
                 _prog.progress(54, text="Step II · Claude Sonnet 4.6 — Multi-Agent Deliberation — Convening virtual expert committee...")
                 st.write(
                     "**Step II — Multi-Agent Deliberation**  \n"
@@ -2506,6 +2548,10 @@ def main() -> None:
                 )
                 time.sleep(0.3)
 
+                pipeline_status.update(
+                    label="◆  Step III — Agentic Execution — Running...",
+                    state="running",
+                )
                 _prog.progress(72, text="Step III · Agentic Execution — Generating 6 deliverables...")
                 st.write(
                     "**Step III — Agentic Execution & Deliverable Synthesis**  \n"
@@ -2543,24 +2589,38 @@ def main() -> None:
                     expanded=False,
                 )
 
-            except anthropic.AuthenticationError:
+            except anthropic.AuthenticationError as exc:
                 _prog.progress(100, text="Pipeline failed.")
                 pipeline_status.update(
                     label="◆  Pipeline Failed — Authentication Error", state="error"
                 )
-                st.error("Invalid API key. Please check your credentials.")
+                st.error(
+                    f"**Authentication Error** — Invalid API key. Please check your credentials.\n\n"
+                    f"`{exc}`"
+                )
+                with st.expander("🔍 Full error details", expanded=False):
+                    st.code(traceback.format_exc(), language="python")
                 return
-            except anthropic.RateLimitError:
+            except anthropic.RateLimitError as exc:
                 _prog.progress(100, text="Pipeline failed.")
                 pipeline_status.update(
                     label="◆  Pipeline Failed — Rate Limit", state="error"
                 )
-                st.error("Rate limit exceeded. Please wait a moment and try again.")
+                st.error(
+                    f"**Rate Limit Exceeded** — Please wait a moment and try again.\n\n"
+                    f"`{exc}`"
+                )
+                with st.expander("🔍 Full error details", expanded=False):
+                    st.code(traceback.format_exc(), language="python")
                 return
             except Exception as exc:
                 _prog.progress(100, text="Pipeline failed.")
                 pipeline_status.update(label="◆  Pipeline Failed", state="error")
-                st.error(f"Pipeline Error: {exc}")
+                st.error(
+                    f"**Pipeline Error — {type(exc).__name__}**\n\n{exc}"
+                )
+                with st.expander("🔍 Full error details (stack trace)", expanded=True):
+                    st.code(traceback.format_exc(), language="python")
                 return
 
         elapsed = round(time.time() - pipeline_start, 1)
