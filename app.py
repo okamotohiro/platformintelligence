@@ -443,6 +443,818 @@ STRATEGIST_SYSTEM = (
     "All output must be in professional business English."
 )
 
+# ─── Scenario Router ──────────────────────────────────────────────────────────
+def get_scenario_data(policy_text: str) -> Optional[Dict]:
+    """Return complete mock pipeline data keyed to input text keywords.
+    Returns None when no keyword matches (fall through to live LLM pipeline).
+    """
+    txt = policy_text.upper()
+
+    # ── GAIF: Zero-click threat scenario ───────────────────────────────────────
+    if "GAIF" in txt:
+        domain = "AI Search & Zero-Click"
+        step1 = {
+            "added_obligations": [
+                {"item": "Mandatory Zero-click AI Answers format",
+                 "severity": "high",
+                 "description": "All search results must be displayed in GAIF's inline AI answer format without optional redirect links."},
+                {"item": "Compulsory indexing opt-in",
+                 "severity": "high",
+                 "description": "Publishers must affirmatively opt-in to GAIF's AI training pipeline or lose search visibility entirely."},
+                {"item": "Revenue share cap at 8%",
+                 "severity": "medium",
+                 "description": "GAIF v3.1 imposes a unilateral cap of 8% revenue share for attributed AI summaries."},
+            ],
+            "removed_rights": [
+                {"item": "Traffic attribution guarantee",
+                 "severity": "high",
+                 "description": "Previous terms included a minimum referral traffic baseline; removed entirely in v3.1."},
+                {"item": "Source link prominence requirement",
+                 "severity": "high",
+                 "description": "Obligation to display publisher source links above the fold has been eliminated."},
+            ],
+            "key_thresholds": [
+                {"item": "Zero-click AI Answer word limit", "value": "40 words",
+                 "description": "Summaries exceeding 40 words require separate licensing — previously uncapped."},
+                {"item": "Opt-in deadline", "value": "90 days",
+                 "description": "Publishers must opt-in within 90 days or face automatic de-indexing."},
+            ],
+            "context_summary": (
+                "GAIF Publisher Ecosystem Terms v3.1 consolidates AI answers inline, eliminating the "
+                "traffic referral baseline that underpinned Nikkei's search-driven subscription model. "
+                "The update forces binary indexing opt-ins and caps revenue share, representing a "
+                "critical structural shift in the publisher-platform relationship."
+            ),
+        }
+        step2 = {
+            "scores": {
+                "IP":      {"score": 75, "direction": "threat",
+                            "evidence": "Compulsory opt-in to AI training pipeline undermines copyright ownership of editorial content.",
+                            "priority_actions": ["Invoke Clause 4.2 opt-out right immediately", "Escalate to outside IP counsel"]},
+                "Traffic": {"score": 98, "direction": "threat",
+                            "evidence": "Removal of referral traffic guarantee threatens 85%+ of search-driven subscriber acquisition.",
+                            "priority_actions": ["Activate Article 7(c) termination clause", "Begin direct audience migration strategy"]},
+                "Revenue": {"score": 90, "direction": "threat",
+                            "evidence": "8% revenue share cap represents a 60%+ reduction from current contractual floor.",
+                            "priority_actions": ["Reject v3.1 terms pending renegotiation", "Prepare alternative monetisation roadmap"]},
+                "Product": {"score": 65, "direction": "threat",
+                            "evidence": "Mandatory inline format requires product re-architecture of content delivery APIs.",
+                            "priority_actions": ["Audit current API endpoints", "Estimate 6-week engineering sprint for compliance stack"]},
+            },
+            "overall_risk_level": "critical",
+            "stance_label": "PROTECT & WAIT",
+            "executive_summary": (
+                "GAIF v3.1 poses a CRITICAL existential threat to Nikkei's search-driven revenue model. "
+                "The elimination of traffic attribution and imposition of a revenue share cap demands "
+                "immediate IP defense. Strategic stance: PROTECT & WAIT — reject terms, preserve optionality, "
+                "and leverage collective publisher coalition before re-engagement."
+            ),
+            "key_opportunities": [
+                "Lead publisher coalition counter-proposal to GAIF Governance Board",
+                "Accelerate direct newsletter and app subscriber conversion to reduce search dependency",
+                "Use termination threat as leverage to reopen bilateral licensing negotiation",
+            ],
+            "key_threats": [
+                "98/100 traffic exposure if de-indexed — catastrophic subscriber acquisition impact",
+                "Precedent risk: accepting v3.1 terms sets industry baseline for all future AI platform deals",
+                "90-day opt-in deadline creates artificial urgency for an unfavourable decision",
+            ],
+        }
+        step3 = {
+            "what_changed_brief": (
+                "BEFORE: Publishers received guaranteed traffic attribution and negotiated revenue share "
+                "under GAIF v3.0. Source links appeared above the fold; referral traffic was contractually protected.\n\n"
+                "AFTER: GAIF v3.1 consolidates all answers as inline Zero-click AI Answers, hides source links, "
+                "removes the referral traffic baseline, caps revenue share at 8%, and forces a binary indexing "
+                "opt-in under a 90-day deadline. This is a unilateral restructuring of the publisher-platform contract."
+            ),
+            "what_changed_quotes": [
+                "Mandatory Zero-click AI Answers format without attribution.",
+                "Publishers must affirmatively opt-in to GAIF's AI training pipeline or lose search visibility.",
+                "Revenue share cap at 8% imposed unilaterally effective 90 days from notice.",
+            ],
+            "overall_risk": "CRITICAL",
+            "business_exposure_memo": (
+                "(1) Traffic & Audience Reach: Search-driven traffic accounts for an estimated 85% of new "
+                "subscriber acquisition. Elimination of the referral baseline (Traffic score: 98/100) is the "
+                "single largest near-term revenue threat in the company's digital history.\n\n"
+                "(2) Revenue Streams: The unilateral 8% revenue share cap reduces licensing revenue by "
+                "approximately 60% relative to current contractual floors. Combined with traffic loss, "
+                "total digital revenue exposure is estimated at ¥4.2–6.8B annually.\n\n"
+                "(3) IP & Copyright: The compulsory AI training opt-in (IP score: 75/100) requires "
+                "Nikkei to grant GAIF a broad sublicensing right over all indexed editorial content — "
+                "directly conflicting with our 2024 partner contract red-lines (Clause 4.2).\n\n"
+                "(4) Product & Platform: Mandatory inline format requires API re-architecture. "
+                "Engineering estimates 6 weeks minimum for compliance stack delivery.\n\n"
+                "(5) Brand & Competitive Standing: Accepting terms signals capitulation to platform "
+                "consolidation and weakens our position in all future AI licensing negotiations."
+            ),
+            "business_exposure_quotes": [
+                "Zero-click AI Answers format consolidates answers inline, eliminating source link prominence.",
+                "Revenue share cap at 8% imposed unilaterally.",
+                "Publishers must opt-in within 90 days or face automatic de-indexing.",
+            ],
+            "negotiation_brief": (
+                "(1) Non-Negotiable Conditions: Restoration of minimum referral traffic baseline (≥40% of current "
+                "organic search referrals). Prohibition on AI training use of editorial content without separate "
+                "written consent and compensation. Revenue share floor at current contractual rate.\n\n"
+                "(2) Items Requiring Written Confirmation: Any opt-in to AI training pipeline requires CEO "
+                "and Board sign-off. Revenue share changes require 180-day advance notice under Clause 8.1.\n\n"
+                "(3) Strongest Leverage Points: Activation of Article 7(c) hard termination trigger "
+                "(>40-word Zero-click AI Answers without redirect). Publisher coalition coordination — "
+                "GAIF cannot afford mass de-indexing of premium content publishers simultaneously.\n\n"
+                "(4) Acceptable Compromise Zones: Phased opt-in timeline extension to 180 days. "
+                "Tiered revenue share by content category.\n\n"
+                "(5) Red Lines: Under no circumstances accept v3.1 terms as presented. "
+                "Do not waive Article 7(c) termination rights."
+            ),
+            "negotiation_quotes": [
+                "Any Zero-click AI Answers rendering of more than 40 words triggers hard termination clause.",
+                "Revenue share cap at 8% is a unilateral breach of existing contractual floor.",
+                "Opt-in deadline of 90 days is commercially unreasonable.",
+            ],
+            "board_memo": (
+                "WHAT HAPPENED: GAIF published v3.1 Publisher Ecosystem Terms on [DATE], eliminating "
+                "traffic referral guarantees and capping revenue share at 8%. This is the most significant "
+                "adverse platform policy change since Google's 2014 algorithm update.\n\n"
+                "FINANCIAL EXPOSURE: ¥4.2–6.8B annual digital revenue at risk. Search-driven subscriber "
+                "acquisition (85% of new subscriptions) threatened within 90 days if terms are accepted.\n\n"
+                "DECISIONS REQUIRED: (1) Authorise Legal to invoke Article 7(c) termination notice. "
+                "(2) Approve publisher coalition participation. (3) Reject v3.1 terms formally by [DATE+30].\n\n"
+                "RECOMMENDED ACTIONS: Legal (Owner: GC) — Issue formal objection letter within 7 days. "
+                "Business Dev (Owner: CDO) — Convene publisher coalition within 14 days. "
+                "Product (Owner: CPO) — Accelerate direct channel migration sprint.\n\n"
+                "SCENARIOS: Best case — GAIF renegotiates under coalition pressure, restores traffic baseline. "
+                "Base case — 6-month negotiation standoff; limited traffic degradation. "
+                "Worst case — GAIF enforces de-indexing; ¥6.8B revenue impact materialises within FY2026."
+            ),
+            "board_memo_quotes": [
+                "GAIF v3.1 eliminates the traffic referral baseline without compensation.",
+                "Revenue share cap at 8% represents a unilateral contract modification.",
+                "90-day opt-in deadline compresses board decision time unacceptably.",
+            ],
+            "product_checklist": [
+                "[CONSENT MECHANISM] Legal & Product — Design explicit opt-out flow for GAIF AI training "
+                "pipeline. Trigger: before any v3.1 opt-in submission. Capture: user ID, timestamp, "
+                "version of terms declined, legal basis. Segment: all content admin users.",
+                "[CONSENT UI] UX Team — Implement full-screen gate modal (not banner) before opt-in "
+                "confirmation. Must include plain-language summary, link to Article 7(c), and 'Decline & "
+                "Request Legal Review' CTA. No pre-checked boxes (dark pattern prohibition).",
+                "[LEGAL DISCLOSURE] Communications — Send board notification within 48 hours of formal "
+                "objection letter dispatch. Publish internal FAQ to editorial and product teams within 7 "
+                "days. Log all disclosure timestamps in compliance record.",
+                "[FEATURE CHANGE] Engineering — Freeze all GAIF API integration updates pending "
+                "renegotiation outcome. Add monitoring alert for de-indexing signals on top 500 articles. "
+                "Deadline: implement within 5 business days.",
+                "[AUDIT LOGGING] Data Engineering — Log all GAIF API requests, response codes, and "
+                "content delivery events. Retention: 7 years (litigation hold). Format: structured JSON "
+                "with article ID, request timestamp, and attribution status.",
+            ],
+        }
+        debate = [
+            {"agent": "⚖️ Legal Agent", "color": "#8B2635",
+             "message": (
+                 "[🎯 Policy Memory Graph Match: Article 7(c) — 2024 Google SGE pre-negotiation memo] "
+                 "Traffic exposure at 98/100 — CRITICAL. GAIF v3.1 directly violates the 'minimum traffic "
+                 "referral baseline' red-line confirmed by Legal Committee in 2023. Article 7(c) hard "
+                 "termination trigger is activated by any Zero-click AI Answers exceeding 40 words without "
+                 "redirect. I am invoking standard outside-counsel escalation protocol. "
+                 "Do not execute any opt-in under these terms."
+             )},
+            {"agent": "💰 Business Agent", "color": "#A8892A",
+             "message": (
+                 "Traffic impact at 98/100 is catastrophic — I concur with Legal on rejection. "
+                 "However, the coalition play is our strongest card. GAIF cannot afford to de-index "
+                 "Nikkei while simultaneously facing resistance from FT, NYT, and AP. "
+                 "Revenue recovery path: accelerate direct channel conversion — newsletter and app "
+                 "subscribers can offset 30–40% of search-driven acquisition within 18 months."
+             )},
+            {"agent": "🧩 Product Agent", "color": "#1A6B3C",
+             "message": (
+                 "Product constraint at 65/100. Freezing all GAIF API integration work pending "
+                 "renegotiation. Direct channel migration sprint is feasible — 6 weeks for consent "
+                 "gate, attribution dashboard, and de-indexing alert system. "
+                 "Recommend CPO sign-off on sprint authorisation within 48 hours."
+             )},
+            {"agent": "🏛️ Executive Alignment", "color": "#0ABAB5", "final": True,
+             "message": (
+                 "Conflict Resolved. Unified position: PROTECT & WAIT. "
+                 "Legal to issue formal Article 7(c) objection within 7 days. "
+                 "Business Dev to convene publisher coalition within 14 days. "
+                 "Product to freeze GAIF integrations and launch direct channel sprint. "
+                 "Board notification required within 48 hours. No opt-in authorised under current terms."
+             )},
+        ]
+        pmg_hits = [
+            ("Article 7(c)", "2024 Google SGE pre-negotiation memo",
+             "Any Zero-click AI Answers rendering of more than 40 words from a Nikkei article without a redirect "
+             "was categorised as a hard termination trigger — binding precedent confirmed by Legal Committee."),
+            ("Clause 11", "2023 Bing / Microsoft partner contract review",
+             "Traffic attribution model changes require 90-day advance notice and board sign-off. "
+             "Retroactive application of algorithm changes was explicitly rejected — directly applicable to GAIF v3.1."),
+        ]
+
+    # ── US Attribution Act scenario ─────────────────────────────────────────────
+    elif "US" in txt or "ACT" in txt:
+        domain = "AI Licensing & Copyright"
+        step1 = {
+            "added_obligations": [
+                {"item": "Above-the-fold attribution mandate",
+                 "severity": "high",
+                 "description": "AI summaries must display prominent, above-the-fold hyperlinks to source publishers — non-compliance triggers statutory damages."},
+                {"item": "Statutory damages per un-attributed query",
+                 "severity": "high",
+                 "description": "Each Zero-click AI Answer lacking required attribution is an independent infringement event subject to per-query damages."},
+                {"item": "Licensing disclosure requirement",
+                 "severity": "medium",
+                 "description": "AI operators must publicly disclose all content licensing agreements used to train or ground AI summary systems."},
+            ],
+            "removed_rights": [
+                {"item": "Ambiguous fair use defence for AI summaries",
+                 "severity": "high",
+                 "description": "The Act explicitly forecloses fair use as a defence for AI-generated summaries exceeding 50 words without attribution."},
+            ],
+            "key_thresholds": [
+                {"item": "Attribution trigger word count", "value": "50 words",
+                 "description": "AI summaries exceeding 50 words without prominent attribution presumed to be copyright infringement."},
+                {"item": "Statutory damages floor", "value": "$500 per query",
+                 "description": "Minimum $500 per un-attributed search query; up to $150,000 for wilful infringement."},
+            ],
+            "context_summary": (
+                "The US AI Search & Attribution Act (Draft) establishes a strict liability framework "
+                "for AI-generated summaries, presuming copyright infringement for Zero-click AI Answers "
+                "lacking prominent above-the-fold attribution. Statutory damages create significant "
+                "leverage for publishers to enforce licensing floors against AI operators."
+            ),
+        }
+        step2 = {
+            "scores": {
+                "IP":      {"score": 92, "direction": "opportunity",
+                            "evidence": "Strict liability framework and statutory damages give publishers maximum IP enforcement leverage.",
+                            "priority_actions": ["File preemptive licensing demand with all US AI operators within 30 days", "Engage US Publisher Coalition to coordinate enforcement strategy"]},
+                "Traffic": {"score": 60, "direction": "threat",
+                            "evidence": "Attribution mandate may reduce AI operator willingness to surface Nikkei content, reducing referral traffic short-term.",
+                            "priority_actions": ["Monitor referral traffic impact over 90-day observation window", "Negotiate traffic guarantee as part of licensing settlement"]},
+                "Revenue": {"score": 85, "direction": "opportunity",
+                            "evidence": "Statutory damages floor of $500/query creates powerful negotiating baseline for licensing fee floors.",
+                            "priority_actions": ["Quantify un-attributed query volume to establish damages claim", "Prepare licensing term sheet with statutory-backed floor rates"]},
+                "Product": {"score": 50, "direction": "neutral",
+                            "evidence": "Attribution display requirements are product-implementable but require API changes to query routing.",
+                            "priority_actions": ["Audit current AI operator API integrations for attribution compliance", "Design attribution tracking dashboard for licensing audit trail"]},
+            },
+            "overall_risk_level": "high",
+            "stance_label": "LICENSE & PROMOTE",
+            "executive_summary": (
+                "The US AI Search & Attribution Act is a major strategic opportunity for Nikkei. "
+                "IP leverage reaches 92/100 as statutory damages establish a legally-backed licensing floor. "
+                "Strategic stance: LICENSE & PROMOTE — aggressively pursue licensing agreements with all "
+                "US AI operators while the regulatory window provides maximum enforcement leverage."
+            ),
+            "key_opportunities": [
+                "92/100 IP leverage — statutory damages enable aggressive licensing enforcement against all US AI operators",
+                "Aligns perfectly with US Publisher Coalition lobbying strategy (Memo #2025-A)",
+                "First-mover licensing agreements lock in revenue floors before industry-wide settlement",
+            ],
+            "key_threats": [
+                "AI operators may reduce Zero-click AI Answers coverage of Nikkei content to limit liability — short-term traffic impact",
+                "Ambiguous territorial scope: unclear whether non-US AI deployments are covered",
+                "60/100 traffic risk if AI operators implement conservative content avoidance strategy",
+            ],
+        }
+        step3 = {
+            "what_changed_brief": (
+                "BEFORE: Ambiguous fair use doctrine allowed AI operators to generate summaries of Nikkei "
+                "articles without attribution or compensation, with limited legal recourse for publishers.\n\n"
+                "AFTER: The US AI Search & Attribution Act presumes copyright infringement for Zero-click AI Answers "
+                "lacking prominent above-the-fold attribution. Statutory damages of $500+ per query create "
+                "a legally-backed licensing floor. AI operators must publicly disclose all content licensing "
+                "agreements — enabling systematic enforcement."
+            ),
+            "what_changed_quotes": [
+                "Strict above-the-fold attribution mandate and statutory damages for un-attributed queries.",
+                "AI summaries must display prominent, above-the-fold hyperlinks to source publishers.",
+                "Each Zero-click AI Answer lacking required attribution is an independent infringement event.",
+            ],
+            "overall_risk": "HIGH",
+            "business_exposure_memo": (
+                "(1) Traffic & Audience Reach: Short-term referral traffic risk (60/100) as AI operators "
+                "adjust coverage to manage attribution compliance costs. Offset by direct licensing revenue.\n\n"
+                "(2) Revenue Streams: 85/100 revenue opportunity — statutory damages floor enables "
+                "aggressive licensing fee setting. Industry modelling suggests ¥2.1–3.4B annual licensing "
+                "revenue achievable across US AI operator base.\n\n"
+                "(3) IP & Copyright: 92/100 IP leverage — strongest regulatory position for publishers "
+                "in the AI era. Nikkei's US content library positions us as a tier-1 licensor.\n\n"
+                "(4) Product & Platform: Attribution tracking infrastructure required. Engineering "
+                "estimates 4 weeks for compliance dashboard and API audit tooling.\n\n"
+                "(5) Brand & Competitive Standing: Early licensing leadership reinforces Nikkei as the "
+                "premium AI-era content partner — differentiated from commoditised news aggregators."
+            ),
+            "business_exposure_quotes": [
+                "Statutory damages of $500 per un-attributed query establish legally-backed licensing floor.",
+                "AI operators must publicly disclose all content licensing agreements.",
+                "Presumptive copyright infringement for Zero-click AI Answers exceeding 50 words without attribution.",
+            ],
+            "negotiation_brief": (
+                "(1) Non-Negotiable Conditions: Above-the-fold attribution on all AI summaries derived "
+                "from Nikkei content. Licensing fee floor at $0.008 per attributed query (benchmarked to "
+                "statutory damages). Annual audit rights over AI operator content usage logs.\n\n"
+                "(2) Items Requiring Written Confirmation: Any licensing agreement must specify territorial "
+                "scope explicitly. Revenue share calculation methodology requires CFO sign-off.\n\n"
+                "(3) Strongest Leverage Points: $500/query statutory damages floor. US Publisher Coalition "
+                "joint enforcement posture. First-mover premium content position.\n\n"
+                "(4) Acceptable Compromise Zones: Phased attribution rollout over 90 days. "
+                "Tiered fee structure for different content categories.\n\n"
+                "(5) Red Lines: No licensing deal below $0.005 per query. No waiver of audit rights."
+            ),
+            "negotiation_quotes": [
+                "Statutory damages floor of $500 per un-attributed query.",
+                "Above-the-fold attribution is a non-negotiable compliance requirement under the Act.",
+                "Licensing disclosure requirement enables systematic enforcement audit.",
+            ],
+            "board_memo": (
+                "WHAT HAPPENED: The US AI Search & Attribution Act (Draft) establishes strict liability "
+                "for AI-generated summaries, creating the strongest publisher copyright enforcement "
+                "framework in US legal history.\n\n"
+                "FINANCIAL EXPOSURE: ¥2.1–3.4B annual licensing revenue opportunity. "
+                "Short-term traffic risk (60/100) manageable within 90-day observation window.\n\n"
+                "DECISIONS REQUIRED: (1) Authorise Business Dev to issue licensing demand letters to "
+                "all US AI operators within 30 days. (2) Approve US Publisher Coalition joint enforcement "
+                "posture. (3) Allocate ¥180M engineering budget for attribution tracking infrastructure.\n\n"
+                "RECOMMENDED ACTIONS: Legal (GC) — File preemptive licensing demand within 30 days. "
+                "Business Dev (CDO) — Close first licensing agreement within 90 days. "
+                "Product (CPO) — Deploy attribution dashboard within 4 weeks.\n\n"
+                "SCENARIOS: Best case — Industry-wide licensing settlement at $0.008/query; ¥3.4B annual "
+                "revenue. Base case — Selective enforcement; ¥2.1B revenue from tier-1 AI operators. "
+                "Worst case — Act delayed or weakened in final passage; revert to coalition strategy."
+            ),
+            "board_memo_quotes": [
+                "Statutory damages of $500 per query provide maximum licensing leverage.",
+                "The Act aligns with our US Publisher Coalition lobbying strategy (Memo #2025-A).",
+                "Above-the-fold attribution mandate is enforceable from effective date.",
+            ],
+            "product_checklist": [
+                "[CONSENT MECHANISM] Legal & Product — Design licensing opt-in flow for AI operator "
+                "content access agreements. Trigger: before any new AI API integration. Capture: "
+                "operator ID, licensed content scope, fee structure, audit rights acknowledgement.",
+                "[CONSENT UI] UX Team — Implement attribution compliance verification module in "
+                "content delivery API. Must validate attribution parameters before serving content "
+                "to AI operators. Flag non-compliant requests for Legal review (no dark patterns).",
+                "[LEGAL DISCLOSURE] Communications — Publish licensing policy statement on Nikkei "
+                "corporate website within 14 days. Send written licensing demand to top 10 US AI "
+                "operators within 30 days. Log all correspondence in litigation-hold database.",
+                "[FEATURE CHANGE] Engineering — Build attribution tracking dashboard showing per-operator "
+                "query volume, attribution compliance rate, and damages exposure calculation. "
+                "Deadline: 4-week sprint, CPO sign-off required at milestone 2.",
+                "[AUDIT LOGGING] Data Engineering — Log all AI operator API calls with content ID, "
+                "attribution status, and query timestamp. Retention: 7 years. Format: structured "
+                "JSON with operator ID and statutory damages calculation fields.",
+            ],
+        }
+        debate = [
+            {"agent": "⚖️ Legal Agent", "color": "#8B2635",
+             "message": (
+                 "[🎯 Policy Memory Graph Match: Clause 4.2 — 2024 OpenAI partner contract negotiations] "
+                 "IP exposure at 92/100 — this is maximum leverage territory. The Act's statutory damages "
+                 "of $500/query align perfectly with the red-line position from our 2024 OpenAI negotiations "
+                 "where we rejected zero-revenue attribution. Initiating formal licensing demand protocol "
+                 "for all US AI operators. Outside counsel engaged for enforcement coordination."
+             )},
+            {"agent": "💰 Business Agent", "color": "#A8892A",
+             "message": (
+                 "Revenue opportunity at 85/100 — I am strongly in favour of aggressive licensing. "
+                 "The US Publisher Coalition (Memo #2025-A) already has 47 member publishers aligned. "
+                 "First-mover licensing agreements will lock in premium fee floors before a "
+                 "post-settlement industry standard is set at a lower rate. This is a once-in-a-decade window."
+             )},
+            {"agent": "🧩 Product Agent", "color": "#1A6B3C",
+             "message": (
+                 "Product constraint at 50/100 — manageable. Attribution tracking dashboard is a "
+                 "4-week build. The API audit tooling is partially reusable from our GDPR consent "
+                 "infrastructure. No major architectural changes required. Ready to proceed on "
+                 "CPO authorisation."
+             )},
+            {"agent": "🏛️ Executive Alignment", "color": "#0ABAB5", "final": True,
+             "message": (
+                 "Conflict Resolved. Unified position: LICENSE & PROMOTE. "
+                 "Legal to issue licensing demands within 30 days. "
+                 "Business Dev to target first signed agreement within 90 days. "
+                 "Product to deploy attribution dashboard within 4 weeks. "
+                 "Board notification required within 48 hours — ¥2.1–3.4B revenue opportunity on the table."
+             )},
+        ]
+        pmg_hits = [
+            ("Clause 4.2", "2024 OpenAI partner contract negotiations",
+             "Zero-revenue attribution for AI-generated summaries of licensed content exceeding 40 words "
+             "was a non-negotiable red-line — the US Act's statutory damages directly validate this position."),
+            ("Memo #2025-A", "US Publisher Coalition lobbying strategy",
+             "Nikkei co-authored the Publisher Coalition's position paper demanding above-the-fold attribution "
+             "and statutory damages. The Act's language mirrors our draft submission verbatim."),
+        ]
+
+    # ── EU DMA scenario ─────────────────────────────────────────────────────────
+    elif "EU" in txt or "DMA" in txt:
+        domain = "AI Search & Zero-Click"
+        step1 = {
+            "added_obligations": [
+                {"item": "Granular technical opt-out for AI training",
+                 "severity": "high",
+                 "description": "DMA requires dominant platforms to offer granular, per-content-type opt-outs from AI training data collection — separate from search indexing consent."},
+                {"item": "Fair and non-discriminatory compensation mandate",
+                 "severity": "high",
+                 "description": "Dominant platforms must offer transparent, auditable compensation schemes for publisher content used in Zero-click AI summaries."},
+                {"item": "Consent unbundling requirement",
+                 "severity": "medium",
+                 "description": "Search indexing consent must be contractually separated from AI training consent — bundled agreements are prohibited."},
+            ],
+            "removed_rights": [
+                {"item": "Bundled AI training consent via search indexing",
+                 "severity": "high",
+                 "description": "Dominant platforms can no longer use search indexing agreements to imply AI training consent — unbundling is mandatory."},
+            ],
+            "key_thresholds": [
+                {"item": "Compensation audit period", "value": "Annual",
+                 "description": "Dominant platforms must submit to annual independent audit of compensation calculation methodology."},
+                {"item": "Opt-out response time", "value": "30 days",
+                 "description": "Platforms must honour granular opt-out requests within 30 days of submission."},
+            ],
+            "context_summary": (
+                "The EU Commission Draft Guidance designates AI-powered search overviews by dominant platforms "
+                "as core platform services under the DMA, mandating unbundled consent for AI training and "
+                "fair compensation for Zero-click AI summaries. This creates the most comprehensive "
+                "publisher protection framework in the EU digital regulatory landscape."
+            ),
+        }
+        step2 = {
+            "scores": {
+                "IP":      {"score": 85, "direction": "opportunity",
+                            "evidence": "Consent unbundling and compensation mandate establish clear IP ownership framework for AI training data.",
+                            "priority_actions": ["Audit all existing search platform agreements for bundled consent clauses", "Issue formal unbundling demand to all EU-designated dominant platforms"]},
+                "Traffic": {"score": 80, "direction": "threat",
+                            "evidence": "Dominant platforms may reduce AI summary coverage during compliance transition — short-term traffic risk.",
+                            "priority_actions": ["Monitor referral traffic during 30-day platform opt-out compliance window", "Negotiate traffic guarantee as part of compensation agreement"]},
+                "Revenue": {"score": 95, "direction": "opportunity",
+                            "evidence": "Fair compensation mandate with annual audit rights enables systematic licensing revenue recovery.",
+                            "priority_actions": ["Quantify historical AI summary usage to establish back-compensation claim", "Prepare DMA-compliant licensing term sheet with revenue floor"]},
+                "Product": {"score": 85, "direction": "threat",
+                            "evidence": "Granular opt-out UI requires significant consent management platform engineering.",
+                            "priority_actions": ["Reuse GDPR Article 17 consent architecture for DMA compliance", "Engineering sprint estimate: 8 weeks for full granular opt-out stack"]},
+            },
+            "overall_risk_level": "critical",
+            "stance_label": "PROTECT & LICENSE",
+            "executive_summary": (
+                "The EU DMA Draft Guidance represents a landmark revenue recovery opportunity for Nikkei "
+                "in the EU market. Revenue leverage reaches 95/100 as fair compensation mandates and "
+                "annual audit rights create a legally-enforceable licensing framework. "
+                "Strategic stance: PROTECT & LICENSE — demand consent unbundling, pursue aggressive "
+                "compensation claims, and leverage our GDPR compliance infrastructure for rapid DMA adaptation."
+            ),
+            "key_opportunities": [
+                "95/100 revenue recovery — fair compensation mandate with audit rights enables systematic licensing enforcement",
+                "Existing GDPR Article 17 consent management platform provides 60% reusable DMA compliance infrastructure",
+                "EU market precedent will strengthen global licensing negotiations with same platform operators",
+            ],
+            "key_threats": [
+                "85/100 product engineering load — granular opt-out UI is complex and resource-intensive",
+                "80/100 traffic risk during platform compliance transition (30-day opt-out response window)",
+                "Dominant platforms may challenge DMA designation through EU courts — 12–18 month litigation risk",
+            ],
+        }
+        step3 = {
+            "what_changed_brief": (
+                "BEFORE: Dominant platforms mixed search indexing and AI training consent under bundled "
+                "agreements, allowing unrestricted use of publisher content for AI summary generation "
+                "without separate compensation.\n\n"
+                "AFTER: EU DMA Draft Guidance mandates unbundling of search indexing and AI training consent. "
+                "Dominant platforms must provide granular technical opt-outs, offer fair and non-discriminatory "
+                "compensation for Zero-click AI summaries, and submit to annual independent audits. "
+                "Publishers gain the strongest structural IP protection in the EU regulatory framework."
+            ),
+            "what_changed_quotes": [
+                "Requirement for granular technical opt-outs and non-discriminatory compensation schemes.",
+                "Dominant platforms are prohibited from using publisher data for Zero-click AI Answers without fair compensation.",
+                "Consent unbundling is mandatory — search indexing consent cannot imply AI training consent.",
+            ],
+            "overall_risk": "CRITICAL",
+            "business_exposure_memo": (
+                "(1) Traffic & Audience Reach: 80/100 traffic risk during 30-day platform compliance "
+                "transition. Dominant platforms may reduce AI summary coverage of Nikkei content. "
+                "Direct audience acquisition strategy should be accelerated in parallel.\n\n"
+                "(2) Revenue Streams: 95/100 revenue opportunity — the largest in Nikkei's digital "
+                "licensing history. Annual audit rights enable systematic back-compensation claims "
+                "for historical AI summary usage. Estimated EU licensing revenue: ¥1.8–2.9B annually.\n\n"
+                "(3) IP & Copyright: 85/100 IP protection — consent unbundling establishes clear "
+                "ownership boundary between search indexing rights and AI training rights for the first time.\n\n"
+                "(4) Product & Platform: 85/100 engineering load. GDPR Article 17 architecture "
+                "provides 60% reusable infrastructure. Full DMA compliance stack: 8-week sprint.\n\n"
+                "(5) Brand & Competitive Standing: DMA compliance leadership positions Nikkei as "
+                "the model EU-compliant premium content publisher."
+            ),
+            "business_exposure_quotes": [
+                "Fair and non-discriminatory compensation mandate with annual audit rights.",
+                "Granular technical opt-outs required within 30 days of publisher request.",
+                "Dominant platforms cannot use publisher data for Zero-click AI summaries without compensation.",
+            ],
+            "negotiation_brief": (
+                "(1) Non-Negotiable Conditions: Immediate consent unbundling for all EU dominant platforms. "
+                "Fair compensation floor benchmarked to pro-rata query volume. Annual audit rights "
+                "with independent auditor of Nikkei's selection.\n\n"
+                "(2) Items Requiring Written Confirmation: Back-compensation for historical AI summary "
+                "usage (12-month lookback). Granular opt-out implementation timeline.\n\n"
+                "(3) Strongest Leverage Points: DMA enforcement risk for platforms — fines up to 10% "
+                "of global annual turnover. EU regulatory precedent extends to global negotiations.\n\n"
+                "(4) Acceptable Compromise Zones: Phased compensation rollout tied to audit findings. "
+                "Temporary search indexing continuity during unbundling transition.\n\n"
+                "(5) Red Lines: No continued bundled consent agreements. No compensation formula "
+                "without independent audit rights."
+            ),
+            "negotiation_quotes": [
+                "DMA mandates fair and non-discriminatory compensation — no below-floor offers accepted.",
+                "Annual independent audit rights are a non-negotiable DMA compliance requirement.",
+                "Consent unbundling must be implemented within the platform's 30-day DMA compliance window.",
+            ],
+            "board_memo": (
+                "WHAT HAPPENED: EU Commission Draft Guidance designates AI search overviews by dominant "
+                "platforms as core DMA services, mandating consent unbundling and fair compensation. "
+                "This is the most significant EU publisher rights development since GDPR.\n\n"
+                "FINANCIAL EXPOSURE: ¥1.8–2.9B annual EU licensing revenue opportunity. "
+                "8-week engineering sprint required (¥220M budget estimate).\n\n"
+                "DECISIONS REQUIRED: (1) Approve DMA compliance sprint budget (¥220M). "
+                "(2) Authorise compensation claim letters to EU dominant platforms. "
+                "(3) Engage EU regulatory counsel for DMA enforcement monitoring.\n\n"
+                "RECOMMENDED ACTIONS: Legal (GC) — Issue consent unbundling demand within 14 days. "
+                "Product (CPO) — Launch DMA compliance sprint using GDPR Article 17 foundation. "
+                "Business Dev (CDO) — File EU compensation claims within 30 days.\n\n"
+                "SCENARIOS: Best case — Platforms comply and ¥2.9B licensing revenue materialises. "
+                "Base case — Contested implementation; ¥1.8B after audit findings. "
+                "Worst case — Platforms challenge DMA designation; 18-month litigation delay."
+            ),
+            "board_memo_quotes": [
+                "EU DMA mandates granular opt-outs and fair compensation for Zero-click AI Answers.",
+                "Annual audit rights enable systematic enforcement of compensation obligations.",
+                "Consent unbundling follows the compliance architecture we built for GDPR Article 17.",
+            ],
+            "product_checklist": [
+                "[CONSENT MECHANISM] Legal & Product — Redesign all EU dominant platform agreements "
+                "to separate search indexing consent from AI training consent. Trigger: before any "
+                "platform API renewal. Capture: platform ID, consent scope, effective date, audit cycle.",
+                "[CONSENT UI] UX Team — Build granular opt-out control panel for editorial and "
+                "content management users. Must cover: AI training opt-out, AI summary opt-out, "
+                "search indexing retention. Reuse GDPR Article 17 consent management UI components.",
+                "[LEGAL DISCLOSURE] Communications — Notify all EU dominant platforms of consent "
+                "unbundling demand within 14 days. Publish DMA compliance statement on corporate "
+                "website. File compensation claims with documented query volume data.",
+                "[FEATURE CHANGE] Engineering — Extend GDPR Article 17 consent management platform "
+                "with DMA-specific opt-out categories. Add per-platform consent status dashboard. "
+                "Deadline: 8-week sprint, milestone sign-offs at weeks 2, 4, and 6.",
+                "[AUDIT LOGGING] Data Engineering — Build DMA compliance audit trail: per-platform "
+                "AI query volume, content attribution status, compensation calculation log. "
+                "Retention: 7 years. Annual audit export format: structured XML for independent auditors.",
+            ],
+        }
+        debate = [
+            {"agent": "⚖️ Legal Agent", "color": "#8B2635",
+             "message": (
+                 "[🎯 Policy Memory Graph Match: GDPR Article 17 compliance architecture — 2022] "
+                 "IP exposure at 85/100 — strong position. DMA consent unbundling follows the exact "
+                 "legal architecture we designed for GDPR Article 17. I am issuing formal consent "
+                 "unbundling demands to all EU-designated dominant platforms within 14 days. "
+                 "DMA fines (10% global turnover) give us maximum enforcement leverage."
+             )},
+            {"agent": "💰 Business Agent", "color": "#A8892A",
+             "message": (
+                 "Revenue opportunity at 95/100 — this is extraordinary. The annual audit rights "
+                 "alone justify immediate aggressive action. I am projecting ¥1.8–2.9B in EU "
+                 "licensing revenue once compensation claims are processed. "
+                 "Engineering load at 85/100 is justified — this is a multi-year revenue stream."
+             )},
+            {"agent": "🧩 Product Agent", "color": "#1A6B3C",
+             "message": (
+                 "Product constraint at 85/100 — significant but manageable. GDPR Article 17 "
+                 "architecture covers 60% of the DMA compliance requirement. "
+                 "Estimate 8 weeks for full granular opt-out stack with milestone sign-offs at "
+                 "weeks 2, 4, and 6. CPO authorisation requested."
+             )},
+            {"agent": "🏛️ Executive Alignment", "color": "#0ABAB5", "final": True,
+             "message": (
+                 "Conflict Resolved. Unified position: PROTECT & LICENSE. "
+                 "Legal to issue unbundling demands within 14 days. "
+                 "Product to launch DMA compliance sprint immediately. "
+                 "Business Dev to file compensation claims within 30 days. "
+                 "Board notification required — ¥1.8–2.9B EU revenue opportunity at stake."
+             )},
+        ]
+        pmg_hits = [
+            ("GDPR Art. 17", "2022 EU consent management platform build",
+             "Engineering team confirmed the existing GDPR Article 17 deletion request infrastructure "
+             "can be extended to support DMA granular opt-out requirements — estimated 60% reuse rate."),
+            ("Exhibit B §3", "2023 Google News Showcase MOU",
+             "Minimum annual traffic guarantee was required as a prerequisite to any content licensing "
+             "arrangement — directly applicable as DMA compensation floor negotiating anchor."),
+        ]
+
+    # ── UK Parliament scenario ───────────────────────────────────────────────────
+    elif "UK" in txt or "PARLIAMENT" in txt:
+        domain = "Platform Distribution Policies"
+        step1 = {
+            "added_obligations": [
+                {"item": "Voluntary code of conduct participation",
+                 "severity": "low",
+                 "description": "UK government invites publishers to participate in a voluntary code of conduct framework — no mandatory compliance timeline."},
+                {"item": "Transparency reporting (voluntary)",
+                 "severity": "low",
+                 "description": "Participating publishers encouraged to disclose AI content licensing arrangements on an annual basis."},
+            ],
+            "removed_rights": [
+                {"item": "Legislative enforcement expectation",
+                 "severity": "medium",
+                 "description": "Parliament's statement confirms no strict liability legislation will be introduced in the current session — removing anticipated enforcement backstop."},
+            ],
+            "key_thresholds": [
+                {"item": "Voluntary participation deadline", "value": "None specified",
+                 "description": "No enforcement date — participation is open-ended and non-binding."},
+                {"item": "Review period", "value": "12 months",
+                 "description": "Government will review voluntary code effectiveness after 12 months before considering legislative options."},
+            ],
+            "context_summary": (
+                "UK Parliament's written statement (HCWS1416) announces a voluntary code of conduct "
+                "rather than the strict legislative penalties anticipated by the publisher community. "
+                "Enforcement risk is low in the near term; however, the 12-month review creates "
+                "an opportunity to shape the eventual legislative framework through voluntary compliance leadership."
+            ),
+        }
+        step2 = {
+            "scores": {
+                "IP":      {"score": 50, "direction": "neutral",
+                            "evidence": "Voluntary framework provides no new IP protection but also imposes no new obligations.",
+                            "priority_actions": ["Monitor code of conduct consultation process", "Submit formal response to government consultation within deadline"]},
+                "Traffic": {"score": 55, "direction": "neutral",
+                            "evidence": "No immediate platform behaviour change expected — voluntary code has no enforcement mechanism.",
+                            "priority_actions": ["Maintain current platform distribution agreements", "Track any voluntary compliance announcements from major platforms"]},
+                "Revenue": {"score": 40, "direction": "neutral",
+                            "evidence": "No new licensing obligations or revenue recovery mechanisms in voluntary framework.",
+                            "priority_actions": ["Defer EU and US licensing negotiations — stronger leverage available in those jurisdictions", "Participate in code consultation to shape revenue protection provisions"]},
+                "Product": {"score": 30, "direction": "neutral",
+                            "evidence": "No mandatory product changes required under voluntary framework.",
+                            "priority_actions": ["No immediate engineering action required", "Document current consent architecture for potential future mandatory compliance"]},
+            },
+            "overall_risk_level": "low",
+            "stance_label": "MONITOR & WAIT",
+            "executive_summary": (
+                "UK Parliament's voluntary code of conduct announcement is a low-impact event for Nikkei. "
+                "All axis scores are in the neutral range (30–55/100). "
+                "Strategic stance: MONITOR & WAIT — participate constructively in the consultation process "
+                "to shape future legislation while prioritising EU and US enforcement actions where "
+                "regulatory leverage is materially stronger."
+            ),
+            "key_opportunities": [
+                "Shape eventual UK legislative framework through proactive voluntary compliance and consultation participation",
+                "Demonstrate market leadership in responsible AI content transparency — brand differentiation",
+                "Use 12-month review window to build evidence base for stronger legislative proposals",
+            ],
+            "key_threats": [
+                "Voluntary framework delays binding UK enforcement — reduces publisher leverage in bilateral platform negotiations",
+                "Platform operators may use voluntary status to defer compensation discussions indefinitely",
+                "12-month review creates regulatory uncertainty — difficult to plan long-term UK licensing strategy",
+            ],
+        }
+        step3 = {
+            "what_changed_brief": (
+                "BEFORE: Publisher community anticipated strict legislative penalties for AI platforms "
+                "using content without attribution or compensation, based on prior government signals.\n\n"
+                "AFTER: Parliament announces a voluntary code of conduct (HCWS1416) rather than strict "
+                "legislative penalties. No enforcement date. Participation is non-binding. Government "
+                "will review effectiveness after 12 months. Enforcement risk remains low in the near term."
+            ),
+            "what_changed_quotes": [
+                "Voluntary compliance framework with no strict liability enforcement date.",
+                "Parliament announces voluntary code of conduct rather than mandatory legislation.",
+                "12-month review period before legislative options will be reconsidered.",
+            ],
+            "overall_risk": "LOW",
+            "business_exposure_memo": (
+                "(1) Traffic & Audience Reach: 55/100 — neutral. No immediate platform behaviour "
+                "change expected under voluntary framework. Current distribution agreements unaffected.\n\n"
+                "(2) Revenue Streams: 40/100 — no new licensing mechanisms. UK revenue exposure is "
+                "limited; prioritise EU and US enforcement actions for higher-return licensing activity.\n\n"
+                "(3) IP & Copyright: 50/100 — neutral. Voluntary framework provides no new IP protection. "
+                "Maintain existing UK content licensing arrangements without modification.\n\n"
+                "(4) Product & Platform: 30/100 — no mandatory product changes. Document current "
+                "consent architecture for potential future mandatory compliance requirements.\n\n"
+                "(5) Brand & Competitive Standing: Proactive voluntary participation enhances Nikkei's "
+                "reputation as a responsible AI content partner in the UK market."
+            ),
+            "business_exposure_quotes": [
+                "Voluntary compliance framework with no strict liability enforcement date.",
+                "No mandatory licensing obligations under HCWS1416 voluntary code.",
+                "12-month review period before legislation reconsidered.",
+            ],
+            "negotiation_brief": (
+                "(1) Non-Negotiable Conditions: None required under voluntary framework — no mandatory "
+                "compliance obligations.\n\n"
+                "(2) Items Requiring Written Confirmation: Government consultation submission deadline "
+                "and formal participation confirmation for voluntary code.\n\n"
+                "(3) Strongest Leverage Points: Constructive engagement in consultation process "
+                "to shape stronger future legislative provisions.\n\n"
+                "(4) Acceptable Compromise Zones: All terms are effectively negotiable under voluntary "
+                "framework — no enforcement backstop.\n\n"
+                "(5) Red Lines: Do not commit to voluntary code terms that would pre-empt stronger "
+                "EU or US licensing positions if legislation is later strengthened."
+            ),
+            "negotiation_quotes": [
+                "Voluntary compliance framework — all participation terms are negotiable.",
+                "12-month review creates opportunity to shape legislative provisions.",
+                "No strict liability enforcement means no immediate red-line positions required.",
+            ],
+            "board_memo": (
+                "WHAT HAPPENED: UK Parliament issued HCWS1416 announcing a voluntary code of conduct "
+                "for AI content — not the mandatory legislation anticipated. Enforcement risk: LOW.\n\n"
+                "FINANCIAL EXPOSURE: Minimal near-term impact. UK enforcement leverage is significantly "
+                "weaker than EU (DMA) and US (Attribution Act) jurisdictions.\n\n"
+                "DECISIONS REQUIRED: (1) Approve voluntary code participation and consultation response. "
+                "(2) Redirect UK enforcement resources to EU and US licensing actions.\n\n"
+                "RECOMMENDED ACTIONS: Legal (GC) — Submit formal consultation response within 30 days. "
+                "Business Dev (CDO) — Deprioritise UK bilateral licensing enforcement; focus on EU/US. "
+                "Product (CPO) — Document consent architecture for future mandatory compliance readiness.\n\n"
+                "SCENARIOS: Best case — 12-month review leads to strong legislation; Nikkei positioned "
+                "as voluntary compliance leader. Base case — Voluntary code continues indefinitely; "
+                "limited UK leverage. Worst case — No legislation; platforms use UK as safe harbour."
+            ),
+            "board_memo_quotes": [
+                "Voluntary compliance framework matches historical trajectory of 2021 UK CMA voluntary tech agreements.",
+                "Enforcement risk remains low pending 12-month review.",
+                "No immediate aggressive action warranted in UK jurisdiction.",
+            ],
+            "product_checklist": [
+                "[CONSENT MECHANISM] Legal — Document current consent architecture and map to "
+                "voluntary code transparency requirements. No mandatory changes required. "
+                "Trigger: annual voluntary code reporting cycle.",
+                "[CONSENT UI] UX Team — No mandatory UI changes required under voluntary framework. "
+                "Optional: add voluntary AI content transparency disclosure to Nikkei website footer.",
+                "[LEGAL DISCLOSURE] Communications — Submit formal consultation response to DCMS "
+                "within 30 days of consultation publication. Publish voluntary participation statement "
+                "on corporate website if code participation is confirmed.",
+                "[FEATURE CHANGE] Engineering — No mandatory feature changes. Optional: create "
+                "AI content usage transparency report generator for annual voluntary disclosure. "
+                "Low priority — defer to Q3 if resource-constrained.",
+                "[AUDIT LOGGING] Data Engineering — Maintain existing consent and content delivery "
+                "logs for potential future mandatory compliance. No new logging requirements under "
+                "voluntary code. Annual documentation review recommended.",
+            ],
+        }
+        debate = [
+            {"agent": "⚖️ Legal Agent", "color": "#8B2635",
+             "message": (
+                 "[🎯 Policy Memory Graph Match: 2021 UK CMA voluntary tech agreements] "
+                 "IP exposure at 50/100 — neutral. HCWS1416 is a voluntary framework — "
+                 "enforcement risk is low. This mirrors the trajectory of the 2021 UK CMA "
+                 "voluntary commitments which yielded no binding outcomes for 18 months. "
+                 "I advise against immediate aggressive action. Submit consultation response only."
+             )},
+            {"agent": "💰 Business Agent", "color": "#A8892A",
+             "message": (
+                 "Revenue at 40/100 — low leverage in UK. I agree with Legal on deferral. "
+                 "Our enforcement resources should be redirected to EU (95/100 revenue) "
+                 "and US (85/100 revenue) where regulatory frameworks have real teeth. "
+                 "UK is a monitoring situation — not an enforcement priority."
+             )},
+            {"agent": "🧩 Product Agent", "color": "#1A6B3C",
+             "message": (
+                 "Product constraint at 30/100 — no mandatory engineering changes required. "
+                 "I recommend documenting our current consent architecture for future compliance "
+                 "readiness. Optional voluntary disclosure feature can be deferred to Q3 "
+                 "pending resource availability."
+             )},
+            {"agent": "🏛️ Executive Alignment", "color": "#0ABAB5", "final": True,
+             "message": (
+                 "Conflict Resolved. Unified position: MONITOR & WAIT. "
+                 "Legal to submit consultation response within 30 days. "
+                 "No aggressive enforcement action in UK jurisdiction at this time. "
+                 "Resources redirected to EU and US licensing actions. "
+                 "Status review at 12-month government review milestone."
+             )},
+        ]
+        pmg_hits = [
+            ("CMA Ref. 2021-07", "UK CMA voluntary tech commitments (2021)",
+             "Historical trajectory of UK CMA voluntary agreements showed no binding enforcement outcomes "
+             "for 18+ months — directly applicable precedent for HCWS1416 voluntary code assessment."),
+            ("Section 6.1", "2024 Meta Platform Agreement review",
+             "Voluntary platform conduct frameworks in UK historically required CEO-level monitoring "
+             "rather than immediate legal escalation — confirmed by General Counsel in prior cycle."),
+        ]
+
+    else:
+        return None   # No scenario match → fall through to live LLM pipeline
+
+    return {
+        "step1_data":  step1,
+        "step2_data":  step2,
+        "step3_data":  step3,
+        "debate_log":  debate,
+        "pmg_hits":    pmg_hits,
+        "domain":      domain,
+    }
+
+
 # ─── Pipeline Functions ───────────────────────────────────────────────────────
 def _safe_json_parse(text: str) -> Dict:
     match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
@@ -1286,35 +2098,39 @@ def _audit_block(doc_id: str, domain: str = "", step2_data: Optional[Dict] = Non
     </div>""", unsafe_allow_html=True)
 
 
-def _policy_memory_block(domain: str) -> None:
-    """Render a mock Policy Memory Graph — historical red-line match panel."""
-    _pmg_hits: Dict[str, List[tuple]] = {
-        "AI Licensing & Copyright": [
-            ("Clause 4.2",    "2024 OpenAI partner contract negotiations",
-             "Zero-revenue attribution for AI-generated summaries of licensed content exceeding 40 words "
-             "was a non-negotiable red-line confirmed by the Legal Committee."),
-            ("Exhibit B §3",  "2023 Google News Showcase MOU",
-             "Minimum 12-month traffic guarantee required as a prerequisite to any content licensing "
-             "arrangement — hard floor established by Board resolution."),
-        ],
-        "AI Search & Zero-Click": [
-            ("Article 7(c)",  "2024 Google SGE pre-negotiation memo",
-             "Any Zero-click AI Answers rendering of more than 40 words from a Nikkei article without a redirect "
-             "was categorised as a hard termination trigger — binding precedent."),
-            ("Clause 11",     "2023 Bing / Microsoft partner contract review",
-             "Traffic attribution model changes require 90-day advance notice and board sign-off. "
-             "Retroactive application of algorithm changes was explicitly rejected."),
-        ],
-        "Platform Distribution Policies": [
-            ("Section 6.1",   "2024 Meta Platform Agreement review",
-             "Unilateral algorithm change causing >15% traffic reduction triggers force majeure — "
-             "clause negotiated by General Counsel in prior cycle."),
-            ("Clause 9.4",    "2023 Apple News+ renegotiation",
-             "Revenue share floor of 35% was confirmed as a hard red-line by Board resolution. "
-             "Any offer below this threshold requires CEO-level authorisation to consider."),
-        ],
-    }
-    hits = _pmg_hits.get(domain, _pmg_hits["AI Licensing & Copyright"])
+def _policy_memory_block(domain: str, pmg_hits: Optional[List[tuple]] = None) -> None:
+    """Render a mock Policy Memory Graph — historical red-line match panel.
+    pmg_hits, when provided by the Scenario Router, overrides the domain-keyed defaults.
+    """
+    if pmg_hits is None:
+        _fallback: Dict[str, List[tuple]] = {
+            "AI Licensing & Copyright": [
+                ("Clause 4.2",    "2024 OpenAI partner contract negotiations",
+                 "Zero-revenue attribution for AI-generated summaries of licensed content exceeding 40 words "
+                 "was a non-negotiable red-line confirmed by the Legal Committee."),
+                ("Exhibit B §3",  "2023 Google News Showcase MOU",
+                 "Minimum 12-month traffic guarantee required as a prerequisite to any content licensing "
+                 "arrangement — hard floor established by Board resolution."),
+            ],
+            "AI Search & Zero-Click": [
+                ("Article 7(c)",  "2024 Google SGE pre-negotiation memo",
+                 "Any Zero-click AI Answers rendering of more than 40 words from a Nikkei article without a redirect "
+                 "was categorised as a hard termination trigger — binding precedent."),
+                ("Clause 11",     "2023 Bing / Microsoft partner contract review",
+                 "Traffic attribution model changes require 90-day advance notice and board sign-off. "
+                 "Retroactive application of algorithm changes was explicitly rejected."),
+            ],
+            "Platform Distribution Policies": [
+                ("Section 6.1",   "2024 Meta Platform Agreement review",
+                 "Unilateral algorithm change causing >15% traffic reduction triggers force majeure — "
+                 "clause negotiated by General Counsel in prior cycle."),
+                ("Clause 9.4",    "2023 Apple News+ renegotiation",
+                 "Revenue share floor of 35% was confirmed as a hard red-line by Board resolution. "
+                 "Any offer below this threshold requires CEO-level authorisation to consider."),
+            ],
+        }
+        pmg_hits = _fallback.get(domain, _fallback["AI Licensing & Copyright"])
+    hits = pmg_hits
     cards_html = "".join(
         f"""<div style="background:rgba(10,186,181,0.03);border:1px solid rgba(10,186,181,0.18);
                         border-left:3px solid {_ACCENT};border-radius:0 4px 4px 0;
@@ -1520,6 +2336,7 @@ def _governance_panel(tab_key: str, risk_raw: str = "high") -> None:
 
     rl_key   = (risk_raw or "medium").lower()
     stance_label, rl_color, stance_sub = _risk_config(rl_key)
+    stance_label = step2_data.get("stance_label") or stance_label
 
     # Override dropdown uses human-readable stance options
     all_stances = [
@@ -2238,24 +3055,32 @@ def main() -> None:
     # ── Validation ────────────────────────────────────────────────────────────
     if run_triggered:
         # domain / policy_text / has_input are defined in the welcome block above
-        client = get_client()
-        if not client:
-            st.markdown(f"""
-            <div style="background:#111111;border:1px solid rgba(139,38,53,0.4);
-                        padding:16px 20px;margin-bottom:1rem">
-              <div style="font-family:'Montserrat',sans-serif;color:#8B2635;
-                          font-size:0.72rem;font-weight:600;letter-spacing:0.12em">
-                API KEY REQUIRED
-              </div>
-              <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
-                          font-size:0.78rem;margin-top:4px">
-                Set the ANTHROPIC_API_KEY environment variable to enable analysis.
-              </div>
-            </div>""", unsafe_allow_html=True)
-            return
         if not has_input:
             st.warning("Please enter policy text (minimum 20 characters).")
             return
+
+        # ── Scenario Router: check for known demo scenario BEFORE LLM calls ───
+        scenario = get_scenario_data(policy_text)
+
+        if scenario is None:
+            # No keyword match → require live API key
+            client = get_client()
+            if not client:
+                st.markdown(f"""
+                <div style="background:#111111;border:1px solid rgba(139,38,53,0.4);
+                            padding:16px 20px;margin-bottom:1rem">
+                  <div style="font-family:'Montserrat',sans-serif;color:#8B2635;
+                              font-size:0.72rem;font-weight:600;letter-spacing:0.12em">
+                    API KEY REQUIRED
+                  </div>
+                  <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;
+                              font-size:0.78rem;margin-top:4px">
+                    Set the ANTHROPIC_API_KEY environment variable to enable analysis.
+                  </div>
+                </div>""", unsafe_allow_html=True)
+                return
+        else:
+            client = None   # Scenario Router provides all data; no API call needed
 
         # ── Agentic Pipeline ───────────────────────────────────────────────────
         st.session_state.results = None
@@ -2265,6 +3090,7 @@ def main() -> None:
         step2_data: Optional[Dict] = None
         step3_data: Optional[Dict] = None
         debate_log: List[Dict] = []
+        pmg_hits:   Optional[List] = None
 
         # Progress bar lives outside st.status so it stays visible throughout
         _prog = st.progress(0, text="◆  Initializing Autonomous Response Pipeline...")
@@ -2275,106 +3101,200 @@ def main() -> None:
             expanded=True,
         ) as pipeline_status:
             try:
-                # ── STEP I : Substantive Change Analysis ──────────────────────────
-                _prog.progress(6, text="Step I · Substantive Change Analysis — Parsing policy structure...")
-                st.write(
-                    "**Step I — Substantive Change Analysis**  \n"
-                    "Deep-parsing source text to isolate meaning-level changes — added obligations, "
-                    "removed rights, penalty thresholds, and effective-date triggers. "
-                    "Mapping to Media Business Ontology..."
-                )
-                time.sleep(0.4)   # flush UI before blocking LLM call
+                if scenario is not None:
+                    # ── Scenario Router fast path ─────────────────────────────
+                    _prog.progress(6, text="Step I · Substantive Change Analysis — Parsing policy structure...")
+                    st.write(
+                        "**Step I — Substantive Change Analysis**  \n"
+                        "Deep-parsing source text to isolate meaning-level changes — added obligations, "
+                        "removed rights, penalty thresholds, and effective-date triggers. "
+                        "Mapping to Media Business Ontology..."
+                    )
+                    time.sleep(0.6)
 
-                step1_data = run_step1_parsing(client, policy_text)
+                    step1_data = scenario["step1_data"]
+                    domain     = scenario["domain"]
+                    n_obl = len(step1_data.get("added_obligations", []))
+                    n_rem = len(step1_data.get("removed_rights", []))
+                    n_thr = len(step1_data.get("key_thresholds", []))
+                    _prog.progress(25, text="Step I Complete ✓ — Substantive change extraction finished")
+                    st.write(
+                        f"  ✓  Substantive change extraction complete — "
+                        f"**{n_obl}** added obligations · "
+                        f"**{n_rem}** removed rights · "
+                        f"**{n_thr}** key thresholds identified"
+                    )
+                    time.sleep(0.4)
 
-                n_obl = len(step1_data.get("added_obligations", []))
-                n_rem = len(step1_data.get("removed_rights", []))
-                n_thr = len(step1_data.get("key_thresholds", []))
-                _prog.progress(25, text="Step I Complete ✓ — Semantic delta extraction finished")
-                st.write(
-                    f"  ✓  Semantic delta extraction complete — "
-                    f"**{n_obl}** added obligations · "
-                    f"**{n_rem}** removed rights · "
-                    f"**{n_thr}** key thresholds identified"
-                )
-                time.sleep(0.3)
+                    _prog.progress(30, text=f"Step II · Policy Memory Graph — Loading '{domain}' institutional memory...")
+                    st.write(
+                        f"**Step II — Policy Memory Graph × Impact Mapping**  \n"
+                        f"Cross-referencing extracted deltas against Policy Memory Graph: "
+                        f"340+ archived partner contracts, Board red-lines, and prior negotiation records. "
+                        f"Scoring across 4 axes: IP Exposure · Traffic Risk · Revenue Sensitivity · "
+                        f"Product Constraint. Deriving Strategic Stance..."
+                    )
+                    time.sleep(0.5)
 
-                # ── STEP II : Policy Memory Graph × Impact Mapping ─────────────
-                _prog.progress(30, text=f"Step II · Policy Memory Graph — Loading '{domain}' institutional memory...")
-                st.write(
-                    f"**Step II — Policy Memory Graph × Impact Mapping**  \n"
-                    f"Cross-referencing extracted deltas against Policy Memory Graph: "
-                    f"340+ archived partner contracts, Board red-lines, and prior negotiation records. "
-                    f"Scoring across 4 axes: IP Exposure · Traffic Risk · Revenue Sensitivity · "
-                    f"Product Constraint. Deriving Strategic Stance..."
-                )
-                time.sleep(0.4)   # flush before LLM
+                    step2_data = scenario["step2_data"]
+                    rl_raw = step2_data.get("overall_risk_level", "medium").upper()
+                    stance_label = step2_data.get("stance_label") or _risk_config(rl_raw.lower())[0]
+                    scores = step2_data.get("scores", {})
+                    score_str = "  ·  ".join(
+                        f"{ax}: **{scores[ax]['score']}**/100"
+                        for ax in ["IP", "Traffic", "Revenue", "Product"]
+                        if ax in scores
+                    )
+                    _prog.progress(50, text=f"Step II Complete ✓ — Strategic Stance: {stance_label}")
+                    st.write(
+                        f"  ✓  Policy Memory Graph match complete — Strategic Stance: **{stance_label}**  \n"
+                        f"  {score_str}"
+                    )
+                    time.sleep(0.4)
 
-                step2_data = run_step2_impact_mapping(client, step1_data, domain)
+                    _prog.progress(54, text="Multi-Agent Debate · Convening virtual expert committee...")
+                    st.write(
+                        "**Multi-Agent Debate — Virtual Expert Committee**  \n"
+                        "Convening Legal Counsel, Business Strategy, Product Leadership, "
+                        "and Executive Alignment agents for structured adversarial review against "
+                        "Policy Memory Graph red-lines..."
+                    )
+                    time.sleep(0.4)
 
-                rl_raw = step2_data.get("overall_risk_level", "medium").upper()
-                stance_label = _risk_config(rl_raw.lower())[0]
-                scores = step2_data.get("scores", {})
-                score_str = "  ·  ".join(
-                    f"{ax}: **{scores[ax]['score']}**/100"
-                    for ax in ["IP", "Traffic", "Revenue", "Product"]
-                    if ax in scores
-                )
-                _prog.progress(50, text=f"Step II Complete ✓ — Strategic Stance: {stance_label}")
-                st.write(
-                    f"  ✓  Policy Memory Graph match complete — Strategic Stance: **{stance_label}**  \n"
-                    f"  {score_str}"
-                )
-                time.sleep(0.3)
+                    debate_log = scenario["debate_log"]
+                    _debate_progress_steps = [56, 59, 62, 65]
+                    for i, entry in enumerate(debate_log):
+                        pct = _debate_progress_steps[i] if i < len(_debate_progress_steps) else 65
+                        _prog.progress(pct, text=f"Multi-Agent Debate · {entry['agent']} speaking...")
+                        short = entry["message"][:120].rstrip()
+                        st.write(f"  {entry['agent']}: _{short}..._")
+                        time.sleep(0.45)
 
-                # ── MULTI-AGENT DEBATE ─────────────────────────────────────────
-                _prog.progress(54, text="Multi-Agent Debate · Convening virtual expert committee...")
-                st.write(
-                    "**Multi-Agent Debate — Virtual Expert Committee**  \n"
-                    "Convening Legal Counsel, Business Strategy, Product Leadership, "
-                    "and Executive Alignment agents for structured adversarial review against "
-                    "Policy Memory Graph red-lines..."
-                )
-                time.sleep(0.5)
+                    _prog.progress(68, text="Multi-Agent Debate · Consensus reached ✓")
+                    st.write(
+                        f"  ✓  Committee consensus reached — "
+                        f"Strategic Stance confirmed: **{stance_label}**"
+                    )
+                    time.sleep(0.3)
 
-                debate_log = _build_debate_log(step1_data, step2_data, domain)
+                    _prog.progress(72, text="Step III · Agentic Execution — Generating 6 deliverables...")
+                    st.write(
+                        "**Step III — Agentic Execution & Deliverable Synthesis**  \n"
+                        "Generating 6 Deliverables: What Changed Brief · Business Exposure Memo · "
+                        "PPL Map · Negotiation Brief · Product / Legal Checklist · Board Memo — "
+                        "each grounded with verbatim evidence citations and Policy Memory Graph matches. "
+                        "Preparing execution payloads for Slack, Jira, and Docs..."
+                    )
+                    time.sleep(0.5)
 
-                _debate_progress_steps = [56, 59, 62, 65]
-                for i, entry in enumerate(debate_log):
-                    pct = _debate_progress_steps[i] if i < len(_debate_progress_steps) else 65
-                    _prog.progress(pct, text=f"Multi-Agent Debate · {entry['agent']} speaking...")
-                    short = entry["message"][:120].rstrip()
-                    st.write(f"  {entry['agent']}: _{short}..._")
-                    time.sleep(0.55)
+                    step3_data = scenario["step3_data"]
+                    pmg_hits   = scenario["pmg_hits"]
 
-                _prog.progress(68, text="Multi-Agent Debate · Consensus reached ✓")
-                st.write(
-                    f"  ✓  Committee consensus reached — "
-                    f"Strategic Stance confirmed: **{stance_label}**"
-                )
-                time.sleep(0.3)
+                    _prog.progress(98, text="Step III · Finalizing audit metadata & document ID...")
+                    st.write(
+                        "  ✓  6 role-specific deliverables generated — "
+                        "Policy Memory Graph citations embedded · execution payloads ready"
+                    )
+                    time.sleep(0.3)
 
-                # ── STEP III : Agentic Execution & Deliverable Synthesis ────────
-                _prog.progress(72, text="Step III · Agentic Execution — Generating 6 deliverables...")
-                st.write(
-                    "**Step III — Agentic Execution & Deliverable Synthesis**  \n"
-                    "Generating 6 Deliverables: What Changed Brief · Business Exposure Memo · "
-                    "PPL Map · Negotiation Brief · Product / Legal Checklist · Board Memo — "
-                    "each grounded with verbatim evidence citations and Policy Memory Graph matches. "
-                    "Preparing execution payloads for Slack, Jira, and Docs..."
-                )
-                time.sleep(0.4)   # flush before the longest LLM call
+                else:
+                    # ── Live LLM pipeline ─────────────────────────────────────
+                    _prog.progress(6, text="Step I · Substantive Change Analysis — Parsing policy structure...")
+                    st.write(
+                        "**Step I — Substantive Change Analysis**  \n"
+                        "Deep-parsing source text to isolate meaning-level changes — added obligations, "
+                        "removed rights, penalty thresholds, and effective-date triggers. "
+                        "Mapping to Media Business Ontology..."
+                    )
+                    time.sleep(0.4)
 
-                step3_data = run_step3_structured(
-                    client, domain, step1_data, step2_data, policy_text
-                )
+                    step1_data = run_step1_parsing(client, policy_text)
 
-                _prog.progress(98, text="Step III · Finalizing audit metadata & document ID...")
-                st.write(
-                    "  ✓  6 role-specific deliverables generated — "
-                    "Policy Memory Graph citations embedded · execution payloads ready"
-                )
-                time.sleep(0.4)
+                    n_obl = len(step1_data.get("added_obligations", []))
+                    n_rem = len(step1_data.get("removed_rights", []))
+                    n_thr = len(step1_data.get("key_thresholds", []))
+                    _prog.progress(25, text="Step I Complete ✓ — Substantive change extraction finished")
+                    st.write(
+                        f"  ✓  Substantive change extraction complete — "
+                        f"**{n_obl}** added obligations · "
+                        f"**{n_rem}** removed rights · "
+                        f"**{n_thr}** key thresholds identified"
+                    )
+                    time.sleep(0.3)
+
+                    _prog.progress(30, text=f"Step II · Policy Memory Graph — Loading '{domain}' institutional memory...")
+                    st.write(
+                        f"**Step II — Policy Memory Graph × Impact Mapping**  \n"
+                        f"Cross-referencing extracted deltas against Policy Memory Graph: "
+                        f"340+ archived partner contracts, Board red-lines, and prior negotiation records. "
+                        f"Scoring across 4 axes: IP Exposure · Traffic Risk · Revenue Sensitivity · "
+                        f"Product Constraint. Deriving Strategic Stance..."
+                    )
+                    time.sleep(0.4)
+
+                    step2_data = run_step2_impact_mapping(client, step1_data, domain)
+
+                    rl_raw = step2_data.get("overall_risk_level", "medium").upper()
+                    stance_label = _risk_config(rl_raw.lower())[0]
+                    scores = step2_data.get("scores", {})
+                    score_str = "  ·  ".join(
+                        f"{ax}: **{scores[ax]['score']}**/100"
+                        for ax in ["IP", "Traffic", "Revenue", "Product"]
+                        if ax in scores
+                    )
+                    _prog.progress(50, text=f"Step II Complete ✓ — Strategic Stance: {stance_label}")
+                    st.write(
+                        f"  ✓  Policy Memory Graph match complete — Strategic Stance: **{stance_label}**  \n"
+                        f"  {score_str}"
+                    )
+                    time.sleep(0.3)
+
+                    _prog.progress(54, text="Multi-Agent Debate · Convening virtual expert committee...")
+                    st.write(
+                        "**Multi-Agent Debate — Virtual Expert Committee**  \n"
+                        "Convening Legal Counsel, Business Strategy, Product Leadership, "
+                        "and Executive Alignment agents for structured adversarial review against "
+                        "Policy Memory Graph red-lines..."
+                    )
+                    time.sleep(0.5)
+
+                    debate_log = _build_debate_log(step1_data, step2_data, domain)
+
+                    _debate_progress_steps = [56, 59, 62, 65]
+                    for i, entry in enumerate(debate_log):
+                        pct = _debate_progress_steps[i] if i < len(_debate_progress_steps) else 65
+                        _prog.progress(pct, text=f"Multi-Agent Debate · {entry['agent']} speaking...")
+                        short = entry["message"][:120].rstrip()
+                        st.write(f"  {entry['agent']}: _{short}..._")
+                        time.sleep(0.55)
+
+                    _prog.progress(68, text="Multi-Agent Debate · Consensus reached ✓")
+                    st.write(
+                        f"  ✓  Committee consensus reached — "
+                        f"Strategic Stance confirmed: **{stance_label}**"
+                    )
+                    time.sleep(0.3)
+
+                    _prog.progress(72, text="Step III · Agentic Execution — Generating 6 deliverables...")
+                    st.write(
+                        "**Step III — Agentic Execution & Deliverable Synthesis**  \n"
+                        "Generating 6 Deliverables: What Changed Brief · Business Exposure Memo · "
+                        "PPL Map · Negotiation Brief · Product / Legal Checklist · Board Memo — "
+                        "each grounded with verbatim evidence citations and Policy Memory Graph matches. "
+                        "Preparing execution payloads for Slack, Jira, and Docs..."
+                    )
+                    time.sleep(0.4)
+
+                    step3_data = run_step3_structured(
+                        client, domain, step1_data, step2_data, policy_text
+                    )
+
+                    _prog.progress(98, text="Step III · Finalizing audit metadata & document ID...")
+                    st.write(
+                        "  ✓  6 role-specific deliverables generated — "
+                        "Policy Memory Graph citations embedded · execution payloads ready"
+                    )
+                    time.sleep(0.4)
 
                 _prog.progress(100, text="◆  Response Package Ready — All steps complete ✓")
                 pipeline_status.update(
@@ -2416,6 +3336,7 @@ def main() -> None:
             "debate_log": debate_log if debate_log else [],
             "doc_id": doc_id,
             "policy_text": policy_text,
+            "pmg_hits": pmg_hits,
         }
 
     # ── Display Results ───────────────────────────────────────────────────────
@@ -2431,6 +3352,7 @@ def main() -> None:
     debate_log  = res.get("debate_log", [])
     doc_id      = res.get("doc_id", "REQ-—")
     policy_text = res.get("policy_text", "")
+    pmg_hits    = res.get("pmg_hits")
 
     # ── Header ────────────────────────────────────────────────────────────────
     hcol1, hcol2 = st.columns([4, 1])
@@ -2795,7 +3717,7 @@ def main() -> None:
               </div>
             </div>""", unsafe_allow_html=True)
 
-        _policy_memory_block(domain)
+        _policy_memory_block(domain, pmg_hits)
         _governance_panel("tab3", _gov_risk_raw)
 
     # ── Tab 4: Negotiation Brief ──────────────────────────────────────────────
@@ -2816,7 +3738,7 @@ def main() -> None:
             claim_color="#8B2635",
             agent_tag="Legal Agent",
         )
-        _policy_memory_block(domain)
+        _policy_memory_block(domain, pmg_hits)
 
         _download_row(
             label="📥  Export Negotiation Brief (.docx)",
@@ -2900,7 +3822,7 @@ def main() -> None:
             claim_color="#9A4520",
             agent_tag="Board Level",
         )
-        _policy_memory_block(domain)
+        _policy_memory_block(domain, pmg_hits)
 
         _download_row(
             label="📥  Export Board Memorandum (.docx)",
