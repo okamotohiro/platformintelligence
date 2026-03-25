@@ -524,7 +524,7 @@ def analyze_policy_with_claude(
     try:
       with client.messages.stream(
         model=MODEL,
-        max_tokens=16000,   # 16K; streaming removes the sync 10-min SDK threshold
+        max_tokens=4096,    # Hard cap: ensures <60s completion; UI needs no more than 4K tokens
         thinking={"type": "adaptive"},
         system=(
             "You are the Chief Policy Intelligence Analyst for a major media enterprise. "
@@ -562,15 +562,20 @@ def analyze_policy_with_claude(
             "Tone must match the document_type: advisory and strategic for non-binding texts, "
             "operational and urgent only for binding obligations with clear effective dates.\n\n"
 
-            "RULE 5 — COMPREHENSIVE AND DETAILED REASONING (non-negotiable): "
-            "Every text field — agent_debate_messages, board_memo, business_exposure_memo, "
-            "negotiation_brief, what_changed_brief, and executive_summary — MUST be written "
-            "in full, professional, long-form prose. Do NOT summarize, truncate, or abbreviate. "
-            "Each agent's message in agent_debate_messages must be a substantive paragraph "
-            "of at least 3–5 sentences with specific references to extracted obligations or changes. "
-            "Board memo and business exposure memo must use numbered section headings and cover "
-            "every sub-point in depth. This is an enterprise intelligence product — shallow or "
-            "concise outputs are explicitly prohibited. Take the time needed to reason thoroughly.\n\n"
+            "RULE 5 — HIGH-DENSITY OUTPUT WITH STRICT BOUNDING (non-negotiable): "
+            "This is a time-critical enterprise pipeline — total JSON output MUST complete within "
+            "4096 tokens. Achieve maximum information density: every word must carry analytical weight.\n"
+            "RULE 5A — ARRAY LIMITS: added_obligations, removed_rights, and key_thresholds arrays "
+            "MUST each contain at most 3 items. Select only the highest-impact entries. "
+            "key_opportunities and key_threats: at most 3 items each. "
+            "risk_matrix_points: at most 4 items. product_checklist: at most 4 items.\n"
+            "RULE 5B — AGENT DEBATE LENGTH: Each agent's message in agent_debate_messages MUST be "
+            "exactly 1 dense paragraph of 3–4 sentences. Pack professional depth and specific "
+            "references into those sentences — no padding, no repetition, no preamble.\n"
+            "RULE 5C — NO REDUNDANCY: Never repeat the same point across fields. "
+            "executive_summary, board_memo, and business_exposure_memo each cover distinct angles. "
+            "Eliminate filler phrases ('It is important to note that...', 'In conclusion...'). "
+            "Write as a senior analyst who bills by the word and charges a premium for precision.\n\n"
 
             "Return ONLY a valid JSON object — no preamble, no explanation, no markdown code fences. "
             "All text fields must be in professional business English."
@@ -2476,8 +2481,8 @@ def main() -> None:
                     "and effective-date triggers. The Virtual Expert Committee (Legal, Business, Product) "
                     "is currently debating complex legal and business trade-offs in comprehensive, "
                     "long-form reasoning.  \n\n"
-                    "⏱  **Expected reasoning time: 60–90 seconds.** "
-                    "Do not close or sleep the window — deep enterprise-grade analysis is running."
+                    "⏱  **Expected reasoning time: 30–60 seconds.** "
+                    "Deep enterprise-grade analysis is running — do not close or sleep the window."
                 )
                 time.sleep(0.3)
 
@@ -2563,7 +2568,7 @@ def main() -> None:
                     "the extracted substantive changes from Step I. "
                     "Each agent is writing substantive paragraphs — not bullet summaries — "
                     "covering specific obligations, revenue exposure, and strategic positioning.  \n\n"
-                    "⏱  Generating expert-level deliberation — this depth of reasoning takes time."
+                    "⏱  Generating expert-level deliberation — expected completion in 30–60 seconds."
                 )
                 time.sleep(0.4)
 
