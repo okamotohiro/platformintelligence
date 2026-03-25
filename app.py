@@ -445,14 +445,18 @@ STRATEGIST_SYSTEM = (
 
 # ─── Pipeline Functions ───────────────────────────────────────────────────────
 def _safe_json_parse(text: str) -> Dict:
-    match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
-    if match:
-        return json.loads(match.group(1).strip())
-    start = text.find("{")
-    end = text.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        return json.loads(text[start : end + 1])
-    return json.loads(text.strip())
+    """Extract and parse JSON from LLM response text. Returns {} on any failure."""
+    try:
+        match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
+        if match:
+            return json.loads(match.group(1).strip())
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            return json.loads(text[start : end + 1])
+        return json.loads(text.strip())
+    except Exception:
+        return {}
 
 
 def get_client() -> Optional[anthropic.Anthropic]:
@@ -1244,7 +1248,7 @@ def _audit_block(doc_id: str, domain: str = "", step2_data: Optional[Dict] = Non
 
     # ── Traceability: derive confidence from avg axis score ──────────────────
     if step2_data:
-        axes = step2_data.get("axes", {})
+        axes = step2_data.get("scores", {})
         scores = [v.get("score", 50) for v in axes.values() if isinstance(v, dict)]
         avg = int(sum(scores) / len(scores)) if scores else 50
         # Map 0-100 score to match-rate (score already reflects alignment with red-lines)
@@ -1308,34 +1312,26 @@ def _policy_memory_block(domain: str, pmg_hits: Optional[List[tuple]] = None) ->
     """Render Policy Memory Graph — historical red-line match panel.
     pmg_hits from Claude AI analysis overrides the domain-keyed institutional memory defaults.
     """
-    if pmg_hits is None:
-        _fallback: Dict[str, List[tuple]] = {
-            "AI Licensing & Copyright": [
-                ("Clause 4.2",    "2024 OpenAI partner contract negotiations",
-                 "Zero-revenue attribution for AI-generated summaries of licensed content exceeding 40 words "
-                 "was a non-negotiable red-line confirmed by the Legal Committee."),
-                ("Exhibit B §3",  "2023 Google News Showcase MOU",
-                 "Minimum 12-month traffic guarantee required as a prerequisite to any content licensing "
-                 "arrangement — hard floor established by Board resolution."),
-            ],
-            "AI Search & Distribution": [
-                ("Article 7(c)",  "2024 Google SGE pre-negotiation memo",
-                 "Any Zero-click AI Answers rendering of more than 40 words from a Nikkei article without a redirect "
-                 "was categorised as a hard termination trigger — binding precedent."),
-                ("Clause 11",     "2023 Bing / Microsoft partner contract review",
-                 "Traffic attribution model changes require 90-day advance notice and board sign-off. "
-                 "Retroactive application of algorithm changes was explicitly rejected."),
-            ],
-            "Platform Distribution Policies": [
-                ("Section 6.1",   "2024 Meta Platform Agreement review",
-                 "Unilateral algorithm change causing >15% traffic reduction triggers force majeure — "
-                 "clause negotiated by General Counsel in prior cycle."),
-                ("Clause 9.4",    "2023 Apple News+ renegotiation",
-                 "Revenue share floor of 35% was confirmed as a hard red-line by Board resolution. "
-                 "Any offer below this threshold requires CEO-level authorisation to consider."),
-            ],
-        }
-        pmg_hits = _fallback.get(domain, _fallback["AI Licensing & Copyright"])
+    if not pmg_hits:
+        # No PMG matches from Claude — render a neutral informational message
+        st.markdown(f"""
+        <div style="margin:20px 0 4px">
+          <div style="font-family:'Montserrat',sans-serif;color:{_ACCENT};font-size:0.52rem;
+                      letter-spacing:0.28em;text-transform:uppercase;margin-bottom:10px;
+                      display:flex;align-items:center;gap:8px">
+            <span>🎯</span>
+            <span>Policy Memory Graph — Historical Red-Line Match</span>
+            <div style="flex:1;height:1px;background:rgba(10,186,181,0.14)"></div>
+          </div>
+          <div style="background:rgba(10,186,181,0.03);border:1px solid rgba(10,186,181,0.14);
+                      border-left:3px solid {_ACCENT};padding:14px 18px;
+                      font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.62rem;
+                      line-height:1.65">
+            No matching institutional red-lines or historical contract precedents identified
+            for this policy text in the current Policy Memory Graph index.
+          </div>
+        </div>""", unsafe_allow_html=True)
+        return
     hits = pmg_hits
     cards_html = "".join(
         f"""<div style="background:rgba(10,186,181,0.03);border:1px solid rgba(10,186,181,0.18);
@@ -1367,41 +1363,44 @@ def _policy_memory_block(domain: str, pmg_hits: Optional[List[tuple]] = None) ->
     </div>""", unsafe_allow_html=True)
 
 
-_COUNTERPARTY_PROFILES: Dict[str, Dict[str, str]] = {
-    "AI Search & Distribution": {
-        "label":           "Dominant Search Platform",
-        "traffic_pct":     "85%",
-        "traffic_level":   "CRITICAL",
-        "traffic_color":   "#8B2635",
-        "substitutability":"LOW",
-        "sub_color":       "#8B2635",
-    },
-    "AI Licensing & Copyright": {
-        "label":           "Foundation Model Provider",
-        "traffic_pct":     "60%",
-        "traffic_level":   "HIGH",
-        "traffic_color":   "#A8892A",
-        "substitutability":"MEDIUM",
-        "sub_color":       "#A8892A",
-    },
-    "Platform Distribution Policies": {
-        "label":           "Social / Distribution Platform",
-        "traffic_pct":     "45%",
-        "traffic_level":   "MEDIUM",
-        "traffic_color":   "#0ABAB5",
-        "substitutability":"MEDIUM",
-        "sub_color":       "#A8892A",
-    },
-}
+def _counterparty_panel(domain: str, step2_data: Optional[Dict] = None) -> None:
+    """Render counterparty market-power profile badge — derived dynamically from analysis scores."""
+    scores = (step2_data or {}).get("scores", {})
 
+    def _gs(key: str) -> int:
+        v = scores.get(key, 50)
+        return v.get("score", 50) if isinstance(v, dict) else int(v)
 
-def _counterparty_panel(domain: str) -> None:
-    """Render a counterparty market-power profile badge panel for Impact Mapping."""
-    profile = _COUNTERPARTY_PROFILES.get(
-        domain, _COUNTERPARTY_PROFILES["AI Licensing & Copyright"]
-    )
-    tc = profile["traffic_color"]
-    sc = profile["sub_color"]
+    tr_score  = _gs("Traffic")
+    rev_score = _gs("Revenue")
+
+    # Derive traffic dependency from Traffic score
+    if tr_score >= 75:
+        traffic_level, tc = "CRITICAL", "#8B2635"
+    elif tr_score >= 55:
+        traffic_level, tc = "HIGH", "#A8892A"
+    elif tr_score >= 35:
+        traffic_level, tc = "MEDIUM", "#0ABAB5"
+    else:
+        traffic_level, tc = "LOW", "#1A6B3C"
+    traffic_pct = f"{min(95, max(20, tr_score))}%"
+
+    # Derive substitutability from Revenue score (high revenue exposure = low substitutability)
+    if rev_score >= 70:
+        sub_level, sc = "LOW", "#8B2635"
+    elif rev_score >= 45:
+        sub_level, sc = "MEDIUM", "#A8892A"
+    else:
+        sub_level, sc = "HIGH", "#1A6B3C"
+
+    # Platform label derived from domain
+    _platform_labels = {
+        "AI Search & Distribution":    "Dominant Search Platform",
+        "AI Licensing & Copyright":    "Foundation Model Provider",
+        "Platform Distribution Policies": "Social / Distribution Platform",
+    }
+    platform_label = _platform_labels.get(domain, "Platform Partner")
+
     st.markdown(f"""
     <div style="background:#0D0D0D;border:1px solid #2A2A2A;
                 padding:12px 18px;margin-bottom:18px;
@@ -1412,30 +1411,30 @@ def _counterparty_panel(domain: str) -> None:
       <span style="font-family:'Montserrat',sans-serif;font-size:0.62rem;color:#C4BFB8;
                    border:1px solid #333;border-radius:3px;padding:3px 10px;
                    white-space:nowrap">
-        Platform: <strong style="color:#F0EDE6">{profile["label"]}</strong>
+        Platform: <strong style="color:#F0EDE6">{platform_label}</strong>
       </span>
       <span style="font-family:'Montserrat',sans-serif;font-size:0.62rem;
                    border:1px solid {tc}55;border-radius:3px;padding:3px 10px;
                    color:{tc};white-space:nowrap">
-        Traffic Dependency: <strong>{profile["traffic_pct"]} ({profile["traffic_level"]})</strong>
+        Traffic Dependency: <strong>{traffic_pct} ({traffic_level})</strong>
       </span>
       <span style="font-family:'Montserrat',sans-serif;font-size:0.62rem;
                    border:1px solid {sc}55;border-radius:3px;padding:3px 10px;
                    color:{sc};white-space:nowrap">
-        Substitutability: <strong>{profile["substitutability"]}</strong>
+        Substitutability: <strong>{sub_level}</strong>
       </span>
     </div>""", unsafe_allow_html=True)
 
 
-def _pplw_map_block(risk_raw: str = "high") -> None:
-    """Render PPLW (Protect / Promote / License / Wait) 4-stance visual mapping."""
-    active_map = {
-        "critical": "PROTECT",
-        "high":     "LICENSE",
-        "medium":   "PROMOTE",
-        "low":      "WAIT",
-    }
-    active = active_map.get((risk_raw or "high").lower(), "LICENSE")
+def _pplw_map_block(strategic_stance: str = "", risk_raw: str = "high") -> None:
+    """Render PPLW 4-stance visual mapping — driven by Claude's strategic_stance field."""
+    # Parse active badges from Claude's strategic_stance (e.g. "PROTECT & LICENSE")
+    stance_upper = (strategic_stance or "").upper()
+    active_badges = {b for b in ["PROTECT", "PROMOTE", "LICENSE", "WAIT"] if b in stance_upper}
+    # Fallback to risk-level derivation when stance is absent or unrecognised
+    if not active_badges:
+        _fallback = {"critical": "PROTECT", "high": "LICENSE", "medium": "PROMOTE", "low": "WAIT"}
+        active_badges = {_fallback.get((risk_raw or "high").lower(), "LICENSE")}
     stances = [
         ("PROTECT", "#8B2635", "Immediate IP defense"),
         ("PROMOTE", "#0ABAB5", "Brand visibility & discovery"),
@@ -1444,7 +1443,7 @@ def _pplw_map_block(risk_raw: str = "high") -> None:
     ]
     badges_html = ""
     for label, color, desc in stances:
-        is_active = label == active
+        is_active = label in active_badges
         opacity   = "1" if is_active else "0.32"
         border    = f"border:1.5px solid {color}" if is_active else f"border:1px solid {color}44"
         prefix    = "▶ " if is_active else ""
@@ -2581,7 +2580,7 @@ def main() -> None:
     _accent_divider()
     _section_label("II", f"Impact Mapping — {domain}")
     st.markdown(_engine_badge("Composite Embedding Search"), unsafe_allow_html=True)
-    _counterparty_panel(domain)
+    _counterparty_panel(domain, step2_data)
 
     rl = step2_data.get("overall_risk_level", "medium")
     rl_label2, rl_color2, rl_sub2 = _risk_config(rl)
@@ -2773,7 +2772,7 @@ def main() -> None:
                     line-height:1.6;margin-bottom:16px">
           Impact on traffic, revenue, IP rights, product capabilities, and competitive position.
         </div>""", unsafe_allow_html=True)
-        _pplw_map_block(_gov_risk_raw)
+        _pplw_map_block(analysis.get("strategic_stance", ""), _gov_risk_raw)
 
         exposure = step3_data.get("business_exposure_memo", "")
         _prose_block(exposure)
