@@ -653,6 +653,10 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
              "Traffic attribution model changes require 90-day advance notice and board sign-off. "
              "Retroactive application of algorithm changes was explicitly rejected — directly applicable to GAIF v3.1."),
         ]
+        matrix_clauses = [
+            {"name": "Zero-click UI Change",   "x": 15, "y": 95, "color": "#C0392B", "size": 15},
+            {"name": "Search Delisting Threat", "x": 30, "y": 98, "color": "#8B2635", "size": 14},
+        ]
 
     # ── US Attribution Act scenario ─────────────────────────────────────────────
     elif "US" in txt or "ACT" in txt:
@@ -849,6 +853,10 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
             ("Memo #2025-A", "US Publisher Coalition lobbying strategy",
              "Nikkei co-authored the Publisher Coalition's position paper demanding above-the-fold attribution "
              "and statutory damages. The Act's language mirrors our draft submission verbatim."),
+        ]
+        matrix_clauses = [
+            {"name": "Attribution Mandate",  "x": 60, "y": 85, "color": "#E67E22", "size": 14},
+            {"name": "Statutory Damages",    "x": 90, "y": 90, "color": "#C0392B", "size": 15},
         ]
 
     # ── EU DMA scenario ─────────────────────────────────────────────────────────
@@ -1051,6 +1059,10 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
              "Minimum annual traffic guarantee was required as a prerequisite to any content licensing "
              "arrangement — directly applicable as DMA compensation floor negotiating anchor."),
         ]
+        matrix_clauses = [
+            {"name": "Consent Unbundling",    "x": 45, "y": 88, "color": "#8B2635", "size": 14},
+            {"name": "Fair Compensation",     "x": 45, "y": 95, "color": "#C0392B", "size": 15},
+        ]
 
     # ── UK Parliament scenario ───────────────────────────────────────────────────
     elif "UK" in txt or "PARLIAMENT" in txt:
@@ -1241,17 +1253,21 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
              "Voluntary platform conduct frameworks in UK historically required CEO-level monitoring "
              "rather than immediate legal escalation — confirmed by General Counsel in prior cycle."),
         ]
+        matrix_clauses = [
+            {"name": "Voluntary Code Intro", "x": 120, "y": 40, "color": "#0ABAB5", "size": 11},
+        ]
 
     else:
         return None   # No scenario match → fall through to live LLM pipeline
 
     return {
-        "step1_data":  step1,
-        "step2_data":  step2,
-        "step3_data":  step3,
-        "debate_log":  debate,
-        "pmg_hits":    pmg_hits,
-        "domain":      domain,
+        "step1_data":     step1,
+        "step2_data":     step2,
+        "step3_data":     step3,
+        "debate_log":     debate,
+        "pmg_hits":       pmg_hits,
+        "matrix_clauses": matrix_clauses,
+        "domain":         domain,
     }
 
 
@@ -1467,17 +1483,8 @@ def create_exposure_delta_radar(scores: Dict) -> go.Figure:
     # New Policy Exposure = scores returned by AI analysis
     new_vals = [scores[a]["score"] for a in axes]
 
-    # Current Baseline = pulled toward neutral (50) to show pre-policy state
-    # Threats show score jump upward; opportunities show score drop; neutral ≈ -5
-    def _baseline(axis: str) -> int:
-        s, d = scores[axis]["score"], scores[axis]["direction"]
-        if d == "threat":
-            return max(10, s - 22)
-        elif d == "opportunity":
-            return min(95, s + 14)
-        return max(10, s - 6)
-
-    base_vals = [_baseline(a) for a in axes]
+    # Current Baseline = fixed at 70 across all axes (pre-policy reference line)
+    base_vals = [70] * len(axes)
 
     # Close the polygon
     theta   = axes + [axes[0]]
@@ -1537,48 +1544,57 @@ def create_exposure_delta_radar(scores: Dict) -> go.Figure:
     return fig
 
 
-def create_risk_urgency_matrix(scores: Dict) -> go.Figure:
+def create_risk_urgency_matrix(scores: Dict, clauses: Optional[List[Dict]] = None) -> go.Figure:
     """Risk & Urgency Matrix: scatter of key policy clauses by time + severity."""
-    # ── Derive clause positions from actual axis scores ──────────────────────
-    ip_s  = scores["IP"]["score"]
-    tr_s  = scores["Traffic"]["score"]
-    rv_s  = scores["Revenue"]["score"]
-    pr_s  = scores["Product"]["score"]
-
-    clauses = [
-        {
-            "name": "IP Licensing Term",
-            "x": 10,                         # very close → high urgency
-            "y": min(98, ip_s + 4),
-            "color": "#C0392B",
-            "size": 14,
-            "detail": f"IP Licensing Term<br>Days to Enactment: 10<br>Severity: {min(98, ip_s+4)}/100",
-        },
-        {
-            "name": "Data Share-back Clause",
-            "x": 22,
-            "y": max(30, tr_s - 5),
-            "color": "#E67E22",
-            "size": 12,
-            "detail": f"Data Share-back Clause<br>Days to Enactment: 22<br>Severity: {max(30, tr_s-5)}/100",
-        },
-        {
-            "name": "Content Attribution Rule",
-            "x": 38,
-            "y": max(25, rv_s - 10),
-            "color": "#A8892A",
-            "size": 11,
-            "detail": f"Content Attribution Rule<br>Days to Enactment: 38<br>Severity: {max(25, rv_s-10)}/100",
-        },
-        {
-            "name": "Opt-out UI Change",
-            "x": 55,
-            "y": max(20, pr_s - 8),
-            "color": "#0ABAB5",
-            "size": 10,
-            "detail": f"Opt-out UI Change<br>Days to Enactment: 55<br>Severity: {max(20, pr_s-8)}/100",
-        },
-    ]
+    if clauses is None:
+        # ── Fallback: derive clause positions from axis scores ───────────────
+        ip_s  = scores["IP"]["score"]
+        tr_s  = scores["Traffic"]["score"]
+        rv_s  = scores["Revenue"]["score"]
+        pr_s  = scores["Product"]["score"]
+        clauses = [
+            {
+                "name": "IP Licensing Term",
+                "x": 10,
+                "y": min(98, ip_s + 4),
+                "color": "#C0392B",
+                "size": 14,
+                "detail": f"IP Licensing Term<br>Days to Enactment: 10<br>Severity: {min(98, ip_s+4)}/100",
+            },
+            {
+                "name": "Data Share-back Clause",
+                "x": 22,
+                "y": max(30, tr_s - 5),
+                "color": "#E67E22",
+                "size": 12,
+                "detail": f"Data Share-back Clause<br>Days to Enactment: 22<br>Severity: {max(30, tr_s-5)}/100",
+            },
+            {
+                "name": "Content Attribution Rule",
+                "x": 38,
+                "y": max(25, rv_s - 10),
+                "color": "#A8892A",
+                "size": 11,
+                "detail": f"Content Attribution Rule<br>Days to Enactment: 38<br>Severity: {max(25, rv_s-10)}/100",
+            },
+            {
+                "name": "Opt-out UI Change",
+                "x": 55,
+                "y": max(20, pr_s - 8),
+                "color": "#0ABAB5",
+                "size": 10,
+                "detail": f"Opt-out UI Change<br>Days to Enactment: 55<br>Severity: {max(20, pr_s-8)}/100",
+            },
+        ]
+    else:
+        # ── Ensure each clause has a "detail" field ──────────────────────────
+        for c in clauses:
+            if "detail" not in c:
+                c["detail"] = f"{c['name']}<br>Days to Enactment: {c['x']}<br>Severity: {c['y']}/100"
+            if "color" not in c:
+                c["color"] = "#C0392B"
+            if "size" not in c:
+                c["size"] = 13
 
     fig = go.Figure()
 
@@ -1623,11 +1639,15 @@ def create_risk_urgency_matrix(scores: Dict) -> go.Figure:
             showlegend=False,
         ))
 
+    # x-axis range adapts to the furthest clause with 15% padding
+    max_x = max((c["x"] for c in clauses), default=70)
+    x_max = max(70, int(max_x * 1.15))
+
     fig.update_layout(
         xaxis=dict(
             title=dict(text="← Time to Enactment (Days)  [left = more urgent]",
                        font=dict(size=9, color="#9A9590", family="Montserrat")),
-            range=[0, 70], autorange="reversed",
+            range=[0, x_max], autorange="reversed",
             tickfont=dict(size=9, color="#6B6560", family="Montserrat"),
             gridcolor="rgba(196,191,184,0.05)", showline=False, zeroline=False,
         ),
@@ -3086,11 +3106,12 @@ def main() -> None:
         st.session_state.results = None
         pipeline_start = time.time()
 
-        step1_data: Optional[Dict] = None
-        step2_data: Optional[Dict] = None
-        step3_data: Optional[Dict] = None
-        debate_log: List[Dict] = []
-        pmg_hits:   Optional[List] = None
+        step1_data:     Optional[Dict] = None
+        step2_data:     Optional[Dict] = None
+        step3_data:     Optional[Dict] = None
+        debate_log:     List[Dict] = []
+        pmg_hits:       Optional[List] = None
+        matrix_clauses: Optional[List] = None
 
         # Progress bar lives outside st.status so it stays visible throughout
         _prog = st.progress(0, text="◆  Initializing Autonomous Response Pipeline...")
@@ -3187,8 +3208,9 @@ def main() -> None:
                     )
                     time.sleep(0.5)
 
-                    step3_data = scenario["step3_data"]
-                    pmg_hits   = scenario["pmg_hits"]
+                    step3_data     = scenario["step3_data"]
+                    pmg_hits       = scenario["pmg_hits"]
+                    matrix_clauses = scenario.get("matrix_clauses")
 
                     _prog.progress(98, text="Step III · Finalizing audit metadata & document ID...")
                     st.write(
@@ -3335,8 +3357,9 @@ def main() -> None:
             "elapsed": elapsed,
             "debate_log": debate_log if debate_log else [],
             "doc_id": doc_id,
-            "policy_text": policy_text,
-            "pmg_hits": pmg_hits,
+            "policy_text":    policy_text,
+            "pmg_hits":       pmg_hits,
+            "matrix_clauses": matrix_clauses,
         }
 
     # ── Display Results ───────────────────────────────────────────────────────
@@ -3352,7 +3375,8 @@ def main() -> None:
     debate_log  = res.get("debate_log", [])
     doc_id      = res.get("doc_id", "REQ-—")
     policy_text = res.get("policy_text", "")
-    pmg_hits    = res.get("pmg_hits")
+    pmg_hits       = res.get("pmg_hits")
+    matrix_clauses = res.get("matrix_clauses")
 
     # ── Header ────────────────────────────────────────────────────────────────
     hcol1, hcol2 = st.columns([4, 1])
@@ -3469,7 +3493,7 @@ def main() -> None:
             'margin-bottom:10px">Key clauses by time-to-enactment × business severity</div>',
             unsafe_allow_html=True,
         )
-        st.plotly_chart(create_risk_urgency_matrix(step2_data["scores"]),
+        st.plotly_chart(create_risk_urgency_matrix(step2_data["scores"], matrix_clauses),
                         use_container_width=True, config={"displayModeBar": False})
 
     st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#C4BFB8;font-size:0.60rem;letter-spacing:0.20em;text-transform:uppercase;margin:1rem 0 12px">Evidence & Priority Actions</div>', unsafe_allow_html=True)
