@@ -374,6 +374,17 @@ hr { border: none !important; border-top: 1px solid var(--accent-border) !import
 MODEL = "claude-opus-4-6"
 
 DOMAIN_PROFILES: Dict[str, str] = {
+    "AI Search & Distribution": (
+        "Core business: Japan's leading digital subscription media, dependent on organic search traffic "
+        "for subscriber acquisition and ad revenue. "
+        "Primary risk vectors: AI Overviews and Zero-click AI Answers reducing article click-through rates, "
+        "AI-generated summaries displacing direct content consumption, "
+        "algorithm changes deprioritizing premium paywalled content. "
+        "Key objectives: maintain referral traffic integrity, defend against AI summary cannibalization, "
+        "negotiate traffic guarantees or equivalent value-exchange in platform agreements. "
+        "Special sensitivity: any policy change enabling platform AI to summarize content without redirect, "
+        "or modifying traffic attribution models, carries HIGH-to-CRITICAL revenue exposure."
+    ),
     "AI Licensing & Copyright": (
         "Core business: licensing proprietary editorial content and structured data to generative AI operators "
         "(global LLM providers, AI startups, enterprise AI vendors). "
@@ -384,17 +395,6 @@ DOMAIN_PROFILES: Dict[str, str] = {
         "establish enforceable indemnification clauses in all AI partnership agreements. "
         "Special sensitivity: any policy change affecting copyright ownership, consent mechanisms for data use, "
         "or compensation frameworks for rights holders carries CRITICAL-level exposure."
-    ),
-    "AI Search & Zero-Click": (
-        "Core business: Japan's leading digital subscription media, dependent on organic search traffic "
-        "for subscriber acquisition and ad revenue. "
-        "Primary risk vectors: AI Overviews and Zero-click AI Answers reducing article click-through rates, "
-        "AI-generated summaries displacing direct content consumption, "
-        "algorithm changes deprioritizing premium paywalled content. "
-        "Key objectives: maintain referral traffic integrity, defend against AI summary cannibalization, "
-        "negotiate traffic guarantees or equivalent value-exchange in platform agreements. "
-        "Special sensitivity: any policy change enabling platform AI to summarize content without redirect, "
-        "or modifying traffic attribution models, carries HIGH-to-CRITICAL revenue exposure."
     ),
     "Platform Distribution Policies": (
         "Core business: multi-platform content distribution across social, video, audio, and aggregator channels "
@@ -412,17 +412,17 @@ DOMAIN_PROFILES: Dict[str, str] = {
 
 # Domain-specific risk context injected into LLM prompts for calibrated output
 DOMAIN_RISK_FOCUS: Dict[str, str] = {
+    "AI Search & Distribution": (
+        "The user is evaluating this policy change from the perspective of the 'AI Search & Distribution' domain. "
+        "Place HEIGHTENED emphasis on: traffic attribution, AI summary/snippet impact on click-through rates, "
+        "referral traffic guarantees, and SERP feature policies that displace direct content consumption. "
+        "Quantify estimated traffic and revenue loss in percentage and absolute terms where possible."
+    ),
     "AI Licensing & Copyright": (
         "The user is evaluating this policy change from the perspective of the 'AI Licensing & Copyright' domain. "
         "Place HEIGHTENED emphasis on: IP ownership implications, copyright consent mechanisms, "
         "royalty and compensation structures, indemnification requirements, and training-data usage rights. "
         "Treat any ambiguity in copyright assignment or consent scope as a CRITICAL-level exposure."
-    ),
-    "AI Search & Zero-Click": (
-        "The user is evaluating this policy change from the perspective of the 'AI Search & Zero-Click' domain. "
-        "Place HEIGHTENED emphasis on: traffic attribution, AI summary/snippet impact on click-through rates, "
-        "referral traffic guarantees, and SERP feature policies that displace direct content consumption. "
-        "Quantify estimated traffic and revenue loss in percentage and absolute terms where possible."
     ),
     "Platform Distribution Policies": (
         "The user is evaluating this policy change from the perspective of the 'Platform Distribution Policies' domain. "
@@ -452,7 +452,7 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
 
     # ── GAIF: Zero-click threat scenario ───────────────────────────────────────
     if "GAIF" in txt:
-        domain = "AI Search & Zero-Click"
+        domain = "AI Search & Distribution"
         step1 = {
             "added_obligations": [
                 {"item": "Mandatory Zero-click AI Answers format",
@@ -923,7 +923,7 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
 
     # ── EU DMA scenario ─────────────────────────────────────────────────────────
     elif "EU" in txt or "DMA" in txt:
-        domain = "AI Search & Zero-Click"
+        domain = "AI Search & Distribution"
         step1 = {
             "added_obligations": [
                 {"item": "Granular technical opt-out for AI training",
@@ -2256,7 +2256,7 @@ def _policy_memory_block(domain: str, pmg_hits: Optional[List[tuple]] = None) ->
                  "Minimum 12-month traffic guarantee required as a prerequisite to any content licensing "
                  "arrangement — hard floor established by Board resolution."),
             ],
-            "AI Search & Zero-Click": [
+            "AI Search & Distribution": [
                 ("Article 7(c)",  "2024 Google SGE pre-negotiation memo",
                  "Any Zero-click AI Answers rendering of more than 40 words from a Nikkei article without a redirect "
                  "was categorised as a hard termination trigger — binding precedent."),
@@ -2306,7 +2306,7 @@ def _policy_memory_block(domain: str, pmg_hits: Optional[List[tuple]] = None) ->
 
 
 _COUNTERPARTY_PROFILES: Dict[str, Dict[str, str]] = {
-    "AI Search & Zero-Click": {
+    "AI Search & Distribution": {
         "label":           "Dominant Search Platform",
         "traffic_pct":     "85%",
         "traffic_level":   "CRITICAL",
@@ -3118,7 +3118,7 @@ def main() -> None:
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="font-size:0.55rem;line-height:1">🟢</span>
                 <span style="font-family:'Montserrat',sans-serif;color:#C8C3BD;font-size:0.60rem;
-                             letter-spacing:0.04em">Nikkei IP &amp; Content Archive</span>
+                             letter-spacing:0.04em">Enterprise IP &amp; Content Archive</span>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="font-size:0.55rem;line-height:1">🟢</span>
@@ -3164,11 +3164,10 @@ def main() -> None:
                 "policy_input",
                 height=248,
                 placeholder=(
-                    "Example: EU AI Act Amendment — Article 53\n"
-                    "- Generative AI systems using copyrighted content for training\n"
-                    "  must provide prior notice and a compensation scheme to rights holders.\n"
-                    "- Non-compliance: 3% of global turnover or up to €15M, whichever is higher.\n"
-                    "- Phased enforcement begins Q1 2026."
+                    "Example: Platform Search Terms Update\n"
+                    "- Generative AI overviews will now appear at the top of all query results.\n"
+                    "- Outbound referral links to publisher content will be collapsed by default.\n"
+                    "- Continued indexing requires acceptance of uncompensated AI feature integration."
                 ),
                 key="policy_text",
                 label_visibility="collapsed",
@@ -3767,7 +3766,7 @@ def main() -> None:
                 "Mirrors the revenue-floor precedent from 2023 Google News Showcase MOU (Exhibit B §3): "
                 "minimum per-article compensation must not fall below ¥0.8 per impression.",
             ],
-            "AI Search & Zero-Click": [
+            "AI Search & Distribution": [
                 "Consistent with red-line position from 2023 Apple News+ renewal: attribution link "
                 "must remain clickable and must not be replaced by AI-generated summaries (§7.1).",
                 "Conflicts with internal policy memo (Legal, Nov 2024): Zero-click AI Answers from "
