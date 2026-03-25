@@ -466,94 +466,97 @@ def get_client() -> Optional[anthropic.Anthropic]:
         return None
     return anthropic.Anthropic(api_key=api_key)
 
-def extract_substantive_changes(
+def analyze_policy_with_claude(
     client: anthropic.Anthropic,
     policy_text: str,
     domain: str,
-) -> tuple:
+) -> Dict:
     """
-    Single-call comprehensive extraction: structural parsing + impact mapping.
-    Replaces separate run_step1_parsing + run_step2_impact_mapping calls.
-    Returns (step1_data, step2_data) ready for the pipeline display layer.
+    Single comprehensive Claude API call — Single Source of Truth for all UI components.
+    Replaces the former extract_substantive_changes + run_step3_structured two-call pattern.
+    Returns a flat dict with all keys needed by every UI panel.
     """
     domain_profile = DOMAIN_PROFILES.get(domain, "")
     domain_focus   = DOMAIN_RISK_FOCUS.get(domain, "")
+    snippet        = policy_text[:3500]
 
     response = client.messages.create(
         model=MODEL,
-        max_tokens=8000,
+        max_tokens=16000,
         thinking={"type": "adaptive"},
         system=(
-            "You are a dual-role expert: (1) regulatory change analyst for platform policies and AI legislation, "
-            "and (2) senior business strategist for a major media enterprise. "
-            "Extract and assess policy changes precisely, then score their business impact across four dimensions. "
+            "You are the Chief Policy Intelligence Analyst for a major media enterprise. "
+            "Your role combines deep regulatory law expertise with senior business strategy. "
+            "Given a policy text, produce one single comprehensive JSON intelligence report "
+            "covering structural analysis, business impact scoring, strategic recommendations, "
+            "and role-specific deliverables — all grounded with verbatim evidence citations. "
             "Return ONLY a valid JSON object — no preamble, no explanation, no markdown code fences. "
             "All text fields must be in professional business English."
         ),
         messages=[{
             "role": "user",
             "content": (
-                f"Analyze the following policy/platform terms/regulatory text for a media enterprise "
-                f"operating in the '{domain}' domain.\n\n"
+                f"Analyze the following policy/regulatory text for a media enterprise "
+                f"operating in the '{domain}' domain. Produce a COMPLETE intelligence report.\n\n"
                 f"[DOMAIN PROFILE]\n{domain_profile}\n\n"
                 f"[DOMAIN RISK FOCUS]\n{domain_focus}\n\n"
-                f"[POLICY TEXT TO ANALYZE]\n{policy_text}\n\n"
-                f"Return ONLY the following JSON structure (no extra text whatsoever):\n"
+                f"[POLICY SOURCE TEXT — Extract VERBATIM quotes for all *_quotes fields]\n{snippet}\n\n"
+                f"Return ONLY this exact JSON schema (no extra text, no code fences):\n"
                 f"{{\n"
-                f'  "added_obligations": [{{"item": "...", "severity": "high|medium|low", "description": "..."}}],\n'
-                f'  "removed_rights":    [{{"item": "...", "severity": "high|medium|low", "description": "..."}}],\n'
-                f'  "key_thresholds":    [{{"item": "...", "value": "...", "description": "..."}}],\n'
-                f'  "context_summary":   "2-3 sentence business impact summary",\n'
-                f'  "parsed_claims":     ["verbatim extract 1 from source text", "verbatim extract 2", "verbatim extract 3"],\n'
-                f'  "scores": {{\n'
-                f'    "IP":      {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}},\n'
-                f'    "Traffic": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}},\n'
-                f'    "Revenue": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}},\n'
-                f'    "Product": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "priority_actions": ["..."]}}\n'
-                f'  }},\n'
-                f'  "card_scores": {{\n'
-                f'    "IP":      {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "brief phrase", "action_badge": "PROTECT|LICENSE|PROMOTE|WAIT|MONITOR|NEGOTIATE", "action_summary": "one-sentence action rationale", "priority_actions": ["...", "..."]}},\n'
-                f'    "Traffic": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "action_badge": "PROTECT|LICENSE|PROMOTE|WAIT|MONITOR|NEGOTIATE", "action_summary": "...", "priority_actions": ["..."]}},\n'
-                f'    "Revenue": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "action_badge": "PROTECT|LICENSE|PROMOTE|WAIT|MONITOR|NEGOTIATE", "action_summary": "...", "priority_actions": ["..."]}},\n'
-                f'    "Product": {{"score": 0-100, "direction": "threat|opportunity|neutral", "evidence": "...", "action_badge": "PROTECT|LICENSE|PROMOTE|WAIT|MONITOR|NEGOTIATE", "action_summary": "...", "priority_actions": ["..."]}}\n'
-                f'  }},\n'
+                f'  "strategic_stance": "e.g. PROTECT & LICENSE",\n'
+                f'  "jurisdiction": "e.g. European Union / EMEA or Global",\n'
                 f'  "overall_risk_level": "critical|high|medium|low",\n'
-                f'  "stance_label": "strategic stance e.g. PROTECT & WAIT or LICENSE & PROMOTE",\n'
-                f'  "executive_summary": "2-3 sentence executive summary for a C-suite audience",\n'
+                f'  "executive_summary": "2-3 sentence C-suite summary",\n'
                 f'  "key_opportunities": ["...", "..."],\n'
-                f'  "key_threats":       ["...", "..."],\n'
-                f'  "pmg_evidence":      ["institutional memory reference 1 relevant to this policy change", "institutional memory reference 2"]\n'
+                f'  "key_threats": ["...", "..."],\n'
+                f'  "substantive_changes": {{\n'
+                f'    "added_obligations": [{{"title": "...", "severity": "high|medium|low", "description": "..."}}],\n'
+                f'    "removed_rights":    [{{"title": "...", "severity": "high|medium|low", "description": "..."}}],\n'
+                f'    "key_thresholds":    [{{"title": "...", "value": "...", "description": "..."}}],\n'
+                f'    "context_summary":   "2-3 sentence business impact summary"\n'
+                f'  }},\n'
+                f'  "scores": {{"IP": 0-100, "Traffic": 0-100, "Revenue": 0-100, "Product": 0-100}},\n'
+                f'  "axis_actions": {{\n'
+                f'    "IP":      {{"badge": "PROTECT|LICENSE|PROMOTE|WAIT|MONITOR|NEGOTIATE", "summary": "one-sentence action rationale", "evidence": "brief supporting phrase", "direction": "threat|opportunity|neutral", "priority_actions": ["...", "..."]}},\n'
+                f'    "Traffic": {{"badge": "...", "summary": "...", "evidence": "...", "direction": "...", "priority_actions": ["..."]}},\n'
+                f'    "Revenue": {{"badge": "...", "summary": "...", "evidence": "...", "direction": "...", "priority_actions": ["..."]}},\n'
+                f'    "Product": {{"badge": "...", "summary": "...", "evidence": "...", "direction": "...", "priority_actions": ["..."]}}\n'
+                f'  }},\n'
+                f'  "evidence": {{\n'
+                f'    "parsed_claims":          ["verbatim extract 1 from source", "verbatim extract 2", "verbatim extract 3"],\n'
+                f'    "claim_level_provenance": [{{"type": "IP RISK|TRAFFIC RISK|REVENUE RISK", "agent": "LEGAL AGENT|BUSINESS AGENT", "quote": "verbatim from source"}}],\n'
+                f'    "policy_memory_graph":    [{{"reference_id": "e.g. Clause 4.2", "description": "institutional memory / red-line this policy triggers"}}]\n'
+                f'  }},\n'
+                f'  "risk_matrix_points": [\n'
+                f'    {{"label": "obligation/clause name", "days_to_enactment": 0-100, "business_severity": 0-100}}\n'
+                f'  ],\n'
+                f'  "what_changed_brief": "90-second before/after delta memo with specific clause numbers and effective dates",\n'
+                f'  "what_changed_quotes": ["verbatim quote 1", "verbatim quote 2"],\n'
+                f'  "business_exposure_memo": "structured memo: (1) Traffic & audience, (2) Revenue streams, (3) IP & copyright, (4) Product, (5) Brand. Include financial ranges.",\n'
+                f'  "business_exposure_quotes": ["verbatim quote supporting exposure assessment"],\n'
+                f'  "negotiation_brief": "deal team brief: (1) Non-negotiables, (2) Written confirmation needed, (3) Leverage points, (4) Compromise zones, (5) Red lines",\n'
+                f'  "negotiation_quotes": ["verbatim quote relevant to negotiation"],\n'
+                f'  "board_memo": "one-page board summary: (1) What happened, (2) Financial exposure, (3) Board decisions, (4) Recommended actions with owners/deadlines, (5) Best/base/worst scenarios",\n'
+                f'  "board_memo_quotes": ["verbatim quote supporting board concern"],\n'
+                f'  "product_checklist": [\n'
+                f'    "[CONSENT MECHANISM] Team — opt-in/opt-out spec, trigger, data captured, user segment",\n'
+                f'    "[CONSENT UI] Team — component type, placement, timing, dark-pattern anti-patterns with regulation citation",\n'
+                f'    "[LEGAL DISCLOSURE] Team — notification pattern, link placement, changelog requirement",\n'
+                f'    "[FEATURE CHANGE] Team — specific product change with implementation detail and deadline",\n'
+                f'    "[AUDIT LOGGING] Team — events, retention period, format, consent record requirements"\n'
+                f'  ]\n'
                 f"}}"
             ),
         }],
     )
     raw = next(b.text for b in response.content if b.type == "text")
-    combined = _safe_json_parse(raw)
-
-    step1_data = {
-        "added_obligations": combined.get("added_obligations", []),
-        "removed_rights":    combined.get("removed_rights", []),
-        "key_thresholds":    combined.get("key_thresholds", []),
-        "context_summary":   combined.get("context_summary", ""),
-        "parsed_claims":     combined.get("parsed_claims", []),
-    }
-    step2_data = {
-        "scores":             combined.get("scores", {}),
-        "card_scores":        combined.get("card_scores", {}),
-        "overall_risk_level": combined.get("overall_risk_level", "medium"),
-        "stance_label":       combined.get("stance_label", ""),
-        "executive_summary":  combined.get("executive_summary", ""),
-        "key_opportunities":  combined.get("key_opportunities", []),
-        "key_threats":        combined.get("key_threats", []),
-        "pmg_evidence":       combined.get("pmg_evidence", []),
-    }
-    return step1_data, step2_data
+    return _safe_json_parse(raw)
 
 
-def _rule_based_fallback(policy_text: str, domain: str) -> tuple:
+def _rule_based_fallback(policy_text: str, domain: str) -> Dict:
     """
-    Keyword-frequency rule-based parser — safe fallback when ANTHROPIC_API_KEY is absent.
-    Returns (step1_data, step2_data) with indicative scores derived from word patterns.
+    Keyword-frequency rule-based fallback — safe when ANTHROPIC_API_KEY is absent.
+    Returns a flat analysis dict matching the analyze_policy_with_claude schema.
     """
     txt  = policy_text.lower()
     wrds = txt.split()
@@ -576,143 +579,63 @@ def _rule_based_fallback(policy_text: str, domain: str) -> tuple:
     pr_s  = min(int(35 + t_pct * 45), 85)
     dirn  = "threat" if t_pct > 0.55 else ("opportunity" if t_pct < 0.35 else "neutral")
     risk  = "critical" if ip_s > 82 else ("high" if ip_s > 65 else ("medium" if ip_s > 45 else "low"))
+    ev    = f"Keyword scan ({t_cnt} threat · {o_cnt} opportunity terms)"
 
-    def _ax(s: int) -> Dict:
+    def _ax_action(s: int) -> Dict:
         return {
-            "score": s, "direction": dirn,
-            "evidence": f"Keyword scan ({t_cnt} threat · {o_cnt} opportunity terms)",
-            "action_badge": "MONITOR",
-            "action_summary": "Set ANTHROPIC_API_KEY to enable full Claude AI analysis.",
-            "priority_actions": ["Configure ANTHROPIC_API_KEY to unlock scenario-specific recommendations"],
+            "badge": "MONITOR", "direction": dirn, "evidence": ev,
+            "summary": "Set ANTHROPIC_API_KEY to enable full Claude AI analysis.",
+            "priority_actions": ["Configure ANTHROPIC_API_KEY for scenario-specific recommendations"],
         }
 
-    step1_data = {
-        "added_obligations": [{"item": "Policy change detected (rule-based scan)", "severity": "medium",
-                                "description": f"Preliminary scan found {t_cnt} obligation-pattern indicators. "
-                                               "Set ANTHROPIC_API_KEY for detailed AI analysis."}],
-        "removed_rights":    [],
-        "key_thresholds":    [],
-        "context_summary":   (f"Rule-based keyword scan only — {t_cnt} threat-pattern terms, "
-                              f"{o_cnt} opportunity-pattern terms detected. "
-                              "Configure ANTHROPIC_API_KEY for full Claude AI-powered analysis."),
-        "parsed_claims":     [policy_text[:300] + ("…" if len(policy_text) > 300 else "")],
-    }
-    step2_data = {
-        "scores":             {"IP": _ax(ip_s), "Traffic": _ax(tr_s), "Revenue": _ax(re_s), "Product": _ax(pr_s)},
-        "card_scores":        {"IP": _ax(ip_s), "Traffic": _ax(tr_s), "Revenue": _ax(re_s), "Product": _ax(pr_s)},
+    return {
+        "strategic_stance":  "MONITOR",
+        "jurisdiction":      "Global",
         "overall_risk_level": risk,
-        "stance_label":       "MONITOR",
-        "executive_summary":  (f"Preliminary rule-based scan: {t_cnt} obligation-pattern keywords detected. "
-                               "ANTHROPIC_API_KEY required for scenario-specific strategic stance and full analysis."),
-        "key_opportunities":  ["Set ANTHROPIC_API_KEY to enable full opportunity analysis via Claude AI"],
-        "key_threats":        [f"{t_cnt} threat-pattern keywords found in source text — configure API for details"],
-        "pmg_evidence":       ["Set ANTHROPIC_API_KEY to activate Policy Memory Graph cross-referencing."],
+        "executive_summary": (
+            f"Rule-based keyword scan only — {t_cnt} threat-pattern terms and {o_cnt} "
+            f"opportunity-pattern terms detected. Configure ANTHROPIC_API_KEY for full Claude AI analysis."
+        ),
+        "key_opportunities": ["Configure ANTHROPIC_API_KEY to enable full opportunity analysis"],
+        "key_threats":       [f"{t_cnt} threat-pattern keywords detected — configure API key for details"],
+        "substantive_changes": {
+            "added_obligations": [{"title": "Policy change detected (rule-based scan)", "item": "Policy change detected (rule-based scan)",
+                                   "severity": "medium",
+                                   "description": f"Preliminary scan found {t_cnt} obligation-pattern indicators. "
+                                                  "Set ANTHROPIC_API_KEY for detailed AI analysis."}],
+            "removed_rights":   [],
+            "key_thresholds":   [],
+            "context_summary":  (f"Rule-based scan: {t_cnt} threat-pattern terms, "
+                                 f"{o_cnt} opportunity-pattern terms detected. "
+                                 "Configure ANTHROPIC_API_KEY for full analysis."),
+        },
+        "scores": {"IP": ip_s, "Traffic": tr_s, "Revenue": re_s, "Product": pr_s},
+        "axis_actions": {ax: _ax_action(s) for ax, s in
+                         [("IP", ip_s), ("Traffic", tr_s), ("Revenue", re_s), ("Product", pr_s)]},
+        "evidence": {
+            "parsed_claims":          [policy_text[:300] + ("…" if len(policy_text) > 300 else "")],
+            "claim_level_provenance": [],
+            "policy_memory_graph":    [{"reference_id": "API-REQUIRED",
+                                        "description": "Set ANTHROPIC_API_KEY to activate Policy Memory Graph cross-referencing."}],
+        },
+        "risk_matrix_points": [
+            {"label": "IP Exposure",    "days_to_enactment": 10, "business_severity": ip_s},
+            {"label": "Traffic Impact", "days_to_enactment": 22, "business_severity": tr_s},
+            {"label": "Revenue Risk",   "days_to_enactment": 38, "business_severity": re_s},
+            {"label": "Product Change", "days_to_enactment": 55, "business_severity": pr_s},
+        ],
+        "what_changed_brief":       f"Rule-based scan: {t_cnt} obligation-pattern keywords detected. Set API key for full analysis.",
+        "what_changed_quotes":      [policy_text[:300] + ("…" if len(policy_text) > 300 else "")],
+        "overall_risk":             risk.upper(),
+        "business_exposure_memo":   f"Keyword-based preliminary scan: {t_cnt} threat-pattern terms detected.",
+        "business_exposure_quotes": [],
+        "negotiation_brief":        "Set ANTHROPIC_API_KEY for full negotiation brief.",
+        "negotiation_quotes":       [],
+        "board_memo":               "Set ANTHROPIC_API_KEY for full board memo.",
+        "board_memo_quotes":        [],
+        "product_checklist":        ["Set ANTHROPIC_API_KEY for detailed product checklist."],
     }
-    return step1_data, step2_data
 
-
-
-def _build_draft_context(domain: str, step1_data: Dict, step2_data: Dict) -> str:
-    scores = step2_data["scores"]
-    return (
-        f"[Policy/Regulatory Change Summary]\n{step1_data.get('context_summary', '')}\n\n"
-        f"[Target Domain] {domain}\n{DOMAIN_PROFILES[domain]}\n\n"
-        f"[Domain-Specific Risk Calibration]\n{DOMAIN_RISK_FOCUS.get(domain, '')}\n\n"
-        f"[Structured Extraction]\n"
-        f"Added Obligations: {json.dumps(step1_data.get('added_obligations', []), ensure_ascii=False)}\n"
-        f"Removed Rights:    {json.dumps(step1_data.get('removed_rights', []), ensure_ascii=False)}\n"
-        f"Key Thresholds:    {json.dumps(step1_data.get('key_thresholds', []), ensure_ascii=False)}\n\n"
-        f"[Impact Map Scores]\n"
-        + "\n".join(
-            f"{ax}: {scores[ax]['score']}/100 ({scores[ax]['direction']}) — {scores[ax]['evidence'][:80]}"
-            for ax in ["IP", "Traffic", "Revenue", "Product"]
-        )
-        + f"\nStrategic Stance: {step2_data['overall_risk_level'].upper()}\n"
-        f"Key Opportunities: {'; '.join(step2_data.get('key_opportunities', []))}\n"
-        f"Key Threats:       {'; '.join(step2_data.get('key_threats', []))}"
-    )
-
-
-def run_step3_structured(
-    client: anthropic.Anthropic,
-    domain: str,
-    step1_data: Dict,
-    step2_data: Dict,
-    policy_text: str = "",
-) -> Dict:
-    """Generate all role-based deliverables as a single structured JSON call with evidence quotes."""
-    context = _build_draft_context(domain, step1_data, step2_data)
-
-    # Prepend original policy text so LLM can extract verbatim evidence quotes
-    original_block = ""
-    if policy_text:
-        snippet = policy_text[:3500]
-        original_block = (
-            f"[ORIGINAL SOURCE TEXT — Extract VERBATIM quotes from this for all *_quotes fields]\n"
-            f"{snippet}\n\n"
-        )
-
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=10000,
-        thinking={"type": "adaptive"},
-        system=STRATEGIST_SYSTEM,
-        messages=[{
-            "role": "user",
-            "content": (
-                f"Based on the following policy analysis, generate a complete intelligence report "
-                f"with role-specific deliverables for the '{domain}' domain.\n\n"
-                f"{original_block}"
-                f"{context}\n\n"
-                f"CRITICAL INSTRUCTION A: For every *_quotes field, you MUST include 1–3 VERBATIM "
-                f"quotes copied exactly from the ORIGINAL SOURCE TEXT above. "
-                f"These are evidence citations — they must be exact text, not paraphrases.\n\n"
-                f"CRITICAL INSTRUCTION B — product_checklist QUALITY STANDARD:\n"
-                f"The product_checklist must function as a concrete implementation specification that a "
-                f"CPO and UX designer can execute directly without further legal interpretation. "
-                f"Each item must be written in the format: [CATEGORY] Owner Team — specific action. "
-                f"You MUST cover ALL of the following five mandatory categories with at least one item each:\n"
-                f"  1. CONSENT MECHANISM: Specify whether opt-in or opt-out consent is required under the "
-                f"new policy, which user actions trigger consent capture, and the exact data to be stored "
-                f"(timestamp, version ID, user ID). Distinguish between first-time users and existing users.\n"
-                f"  2. CONSENT UI IMPLEMENTATION: Define exactly when and where the consent surface appears "
-                f"(e.g., on first login post-update, at checkout, before AI feature activation). Specify the "
-                f"UI component (modal, banner, inline checkbox, gate screen). List dark-pattern anti-patterns "
-                f"to avoid: pre-ticked boxes, buried decline links, misleading button labels, confusing "
-                f"double-negatives. Cite applicable regulation (GDPR Art.7, CCPA, etc.) per item.\n"
-                f"  3. LEGAL DOCUMENT DISCLOSURE: Specify the UI pattern for notifying users of updated "
-                f"Terms of Service or Privacy Policy (e.g., persistent header banner, email notification, "
-                f"in-app toast). Define the required link placement, label text, and whether a summary "
-                f"changelog ('What changed') must accompany the full document link.\n"
-                f"  4. FEATURE / PLATFORM CHANGE: Specific product feature, API endpoint, content filter, "
-                f"or platform capability to add, modify, or disable — with owning team and deadline.\n"
-                f"  5. AUDIT & COMPLIANCE LOGGING: What events must be logged, retained for how long, and "
-                f"in what format to satisfy the new regulatory requirement. Include any required audit trail "
-                f"for consent records.\n\n"
-                f"Return ONLY the following JSON structure (no preamble, no code fences):\n"
-                f"{{\n"
-                f'  "what_changed_brief": "Concise 90-second delta memo: exactly what changed, written as a clear before/after summary for a busy executive. Include specific clause numbers, penalties, and effective dates where applicable.",\n'
-                f'  "what_changed_quotes": ["Verbatim quote from source text supporting this delta"],\n'
-                f'  "overall_risk": "CRITICAL|HIGH|MEDIUM|LOW",\n'
-                f'  "business_exposure_memo": "Structured memo covering how this affects: (1) Traffic & audience reach, (2) Revenue streams & monetization, (3) IP & copyright position, (4) Product & platform capabilities, (5) Brand & competitive standing. Include estimated financial impact ranges and timelines.",\n'
-                f'  "business_exposure_quotes": ["Verbatim quote from source text supporting this exposure assessment"],\n'
-                f'  "negotiation_brief": "Legal & deal team briefing covering: (1) Non-negotiable conditions we must insist on, (2) Items requiring written confirmation from the other party, (3) Our strongest leverage points, (4) Acceptable compromise zones, (5) Red lines that trigger legal escalation or deal termination.",\n'
-                f'  "negotiation_quotes": ["Verbatim quote from source text relevant to negotiation position"],\n'
-                f'  "board_memo": "One-page board summary covering: (1) What happened and why it matters now, (2) Financial and strategic exposure, (3) Decisions the board must make, (4) Recommended immediate actions with owners and deadlines, (5) Best/base/worst case scenarios.",\n'
-                f'  "board_memo_quotes": ["Verbatim quote from source text supporting board-level concern"],\n'
-                f'  "product_checklist": [\n'
-                f'    "[CONSENT MECHANISM] Team — opt-in/opt-out specification with trigger condition, data captured, and user segment (new vs. existing)",\n'
-                f'    "[CONSENT UI] Team — component type, placement, timing, and specific dark-pattern anti-patterns to avoid with regulatory citation",\n'
-                f'    "[LEGAL DISCLOSURE] Team — notification UI pattern, link placement, changelog summary requirement, and rollout timing",\n'
-                f'    "[FEATURE CHANGE] Team — specific product or platform change with implementation detail and deadline",\n'
-                f'    "[AUDIT LOGGING] Team — events to log, retention period, format, and consent record requirements"\n'
-                f'  ]\n'
-                f"}}"
-            ),
-        }],
-    )
-    raw = next(b.text for b in response.content if b.type == "text")
-    return _safe_json_parse(raw)
 
 
 # ─── Chart Functions ──────────────────────────────────────────────────────────
@@ -796,14 +719,33 @@ def create_exposure_delta_radar(scores: Dict) -> go.Figure:
     return fig
 
 
+def _risk_matrix_points_to_clauses(pts: List[Dict]) -> List[Dict]:
+    """Convert analyze_policy_with_claude risk_matrix_points list → clauses format for the chart."""
+    _COLORS = ["#C0392B", "#E67E22", "#A8892A", "#0ABAB5", "#8B2635", "#1A6B3C"]
+    return [
+        {
+            "name":   pt.get("label", f"Clause {i + 1}"),
+            "x":      max(1, min(100, int(pt.get("days_to_enactment", 30)))),
+            "y":      max(1, min(100, int(pt.get("business_severity", 50)))),
+            "color":  _COLORS[i % len(_COLORS)],
+            "size":   max(8, min(16, 10 + (int(pt.get("business_severity", 50)) - 50) // 10)),
+        }
+        for i, pt in enumerate(pts)
+        if isinstance(pt, dict)
+    ]
+
+
 def create_risk_urgency_matrix(scores: Dict, clauses: Optional[List[Dict]] = None) -> go.Figure:
     """Risk & Urgency Matrix: scatter of key policy clauses by time + severity."""
     if clauses is None:
         # ── Fallback: derive clause positions from axis scores ───────────────
-        ip_s  = scores["IP"]["score"]
-        tr_s  = scores["Traffic"]["score"]
-        rv_s  = scores["Revenue"]["score"]
-        pr_s  = scores["Product"]["score"]
+        def _gs(key):
+            v = scores.get(key, 50)
+            return v.get("score", 50) if isinstance(v, dict) else int(v)
+        ip_s  = _gs("IP")
+        tr_s  = _gs("Traffic")
+        rv_s  = _gs("Revenue")
+        pr_s  = _gs("Product")
         clauses = [
             {
                 "name": "IP Licensing Term",
@@ -1283,7 +1225,7 @@ def _download_row(label: str, data: bytes, file_name: str, key: str) -> None:
         )
 
 
-def _audit_block(doc_id: str, domain: str = "", step2_data: Optional[Dict] = None, policy_text: str = "") -> None:
+def _audit_block(doc_id: str, domain: str = "", step2_data: Optional[Dict] = None, policy_text: str = "", jurisdiction: str = "") -> None:
     """Render compact audit-metadata header — contextual data derived from live analysis."""
     import datetime as _dt
 
@@ -1336,6 +1278,13 @@ def _audit_block(doc_id: str, domain: str = "", step2_data: Optional[Dict] = Non
                     letter-spacing:0.24em;text-transform:uppercase;margin-bottom:2px">Grounding Sources</div>
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.68rem">
           {grounding}
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.50rem;
+                    letter-spacing:0.24em;text-transform:uppercase;margin-bottom:2px">Jurisdiction</div>
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.68rem">
+          {jurisdiction if jurisdiction else "—"}
         </div>
       </div>
       <div>
@@ -1770,7 +1719,7 @@ def _build_debate_log(step1_data: Dict, step2_data: Dict, domain: str) -> List[D
     rev_score  = scores.get("Revenue", {}).get("score", 50)
     prod_score = scores.get("Product", {}).get("score", 50)
 
-    obl_text = obligations[0].get("item", "new compliance obligations") if obligations else "new compliance obligations"
+    obl_text = obligations[0].get("title", obligations[0].get("item", "new compliance obligations")) if obligations else "new compliance obligations"
     threat_text = threats[0]   if threats      else "potential operational disruption"
     opp_text    = opportunities[0] if opportunities else "strategic repositioning opportunity"
 
@@ -2344,12 +2293,11 @@ def main() -> None:
         st.session_state.results = None
         pipeline_start = time.time()
 
-        step1_data:     Optional[Dict] = None
-        step2_data:     Optional[Dict] = None
-        step3_data:     Optional[Dict] = None
-        debate_log:     List[Dict] = []
-        pmg_hits:       Optional[List] = None
-        matrix_clauses: Optional[List] = None
+        analysis:   Optional[Dict] = None
+        step1_data: Optional[Dict] = None
+        step2_data: Optional[Dict] = None
+        step3_data: Optional[Dict] = None
+        debate_log: List[Dict] = []
 
         # Progress bar lives outside st.status so it stays visible throughout
         _prog = st.progress(0, text="◆  Initializing Autonomous Response Pipeline...")
@@ -2373,13 +2321,53 @@ def main() -> None:
                 time.sleep(0.3)
 
                 if client:
-                    step1_data, step2_data = extract_substantive_changes(client, policy_text, domain)
+                    analysis = analyze_policy_with_claude(client, policy_text, domain)
                 else:
                     st.warning(
                         "⚠️  ANTHROPIC_API_KEY not configured — showing rule-based keyword scan only. "
                         "Set the environment variable or add it to st.secrets for full Claude AI analysis."
                     )
-                    step1_data, step2_data = _rule_based_fallback(policy_text, domain)
+                    analysis = _rule_based_fallback(policy_text, domain)
+                # Derive backward-compat shims from the unified analysis dict
+                _sc         = analysis.get("substantive_changes", {})
+                _ax_actions = analysis.get("axis_actions", {})
+                _raw_scores = analysis.get("scores", {})
+                _evidence   = analysis.get("evidence", {})
+                step1_data = {
+                    "added_obligations": [{**it, "item": it.get("title", it.get("item", ""))} for it in _sc.get("added_obligations", [])],
+                    "removed_rights":    [{**it, "item": it.get("title", it.get("item", ""))} for it in _sc.get("removed_rights", [])],
+                    "key_thresholds":    [{**it, "item": it.get("title", it.get("item", ""))} for it in _sc.get("key_thresholds", [])],
+                    "context_summary":   _sc.get("context_summary", ""),
+                    "parsed_claims":     _evidence.get("parsed_claims", []),
+                }
+                step2_data = {
+                    "scores": {
+                        ax: {
+                            "score":            _raw_scores.get(ax, 50) if isinstance(_raw_scores.get(ax), int) else _raw_scores.get(ax, {}).get("score", 50),
+                            "direction":        _ax_actions.get(ax, {}).get("direction", "neutral"),
+                            "evidence":         _ax_actions.get(ax, {}).get("evidence", ""),
+                            "priority_actions": _ax_actions.get(ax, {}).get("priority_actions", []),
+                        }
+                        for ax in ["IP", "Traffic", "Revenue", "Product"]
+                    },
+                    "card_scores": {
+                        ax: {
+                            "score":          _raw_scores.get(ax, 50) if isinstance(_raw_scores.get(ax), int) else _raw_scores.get(ax, {}).get("score", 50),
+                            "direction":      _ax_actions.get(ax, {}).get("direction", "neutral"),
+                            "evidence":       _ax_actions.get(ax, {}).get("evidence", ""),
+                            "action_badge":   _ax_actions.get(ax, {}).get("badge", "MONITOR"),
+                            "action_summary": _ax_actions.get(ax, {}).get("summary", ""),
+                            "priority_actions": _ax_actions.get(ax, {}).get("priority_actions", []),
+                        }
+                        for ax in ["IP", "Traffic", "Revenue", "Product"]
+                    },
+                    "overall_risk_level": analysis.get("overall_risk_level", "medium"),
+                    "stance_label":       analysis.get("strategic_stance", ""),
+                    "executive_summary":  analysis.get("executive_summary", ""),
+                    "key_opportunities":  analysis.get("key_opportunities", []),
+                    "key_threats":        analysis.get("key_threats", []),
+                    "pmg_evidence":       [item.get("description", "") for item in _evidence.get("policy_memory_graph", [])],
+                }
 
                 n_obl = len(step1_data.get("added_obligations", []))
                 n_rem = len(step1_data.get("removed_rights", []))
@@ -2438,23 +2426,18 @@ def main() -> None:
                 )
                 time.sleep(0.4)
 
-                if client:
-                    step3_data = run_step3_structured(
-                        client, domain, step1_data, step2_data, policy_text
-                    )
-                else:
-                    step3_data = {
-                        "what_changed_brief":      step2_data.get("executive_summary", ""),
-                        "what_changed_quotes":     step1_data.get("parsed_claims", []),
-                        "overall_risk":            rl_raw,
-                        "business_exposure_memo":  step2_data.get("executive_summary", ""),
-                        "business_exposure_quotes": [],
-                        "negotiation_brief":        "Set ANTHROPIC_API_KEY for full negotiation brief.",
-                        "negotiation_quotes":       [],
-                        "board_memo":               "Set ANTHROPIC_API_KEY for board memo.",
-                        "board_memo_quotes":        [],
-                        "product_checklist":        ["Set ANTHROPIC_API_KEY for detailed product checklist."],
-                    }
+                step3_data = {
+                    "what_changed_brief":       analysis.get("what_changed_brief", step2_data.get("executive_summary", "")),
+                    "what_changed_quotes":      analysis.get("what_changed_quotes", step1_data.get("parsed_claims", [])),
+                    "overall_risk":             analysis.get("overall_risk_level", "medium").upper(),
+                    "business_exposure_memo":   analysis.get("business_exposure_memo", ""),
+                    "business_exposure_quotes": analysis.get("business_exposure_quotes", []),
+                    "negotiation_brief":        analysis.get("negotiation_brief", ""),
+                    "negotiation_quotes":       analysis.get("negotiation_quotes", []),
+                    "board_memo":               analysis.get("board_memo", ""),
+                    "board_memo_quotes":        analysis.get("board_memo_quotes", []),
+                    "product_checklist":        analysis.get("product_checklist", []),
+                }
 
                 _prog.progress(98, text="Step III · Finalizing audit metadata & document ID...")
                 st.write(
@@ -2495,16 +2478,15 @@ def main() -> None:
         doc_id = f"REQ-{time.strftime('%Y%m%d')}-{initials}-{str(int(elapsed * 1000))[-4:]}"
 
         st.session_state.results = {
-            "step1": step1_data,
-            "step2": step2_data,
-            "step3": step3_data,
-            "domain": domain,
-            "elapsed": elapsed,
-            "debate_log": debate_log if debate_log else [],
-            "doc_id": doc_id,
-            "policy_text":    policy_text,
-            "pmg_hits":       pmg_hits,
-            "matrix_clauses": matrix_clauses,
+            "analysis":    analysis,
+            "step1":       step1_data,
+            "step2":       step2_data,
+            "step3":       step3_data,
+            "domain":      domain,
+            "elapsed":     elapsed,
+            "debate_log":  debate_log if debate_log else [],
+            "doc_id":      doc_id,
+            "policy_text": policy_text,
         }
 
     # ── Display Results ───────────────────────────────────────────────────────
@@ -2520,8 +2502,13 @@ def main() -> None:
     debate_log  = res.get("debate_log", [])
     doc_id      = res.get("doc_id", "REQ-—")
     policy_text = res.get("policy_text", "")
-    pmg_hits       = res.get("pmg_hits")
-    matrix_clauses = res.get("matrix_clauses")
+    analysis       = res.get("analysis", {})
+    jurisdiction   = analysis.get("jurisdiction", "")
+    _risk_pts      = analysis.get("risk_matrix_points", [])
+    matrix_clauses = _risk_matrix_points_to_clauses(_risk_pts) if _risk_pts else None
+    _pmg_graph     = analysis.get("evidence", {}).get("policy_memory_graph", [])
+    pmg_hits       = [(item.get("reference_id", ""), "", item.get("description", ""))
+                      for item in _pmg_graph] if _pmg_graph else None
 
     # ── Header ────────────────────────────────────────────────────────────────
     hcol1, hcol2 = st.columns([4, 1])
@@ -2710,7 +2697,7 @@ def main() -> None:
 
     # ── Tab 1: Executive Summary & Delta ─────────────────────────────────────
     with tab1:
-        _audit_block(doc_id, domain, step2_data, policy_text)
+        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
         rl3 = step3_data.get("overall_risk", "—")
         rl3_label, rl3_color, rl3_sub = _risk_config(rl3)
         st.markdown(f"""
@@ -2757,37 +2744,7 @@ def main() -> None:
         )
 
         # ── Policy Memory Graph evidence — scenario-driven or domain fallback ──
-        _pmg_fallback = {
-            "AI Licensing & Copyright": [
-                "Strictly aligns with the 'no-sublicensing without prior written consent' red-line "
-                "established during our 2024 OpenAI partner contract negotiations (Clause 4.2). Previous position "
-                "required board-level sign-off before any sub-licensing of editorial content.",
-                "Mirrors the revenue-floor precedent from 2023 Google News Showcase MOU (Exhibit B §3): "
-                "minimum per-article compensation must not fall below ¥0.8 per impression.",
-            ],
-            "AI Search & Distribution": [
-                "Consistent with red-line position from 2023 Apple News+ renewal: attribution link "
-                "must remain clickable and must not be replaced by AI-generated summaries (§7.1).",
-                "Conflicts with internal policy memo (Legal, Nov 2024): Zero-click AI Answers from "
-                "generative search must be classified as derivative works under J-Copyright Act Art. 21.",
-            ],
-            "Platform Distribution Policies": [
-                "Directly triggers the 'algorithmic reach guarantee' clause negotiated in 2022 Meta "
-                "Instant Articles exit agreement — any reach reduction >15% activates renegotiation right.",
-                "Matches threat pattern documented in 2023 internal IP audit (Board Minutes, Q3): "
-                "platform-controlled distribution reduces Nikkei's first-party data leverage to zero.",
-            ],
-        }
-        _pmg_quotes = (
-            step2_data.get("pmg_evidence")
-            or _pmg_fallback.get(domain)
-            or [
-                "Historical institutional memory confirms this policy shift pattern was anticipated "
-                "in 2024 internal strategy documents. Board-approved response protocols apply.",
-                "Cross-referenced against 340+ archived partner contracts: this clause type has a 73% success rate "
-                "when countered with the 'reciprocal data access' negotiation framework.",
-            ]
-        )
+        _pmg_quotes = step2_data.get("pmg_evidence") or ["Policy Memory Graph analysis complete — no matching institutional red-lines identified for this policy text."]
         _evidence_block(
             _pmg_quotes,
             claim_tag="🎯 Policy Memory Graph",
@@ -2810,7 +2767,7 @@ def main() -> None:
 
     # ── Tab 2: Business Exposure ──────────────────────────────────────────────
     with tab2:
-        _audit_block(doc_id, domain, step2_data, policy_text)
+        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:16px">
@@ -2842,7 +2799,7 @@ def main() -> None:
 
     # ── Tab 3: Protect / Promote / License Map ────────────────────────────────
     with tab3:
-        _audit_block(doc_id, domain, step2_data, policy_text)
+        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:20px">
@@ -2920,7 +2877,7 @@ def main() -> None:
 
     # ── Tab 4: Negotiation Brief ──────────────────────────────────────────────
     with tab4:
-        _audit_block(doc_id, domain, step2_data, policy_text)
+        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:16px">
@@ -2952,7 +2909,7 @@ def main() -> None:
 
     # ── Tab 5: Product / Legal Checklist ─────────────────────────────────────
     with tab5:
-        _audit_block(doc_id, domain, step2_data, policy_text)
+        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
         checklist = step3_data.get("product_checklist", [])
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
@@ -3004,7 +2961,7 @@ def main() -> None:
 
     # ── Tab 6: Board Memo ─────────────────────────────────────────────────────
     with tab6:
-        _audit_block(doc_id, domain, step2_data, policy_text)
+        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:16px">
