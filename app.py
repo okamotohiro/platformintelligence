@@ -522,15 +522,23 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
             "card_scores": {
                 "IP":      {"score": 75, "direction": "threat",
                             "evidence": "AI training linkage",
+                            "action_badge": "PROTECT",
+                            "action_summary": "Defend core copyright boundaries against unauthorized scraping.",
                             "priority_actions": ["Invoke Clause 4.2 opt-out right immediately", "Escalate to outside IP counsel"]},
                 "Traffic": {"score": 15, "direction": "threat",
                             "evidence": "Critical Threat: Total loss of referral traffic due to zero-click",
+                            "action_badge": "PROTECT",
+                            "action_summary": "Mitigate severe referral loss through technical countermeasures.",
                             "priority_actions": ["Activate Article 7(c) termination clause", "Begin direct audience migration strategy"]},
                 "Revenue": {"score": 20, "direction": "threat",
                             "evidence": "Loss of revenue share",
+                            "action_badge": "WAIT",
+                            "action_summary": "Hold on revenue share negotiations until traffic impact is clear.",
                             "priority_actions": ["Reject v3.1 terms pending renegotiation", "Prepare alternative monetisation roadmap"]},
                 "Product": {"score": 65, "direction": "opportunity",
                             "evidence": "Need to build new consent gates",
+                            "action_badge": "WAIT",
+                            "action_summary": "Delay new feature rollout pending technical opt-out specs.",
                             "priority_actions": ["Audit current API endpoints", "Estimate 6-week engineering sprint for compliance stack"]},
             },
             "pmg_evidence": [
@@ -745,15 +753,23 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
             "card_scores": {
                 "IP":      {"score": 92, "direction": "opportunity",
                             "evidence": "Strong legal basis",
+                            "action_badge": "LICENSE",
+                            "action_summary": "Leverage statutory damages threat to force paid agreements.",
                             "priority_actions": ["File preemptive licensing demand with all US AI operators within 30 days", "Engage US Publisher Coalition to coordinate enforcement strategy"]},
                 "Traffic": {"score": 60, "direction": "opportunity",
                             "evidence": "Mandated links",
+                            "action_badge": "PROMOTE",
+                            "action_summary": "Maximize above-the-fold visibility mandated by the new act.",
                             "priority_actions": ["Monitor referral traffic impact over 90-day observation window", "Negotiate traffic guarantee as part of licensing settlement"]},
                 "Revenue": {"score": 85, "direction": "opportunity",
                             "evidence": "Leverage for licensing",
+                            "action_badge": "LICENSE",
+                            "action_summary": "Establish strong minimum pricing floors for AI indexing.",
                             "priority_actions": ["Quantify un-attributed query volume to establish damages claim", "Prepare licensing term sheet with statutory-backed floor rates"]},
                 "Product": {"score": 50, "direction": "neutral",
                             "evidence": "Standard UI updates",
+                            "action_badge": "WAIT",
+                            "action_summary": "No immediate UI changes required.",
                             "priority_actions": ["Audit current AI operator API integrations for attribution compliance", "Design attribution tracking dashboard for licensing audit trail"]},
             },
             "pmg_evidence": [
@@ -965,15 +981,23 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
             "card_scores": {
                 "IP":      {"score": 85, "direction": "opportunity",
                             "evidence": "Consent unbundling",
+                            "action_badge": "PROTECT",
+                            "action_summary": "Enforce granular technical opt-outs under the new framework.",
                             "priority_actions": ["File for DMA article 6(i) designation review", "Prepare granular consent architecture spec"]},
                 "Traffic": {"score": 80, "direction": "opportunity",
                             "evidence": "Fair search display",
+                            "action_badge": "PROMOTE",
+                            "action_summary": "Reclaim fair search display visibility.",
                             "priority_actions": ["Negotiate traffic floor clause in DMA compensation settlement", "Audit current search placement vs. platform baseline"]},
                 "Revenue": {"score": 95, "direction": "opportunity",
                             "evidence": "Critical Opportunity: Fair compensation mandate",
+                            "action_badge": "LICENSE",
+                            "action_summary": "Demand non-discriminatory compensation for summaries.",
                             "priority_actions": ["Quantify Zero-click AI Answers impression volume for compensation claim", "Draft per-article compensation rate schedule"]},
                 "Product": {"score": 85, "direction": "threat",
                             "evidence": "High compliance engineering load",
+                            "action_badge": "WAIT",
+                            "action_summary": "Assess engineering load for consent UI overhaul.",
                             "priority_actions": ["Reuse GDPR Article 17 opt-out infrastructure (60% reuse estimate)", "Plan 3-sprint compliance engineering roadmap"]},
             },
             "pmg_evidence": [
@@ -1185,15 +1209,23 @@ def get_scenario_data(policy_text: str) -> Optional[Dict]:
             "card_scores": {
                 "IP":      {"score": 50, "direction": "neutral",
                             "evidence": "Awaiting finalized technical codes.",
+                            "action_badge": "MONITOR",
+                            "action_summary": "Maintain current stance pending finalized voluntary codes.",
                             "priority_actions": ["Monitor CMA consultation updates", "No immediate action required"]},
                 "Traffic": {"score": 55, "direction": "neutral",
                             "evidence": "Awaiting finalized technical codes.",
+                            "action_badge": "MONITOR",
+                            "action_summary": "Maintain current stance pending finalized voluntary codes.",
                             "priority_actions": ["Maintain standard traffic monitoring cadence", "No immediate action required"]},
                 "Revenue": {"score": 40, "direction": "neutral",
                             "evidence": "Awaiting finalized technical codes.",
+                            "action_badge": "MONITOR",
+                            "action_summary": "Maintain current stance pending finalized voluntary codes.",
                             "priority_actions": ["Defer UK licensing renegotiation until statutory instruments introduced", "No immediate action required"]},
                 "Product": {"score": 30, "direction": "neutral",
                             "evidence": "Awaiting finalized technical codes.",
+                            "action_badge": "MONITOR",
+                            "action_summary": "Maintain current stance pending finalized voluntary codes.",
                             "priority_actions": ["No immediate engineering action required", "Document current consent architecture for potential future compliance"]},
             },
             "pmg_evidence": [
@@ -3789,37 +3821,44 @@ def main() -> None:
           Axis-by-axis recommended business action — derived from Policy Memory Graph + impact scoring.
         </div>""", unsafe_allow_html=True)
 
-        scores = step2_data.get("scores", {})
-        _ACTION_MAP = {
-            # (direction, score_threshold) → (action, color, icon, rationale)
-            ("threat",      70): ("PROTECT",  "#8B2635", "🛡",
-                                  "High-severity threat — activate IP defense and contract protections immediately."),
-            ("threat",      40): ("NEGOTIATE","#A8892A", "⚖",
-                                  "Material threat — engage counterparty to renegotiate terms before enforcement."),
-            ("opportunity", 60): ("LICENSE",  "#0ABAB5", "💼",
-                                  "Monetisation opportunity — formalise licensing arrangement to capture upside."),
-            ("opportunity",  0): ("PROMOTE",  "#1A6B3C", "📣",
-                                  "Positive development — proactively promote capabilities and market positioning."),
+        # Use card_scores (scenario-specific) if available, fall back to scores
+        _display_scores = step2_data.get("card_scores", step2_data.get("scores", {}))
+
+        # Badge config: badge_name → (color, icon)
+        _BADGE_CFG = {
+            "PROTECT":  ("#8B2635", "🛡"),
+            "LICENSE":  ("#0ABAB5", "💼"),
+            "PROMOTE":  ("#1A6B3C", "📣"),
+            "WAIT":     ("#A8892A", "⏳"),
+            "MONITOR":  ("#6B6560", "🔍"),
+            "NEGOTIATE":("#A8892A", "⚖"),
         }
-        def _ppl_action(direction: str, score: int):
+
+        def _ppl_action(ax_data: dict, direction: str, score: int):
+            """Return (action, color, icon, summary) — prefer explicit badge fields."""
+            badge   = ax_data.get("action_badge")
+            summary = ax_data.get("action_summary")
+            if badge and summary:
+                color, icon = _BADGE_CFG.get(badge.upper(), ("#6B6560", "🔍"))
+                return badge.upper(), color, icon, summary
+            # Fallback derivation
             if direction == "threat":
                 if score >= 70:
-                    return _ACTION_MAP[("threat", 70)]
-                return _ACTION_MAP[("threat", 40)]
+                    return "PROTECT",  "#8B2635", "🛡", "High-severity threat — activate IP defense and contract protections immediately."
+                return "NEGOTIATE", "#A8892A", "⚖", "Material threat — engage counterparty to renegotiate terms before enforcement."
             if direction == "opportunity":
                 if score >= 60:
-                    return _ACTION_MAP[("opportunity", 60)]
-                return _ACTION_MAP[("opportunity", 0)]
-            return ("WAIT & MONITOR", "#6B6560", "🔍",
-                    "Neutral impact — continue monitoring; no urgent action required.")
+                    return "LICENSE",  "#0ABAB5", "💼", "Monetisation opportunity — formalise licensing arrangement to capture upside."
+                return "PROMOTE",  "#1A6B3C", "📣", "Positive development — proactively promote capabilities and market positioning."
+            return "MONITOR", "#6B6560", "🔍", "Neutral impact — continue monitoring; no urgent action required."
 
         ppl_rows = []
         for ax, icon in [("IP", "◈"), ("Traffic", "◉"), ("Revenue", "◆"), ("Product", "◇")]:
-            ax_data = scores.get(ax, {})
+            ax_data   = _display_scores.get(ax, {})
             direction = ax_data.get("direction", "neutral")
             score     = ax_data.get("score", 0)
             evidence  = ax_data.get("evidence", "")
-            action, acolor, aicon, rationale = _ppl_action(direction, score)
+            action, acolor, aicon, rationale = _ppl_action(ax_data, direction, score)
             ppl_rows.append((ax, icon, score, direction, action, acolor, aicon, rationale, evidence))
 
         for ax, axicon, score, direction, action, acolor, aicon, rationale, evidence in ppl_rows:
