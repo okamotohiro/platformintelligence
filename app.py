@@ -477,6 +477,7 @@ class Decision(BaseModel):
 class Deliverables(BaseModel):
     executive_briefing_memo: str
     business_impact_memo:    str
+    negotiation_prep_memo:   str
 
 class PolicyAnalysisOutput(BaseModel):
     decision:    Decision
@@ -635,7 +636,8 @@ def analyze_policy_with_claude(
                 f'  }},\n'
                 f'  "deliverables": {{\n'
                 f'    "executive_briefing_memo": "Markdown memo for C-suite: what happened, financial exposure, recommended action",\n'
-                f'    "business_impact_memo": "Markdown action list for business units: specific obligations, owners, timelines from source text"\n'
+                f'    "business_impact_memo": "Markdown action list for business units: specific obligations, owners, timelines from source text",\n'
+                f'    "negotiation_prep_memo": "Markdown deal team brief: (1) Non-negotiables, (2) Written confirmation needed, (3) Leverage points, (4) Red lines"\n'
                 f'  }},\n'
                 f'  "strategic_stance": "e.g. PROTECT & LICENSE",\n'
                 f'  "jurisdiction": "e.g. European Union / EMEA or Global",\n'
@@ -756,6 +758,7 @@ def analyze_policy_with_claude(
         deliverables_raw = {}
     deliverables_raw.setdefault("executive_briefing_memo", result.get("board_memo", ""))
     deliverables_raw.setdefault("business_impact_memo",    result.get("business_exposure_memo", ""))
+    deliverables_raw.setdefault("negotiation_prep_memo",   result.get("negotiation_brief", ""))
 
     try:
         validated = PolicyAnalysisOutput(
@@ -770,6 +773,7 @@ def analyze_policy_with_claude(
         result["deliverables"] = {
             "executive_briefing_memo": deliverables_raw.get("executive_briefing_memo", ""),
             "business_impact_memo":    deliverables_raw.get("business_impact_memo", ""),
+            "negotiation_prep_memo":   deliverables_raw.get("negotiation_prep_memo", ""),
         }
 
     return result
@@ -2028,7 +2032,7 @@ def _debate_expander(debate_log: List[Dict]) -> None:
     """Render the multi-agent debate transcript as a collapsible section."""
     if not debate_log:
         return
-    with st.expander("◆  Multi-Agent Debate Log — Virtual Expert Committee", expanded=False):
+    with st.expander("◆  エージェントの議論プロセスを見る — Virtual Expert Committee", expanded=False):
         st.markdown(
             _engine_badge("Opus-4 Reasoning") +
             f'<div style="font-family:\'Montserrat\',sans-serif;color:#C4BFB8;font-size:0.60rem;'
@@ -2792,7 +2796,7 @@ def main() -> None:
                       for item in _pmg_graph] if _pmg_graph else None
 
     # ── Header ────────────────────────────────────────────────────────────────
-    hcol1, hcol2 = st.columns([4, 1])
+    hcol1, hcol2, hcol3 = st.columns([4, 1, 1])
     with hcol1:
         st.markdown(f"""
         <div style="padding:1.5rem 0 0.5rem">
@@ -2802,10 +2806,13 @@ def main() -> None:
           </div>
           <div style="font-family:'Montserrat',system-ui,sans-serif;color:#F0EDE6;
                       font-size:1.1rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase">
-            Policy Response — Execution Report
+            Audit Console — Execution Report
           </div>
         </div>""", unsafe_allow_html=True)
     with hcol2:
+        dev_mode = st.toggle("🛠 Dev Mode", value=False, key="dev_mode",
+                             help="Show full API payload JSON for debugging")
+    with hcol3:
         if st.button("← New Analysis", key="clear"):
             st.session_state.results = None
             st.session_state["workflow_executed"] = False
@@ -2814,7 +2821,100 @@ def main() -> None:
     # ── Success Toast ─────────────────────────────────────────────────────────
     st.toast("✅ Multi-Agent Synthesis Complete: Generated 6 role-specific actionable outputs.")
 
+    # ── Developer Mode: Full API Payload ──────────────────────────────────────
+    if dev_mode:
+        with st.expander("🔍 Full API Payload — Developer Mode", expanded=True):
+            st.json(analysis or {})
+
+    # ── THE STANCE PANEL ──────────────────────────────────────────────────────
+    _decision   = analysis.get("decision", {}) if analysis else {}
+    _stance     = _decision.get("stance", "Wait and Monitor")
+    _rationale  = _decision.get("rationale", "")
+
+    _STANCE_UI = {
+        "Defend":           ("🛡",  "error",   "#8B2635", "Immediate IP defense — activate contract protections now."),
+        "Pursue Exposure":  ("📣",  "success", "#1A6B3C", "Positive opportunity — proactively expand market position."),
+        "Negotiate Terms":  ("⚖",  "warning", "#A8892A", "Material exposure — engage counterparty to renegotiate."),
+        "Wait and Monitor": ("🔍",  "info",    "#0ABAB5", "Insufficient urgency — continue monitoring policy landscape."),
+    }
+    _s_icon, _s_type, _s_color, _s_default_sub = _STANCE_UI.get(
+        _stance, ("🔍", "info", "#0ABAB5", "")
+    )
+
+    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+    st.markdown(f"""
+    <div style="background:#111111;border:2px solid {_s_color}66;border-left:5px solid {_s_color};
+                padding:20px 24px;margin-bottom:0.5rem;
+                display:flex;align-items:flex-start;gap:20px">
+      <div style="min-width:90px;text-align:center;padding-top:4px">
+        <div style="font-size:2rem;line-height:1">{_s_icon}</div>
+        <div style="font-family:'Montserrat',sans-serif;color:{_s_color};font-size:0.52rem;
+                    font-weight:700;letter-spacing:0.14em;text-transform:uppercase;margin-top:6px">
+          STANCE
+        </div>
+      </div>
+      <div style="flex:1">
+        <div style="font-family:'Montserrat',sans-serif;color:{_s_color};font-size:0.50rem;
+                    font-weight:700;letter-spacing:0.26em;text-transform:uppercase;margin-bottom:4px">
+          EXECUTIVE DECISION
+        </div>
+        <div style="font-family:'Montserrat',system-ui,sans-serif;color:#F0EDE6;
+                    font-size:1.15rem;font-weight:700;letter-spacing:0.06em;margin-bottom:10px">
+          {_stance}
+        </div>
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.80rem;
+                    line-height:1.75">
+          {_rationale or _s_default_sub}
+        </div>
+      </div>
+    </div>""", unsafe_allow_html=True)
+
+    # ── Action Buttons Row ─────────────────────────────────────────────────────
+    st.markdown("<div style='height:0.6rem'></div>", unsafe_allow_html=True)
+    _ab1, _ab2, _ab3 = st.columns(3)
+    with _ab1:
+        if st.button("✅  Approve & Execute", key="action_approve",
+                     use_container_width=True, type="primary"):
+            st.session_state["workflow_executed"] = True
+            st.toast("✅ Decision approved — execution payloads queued for Slack / Jira / Docs.", icon="✅")
+    with _ab2:
+        if st.button("✏️  Edit Memo", key="action_edit",
+                     use_container_width=True):
+            st.toast("✏️ Memo opened in edit mode — navigate to the Deliverables tabs below.", icon="✏️")
+    with _ab3:
+        if st.button("❌  Reject", key="action_reject",
+                     use_container_width=True):
+            st.toast("❌ Analysis rejected — please adjust domain or policy text and re-run.", icon="❌")
+
+    # ── Deliverables Tabs (Pydantic-validated structured output) ──────────────
+    st.markdown("<div style='height:1.2rem'></div>", unsafe_allow_html=True)
+    _deliv = analysis.get("deliverables", {}) if analysis else {}
+    _dt1, _dt2, _dt3 = st.tabs([
+        "🏢  Executive Memo",
+        "💼  Business Impact",
+        "🤝  Negotiation Prep",
+    ])
+    with _dt1:
+        _em_text = _deliv.get("executive_briefing_memo", "")
+        if _em_text:
+            st.markdown(_em_text)
+        else:
+            st.caption("Executive briefing memo not available.")
+    with _dt2:
+        _bi_text = _deliv.get("business_impact_memo", "")
+        if _bi_text:
+            st.markdown(_bi_text)
+        else:
+            st.caption("Business impact memo not available.")
+    with _dt3:
+        _np_text = _deliv.get("negotiation_prep_memo", "")
+        if _np_text:
+            st.markdown(_np_text)
+        else:
+            st.caption("Negotiation prep memo not available.")
+
     # ── Multi-Agent Debate Log ────────────────────────────────────────────────
+    st.markdown("<div style='height:0.8rem'></div>", unsafe_allow_html=True)
     _debate_expander(debate_log)
     _uncertainty_alert(step2_data, domain)
 
