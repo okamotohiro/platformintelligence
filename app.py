@@ -474,30 +474,63 @@ class Decision(BaseModel):
     stance:    StanceType
     rationale: str
 
+class Metadata(BaseModel):
+    affected_departments: List[str]
+    legal_certainty: Literal["High", "Medium", "Low"]
+    primary_risk: str
+
 class Deliverables(BaseModel):
     executive_briefing_memo: str
     business_impact_memo:    str
     negotiation_prep_memo:   str
+    implementation_checklist: str
+    policy_response_draft: str
 
 class PolicyAnalysisOutput(BaseModel):
     decision:    Decision
     deliverables: Deliverables
+    metadata: Metadata
 
 
 # ─── Pipeline Functions ───────────────────────────────────────────────────────
 def _safe_json_parse(text: str) -> Dict:
-    """Extract and parse JSON from LLM response text.
+    """Extract and parse JSON from LLM response text with truncation recovery.
 
     Extraction order:
     1. Fenced code block  ```json … ```
     2. First { … last }  (re.DOTALL greedy extraction)
     3. Bare json.loads on stripped text
+    4. Truncation recovery: append missing closing braces
 
     Returns {} on any failure — callers that need to distinguish empty-from-error
     should check `not result` after calling this function.
     """
     if not text or not text.strip():
         return {}
+
+    def _attempt_truncation_recovery(json_str: str) -> Dict:
+        """Attempt to recover truncated JSON by appending missing closing braces."""
+        # Count opening and closing braces
+        open_braces = json_str.count('{')
+        close_braces = json_str.count('}')
+        open_brackets = json_str.count('[')
+        close_brackets = json_str.count(']')
+
+        # If truncated, try to close
+        if open_braces > close_braces or open_brackets > close_brackets:
+            recovered = json_str
+            # Close missing brackets first (arrays)
+            for _ in range(open_brackets - close_brackets):
+                recovered += ']'
+            # Then close missing braces (objects)
+            for _ in range(open_braces - close_braces):
+                recovered += '}'
+            try:
+                return json.loads(recovered)
+            except json.JSONDecodeError:
+                pass
+        return {}
+
     try:
         # ── Step 0: Strip markdown code fences if present ─────────────────────
         clean = text.strip()
@@ -514,7 +547,10 @@ def _safe_json_parse(text: str) -> Dict:
             try:
                 return json.loads(clean)
             except json.JSONDecodeError:
-                pass
+                # Try truncation recovery
+                recovered = _attempt_truncation_recovery(clean)
+                if recovered:
+                    return recovered
 
         # ── Step 2: Greedy first-{ last-} extraction (handles surrounding prose) ──
         m = re.search(r"\{.*\}", clean, re.DOTALL)
@@ -522,12 +558,21 @@ def _safe_json_parse(text: str) -> Dict:
             try:
                 return json.loads(m.group(0))
             except json.JSONDecodeError:
-                pass
+                # Try truncation recovery
+                recovered = _attempt_truncation_recovery(m.group(0))
+                if recovered:
+                    return recovered
 
         # ── Step 3: Same extraction on original text as last resort ───────────
         m2 = re.search(r"\{.*\}", text, re.DOTALL)
         if m2:
-            return json.loads(m2.group(0))
+            try:
+                return json.loads(m2.group(0))
+            except json.JSONDecodeError:
+                # Try truncation recovery
+                recovered = _attempt_truncation_recovery(m2.group(0))
+                if recovered:
+                    return recovered
 
         return {}
     except Exception:
@@ -552,7 +597,13 @@ def analyze_policy_with_claude(
 ) -> Dict:
     """
     Single comprehensive Claude API call — Single Source of Truth for all UI components.
-    Replaces the former extract_substantive_changes + run_step3_structured two-call pattern.
+
+    OPTIMIZATIONS FOR 8 DELIVERABLES:
+    - max_tokens: 8192 (Claude Sonnet 4.5 output limit)
+    - Concise prompt: instructs bullet-point format, 150-250 words per deliverable
+    - Truncation recovery: _safe_json_parse attempts to close incomplete JSON
+    - Truncation guard: pre-parse check for response completeness
+
     Returns a flat dict with all keys needed by every UI panel.
     """
     domain_profile = DOMAIN_PROFILES.get(domain, "")
@@ -564,61 +615,27 @@ def analyze_policy_with_claude(
     try:
       with client.messages.stream(
         model=MODEL,
-        max_tokens=16000,   # 16K: thinking blocks need headroom; prompt constraints keep text output lean
+        max_tokens=8192,   # Maximum output tokens for Claude Sonnet 4.5
         thinking={"type": "adaptive"},
         system=(
             "You are the Chief Policy Intelligence Analyst for a major media enterprise. "
-            "Your role combines deep regulatory law expertise with senior business strategy. "
-            "Given a policy text, produce one single comprehensive JSON intelligence report "
-            "covering structural analysis, business impact scoring, strategic recommendations, "
-            "and role-specific deliverables — all grounded with verbatim evidence citations.\n\n"
+            "Produce a single comprehensive JSON intelligence report with structural analysis, "
+            "business impact scoring, strategic recommendations, and 8 role-specific deliverables.\n\n"
 
-            "━━━ STRICT GROUNDING RULES (non-negotiable) ━━━\n"
+            "━━━ CRITICAL: EXTREME BREVITY REQUIRED ━━━\n"
+            "TOKEN BUDGET: This response must fit within 8000 tokens total.\n"
+            "DELIVERABLES: Each of the 8 deliverables MUST be 80-120 words MAX (not 150-250).\n"
+            "FORMAT: Use ONLY bullet points. NO paragraphs. NO introductions. NO filler.\n"
+            "AGENT MESSAGES: 2 sentences MAX per agent (not 3-4).\n"
+            "ARRAYS: Max 2 items per array (not 3-4). Only include highest-impact items.\n\n"
 
-            "RULE 1 — EVIDENCE-ONLY ANALYSIS: Every obligation, risk, threshold, and "
-            "recommendation MUST be explicitly stated or directly implied by the source text. "
-            "NEVER invent obligations, penalty amounts, engineering timelines (e.g. '4–6 weeks'), "
-            "consent-UI specifications, or compliance deadlines that are absent from the source. "
-            "If information is not in the text, acknowledge uncertainty rather than fabricate detail.\n\n"
+            "RULES:\n"
+            "1. Evidence-only analysis from source text\n"
+            "2. Match tone to document_type (advisory vs operational)\n"
+            "3. Policy memory graph: empty array if no genuine triggers\n"
+            "4. All text fields: telegraphic, high-density prose only\n\n"
 
-            "RULE 2 — DOCUMENT-TYPE CALIBRATION: Classify the input using the document_type field. "
-            "For NON-BINDING documents (government_statement, consultation_paper, industry_guideline): "
-            "the agent_debate_messages MUST focus on strategic positioning, lobbying preparation, "
-            "working-group engagement, and monitoring — NOT immediate UI development, engineering sprints, "
-            "or urgent compliance tasks. "
-            "For BINDING documents (binding_regulation, platform_terms_update, draft_legislation with "
-            "stated effective dates): specific implementation tasks with timelines are appropriate ONLY "
-            "when grounded in the source text's explicit requirements.\n\n"
-
-            "RULE 3 — POLICY MEMORY GRAPH RELEVANCE: Include entries in policy_memory_graph ONLY when "
-            "the source text genuinely triggers those institutional concerns. "
-            "Do NOT force-fit licensing contract red-lines onto a non-binding government statement or "
-            "consultation paper. If no genuine historical red-line is triggered, return an empty array.\n\n"
-
-            "RULE 4 — AGENT DEBATE GROUNDING: Each agent in agent_debate_messages MUST base arguments "
-            "solely on the extracted substantive_changes and the document_type. "
-            "Legal, Business, and Product agents must not reference specific historical contract clauses, "
-            "dollar amounts, or engineering estimates unless they appear in the source text. "
-            "Tone must match the document_type: advisory and strategic for non-binding texts, "
-            "operational and urgent only for binding obligations with clear effective dates.\n\n"
-
-            "RULE 5 — HIGH-DENSITY OUTPUT WITH STRICT BOUNDING (non-negotiable): "
-            "This is a time-critical enterprise pipeline — JSON text output MUST be compact. "
-            "Achieve maximum information density: every word must carry analytical weight.\n"
-            "RULE 5A — ARRAY LIMITS: added_obligations, removed_rights, and key_thresholds arrays "
-            "MUST each contain at most 3 items. Select only the highest-impact entries. "
-            "key_opportunities and key_threats: at most 3 items each. "
-            "risk_matrix_points: at most 4 items. product_checklist: at most 4 items.\n"
-            "RULE 5B — AGENT DEBATE LENGTH: Each agent's message in agent_debate_messages MUST be "
-            "exactly 1 dense paragraph of 3–4 sentences. Pack professional depth and specific "
-            "references into those sentences — no padding, no repetition, no preamble.\n"
-            "RULE 5C — NO REDUNDANCY: Never repeat the same point across fields. "
-            "executive_summary, board_memo, and business_exposure_memo each cover distinct angles. "
-            "Eliminate filler phrases ('It is important to note that...', 'In conclusion...'). "
-            "Write as a senior analyst who bills by the word and charges a premium for precision.\n\n"
-
-            "Return ONLY a valid JSON object — no preamble, no explanation, no markdown code fences. "
-            "All text fields must be in professional business English."
+            "Return ONLY valid JSON. No preamble, no code fences."
         ),
         messages=[{
             "role": "user",
@@ -635,72 +652,77 @@ def analyze_policy_with_claude(
                 f'    "rationale": "1-2 sentence synthesis of the agent debate leading to this stance"\n'
                 f'  }},\n'
                 f'  "deliverables": {{\n'
-                f'    "executive_briefing_memo": "Markdown memo for C-suite: what happened, financial exposure, recommended action",\n'
-                f'    "business_impact_memo": "Markdown action list for business units: specific obligations, owners, timelines from source text",\n'
-                f'    "negotiation_prep_memo": "Markdown deal team brief: (1) Non-negotiables, (2) Written confirmation needed, (3) Leverage points, (4) Red lines"\n'
+                f'    "executive_briefing_memo": "Bullets only (80-120 words): • What happened • Exposure • Action",\n'
+                f'    "business_impact_memo": "Bullets only (80-120 words): • Obligations • Owners • Timelines",\n'
+                f'    "negotiation_prep_memo": "Bullets only (80-120 words): • Non-negotiables • Confirmations • Leverage • Red lines",\n'
+                f'    "implementation_checklist": "Bullets only (80-120 words): • Tasks • Details • Dependencies",\n'
+                f'    "policy_response_draft": "Bullets only (80-120 words): • Positions • Justifications • Actions"\n'
+                f'  }},\n'
+                f'  "metadata": {{\n'
+                f'    "affected_departments": ["List of departments impacted, e.g. Legal, Engineering, Business, Marketing"],\n'
+                f'    "legal_certainty": "High|Medium|Low — confidence in legal interpretation based on source clarity",\n'
+                f'    "primary_risk": "One-sentence summary of the most critical risk factor"\n'
                 f'  }},\n'
                 f'  "strategic_stance": "e.g. PROTECT & LICENSE",\n'
                 f'  "jurisdiction": "e.g. European Union / EMEA or Global",\n'
                 f'  "document_type": "binding_regulation|draft_legislation|platform_terms_update|government_statement|consultation_paper|industry_guideline",\n'
                 f'  "overall_risk_level": "critical|high|medium|low",\n'
-                f'  "executive_summary": "2-3 sentence C-suite summary",\n'
-                f'  "key_opportunities": ["...", "..."],\n'
-                f'  "key_threats": ["...", "..."],\n'
+                f'  "executive_summary": "1-2 sentences max",\n'
+                f'  "key_opportunities": ["max 2 items"],\n'
+                f'  "key_threats": ["max 2 items"],\n'
                 f'  "substantive_changes": {{\n'
-                f'    "added_obligations": [{{"title": "...", "severity": "high|medium|low", "description": "..."}}],\n'
-                f'    "removed_rights":    [{{"title": "...", "severity": "high|medium|low", "description": "..."}}],\n'
-                f'    "key_thresholds":    [{{"title": "...", "value": "...", "description": "..."}}],\n'
-                f'    "context_summary":   "2-3 sentence business impact summary"\n'
+                f'    "added_obligations": [{{"title": "...", "severity": "high|medium|low", "description": "brief"}}],\n'
+                f'    "removed_rights":    [{{"title": "...", "severity": "high|medium|low", "description": "brief"}}],\n'
+                f'    "key_thresholds":    [{{"title": "...", "value": "...", "description": "brief"}}],\n'
+                f'    "context_summary":   "1-2 sentences"\n'
                 f'  }},\n'
                 f'  "scores": {{"IP": 0-100, "Traffic": 0-100, "Revenue": 0-100, "Product": 0-100}},\n'
                 f'  "axis_actions": {{\n'
-                f'    "IP":      {{"badge": "PROTECT|LICENSE|PROMOTE|WAIT|MONITOR|NEGOTIATE", "summary": "one-sentence action rationale", "evidence": "brief supporting phrase", "direction": "threat|opportunity|neutral", "priority_actions": ["...", "..."]}},\n'
-                f'    "Traffic": {{"badge": "...", "summary": "...", "evidence": "...", "direction": "...", "priority_actions": ["..."]}},\n'
-                f'    "Revenue": {{"badge": "...", "summary": "...", "evidence": "...", "direction": "...", "priority_actions": ["..."]}},\n'
-                f'    "Product": {{"badge": "...", "summary": "...", "evidence": "...", "direction": "...", "priority_actions": ["..."]}}\n'
+                f'    "IP":      {{"badge": "PROTECT|LICENSE|etc", "summary": "brief", "evidence": "short", "direction": "threat|opportunity|neutral", "priority_actions": ["max 2"]}},\n'
+                f'    "Traffic": {{"badge": "...", "summary": "brief", "evidence": "short", "direction": "...", "priority_actions": ["max 2"]}},\n'
+                f'    "Revenue": {{"badge": "...", "summary": "brief", "evidence": "short", "direction": "...", "priority_actions": ["max 2"]}},\n'
+                f'    "Product": {{"badge": "...", "summary": "brief", "evidence": "short", "direction": "...", "priority_actions": ["max 2"]}}\n'
                 f'  }},\n'
                 f'  "evidence": {{\n'
-                f'    "parsed_claims":          ["verbatim extract 1 from source", "verbatim extract 2", "verbatim extract 3"],\n'
-                f'    "claim_level_provenance": [{{"type": "IP RISK|TRAFFIC RISK|REVENUE RISK", "agent": "LEGAL AGENT|BUSINESS AGENT", "quote": "verbatim from source"}}],\n'
-                f'    "policy_memory_graph":    [{{"reference_id": "e.g. Clause 4.2", "description": "institutional memory / red-line this policy triggers"}}]\n'
+                f'    "parsed_claims":          ["max 2 extracts"],\n'
+                f'    "claim_level_provenance": [{{"type": "IP|TRAFFIC|REVENUE", "agent": "LEGAL|BUSINESS", "quote": "short"}}],\n'
+                f'    "policy_memory_graph":    [{{"reference_id": "ID", "description": "brief"}}]\n'
                 f'  }},\n'
                 f'  "risk_matrix_points": [\n'
-                f'    {{"label": "obligation/clause name", "days_to_enactment": 0-100, "business_severity": 0-100}}\n'
+                f'    {{"label": "name", "days_to_enactment": 0-100, "business_severity": 0-100}}\n'
                 f'  ],\n'
-                f'  "what_changed_brief": "90-second before/after delta memo with specific clause numbers and effective dates",\n'
-                f'  "what_changed_quotes": ["verbatim quote 1", "verbatim quote 2"],\n'
-                f'  "business_exposure_memo": "structured memo: (1) Traffic & audience, (2) Revenue streams, (3) IP & copyright, (4) Product, (5) Brand. Include financial ranges.",\n'
-                f'  "business_exposure_quotes": ["verbatim quote supporting exposure assessment"],\n'
-                f'  "negotiation_brief": "deal team brief: (1) Non-negotiables, (2) Written confirmation needed, (3) Leverage points, (4) Compromise zones, (5) Red lines",\n'
-                f'  "negotiation_quotes": ["verbatim quote relevant to negotiation"],\n'
-                f'  "board_memo": "one-page board summary: (1) What happened, (2) Financial exposure, (3) Board decisions, (4) Recommended actions with owners/deadlines, (5) Best/base/worst scenarios",\n'
-                f'  "board_memo_quotes": ["verbatim quote supporting board concern"],\n'
+                f'  "what_changed_brief": "Bullets only (80-120 words): • Deltas • Clause # • Dates",\n'
+                f'  "what_changed_quotes": ["quote 1", "quote 2"],\n'
+                f'  "business_exposure_memo": "Bullets only (100-150 words): • Traffic • Revenue • IP • Product • Brand",\n'
+                f'  "business_exposure_quotes": ["quote"],\n'
+                f'  "negotiation_brief": "Bullets only (80-120 words): • Non-negotiables • Confirmations • Leverage • Red lines",\n'
+                f'  "negotiation_quotes": ["quote"],\n'
+                f'  "board_memo": "Bullets only (100-150 words): • Event • Exposure • Decisions • Actions • Scenarios",\n'
+                f'  "board_memo_quotes": ["quote"],\n'
                 f'  "product_checklist": [\n'
-                f'    "ONLY include items explicitly required by the source text. Use format: [CATEGORY] Team — specific action grounded in source text.",\n'
-                f'    "For non-binding documents: items should be strategic/preparatory (e.g. [MONITORING] — track next policy revision). Do NOT invent UI or engineering tasks.",\n'
-                f'    "For binding documents: include only concrete obligations stated in the source (consent, disclosure, logging, etc.)"\n'
+                f'    "Max 3 items. Format: [CATEGORY] Team — action. Only items from source text."\n'
                 f'  ],\n'
                 f'  "agent_debate_messages": [\n'
                 f'    {{\n'
-                f'      "agent": "⚖️ Legal Agent",\n'
+                f'      "agent": "⚖️ Legal",\n'
                 f'      "color": "#8B2635",\n'
-                f'      "message": "Ground argument STRICTLY in substantive_changes. Cite only obligations present in the source. For non-binding texts, focus on monitoring and legal positioning rather than immediate compliance. No invented contract clauses or penalty amounts."\n'
+                f'      "message": "2 sentences max. Focus: contract risk, IP rights, liability. Ground in source text only."\n'
                 f'    }},\n'
                 f'    {{\n'
-                f'      "agent": "💰 Business Agent",\n'
+                f'      "agent": "💰 Business",\n'
                 f'      "color": "#A8892A",\n'
-                f'      "message": "Ground revenue/partnership impact in extracted changes. For non-binding texts, focus on strategic engagement and lobbying rather than financial exposure from imminent enforcement."\n'
+                f'      "message": "2 sentences max. Focus: revenue, partnerships, market position. Ground in source text only."\n'
                 f'    }},\n'
                 f'    {{\n'
-                f'      "agent": "🧩 Product Agent",\n'
+                f'      "agent": "⚙️ Engineering",\n'
                 f'      "color": "#1A6B3C",\n'
-                f'      "message": "For non-binding texts, do NOT claim specific engineering timelines or UI changes are required. Instead discuss monitoring and preparedness. For binding texts, scope product changes only to what the source explicitly mandates."\n'
+                f'      "message": "2 sentences max. Focus: implementation, technical debt, resources. Ground in source text only."\n'
                 f'    }},\n'
                 f'    {{\n'
-                f'      "agent": "🏛️ Executive Alignment",\n'
+                f'      "agent": "🏛️ Management",\n'
                 f'      "color": "#0ABAB5",\n'
                 f'      "final": true,\n'
-                f'      "message": "Synthesise the three agents into a unified strategic stance. Match urgency level to document_type. Non-binding texts → strategic positioning and monitoring. Binding texts → clear escalation path and action owners derived from the source."\n'
+                f'      "message": "2 sentences max. Synthesize Legal/Business/Engineering into unified stance. Match urgency to document type."\n'
                 f'    }}\n'
                 f'  ]\n'
                 f"}}"
@@ -727,13 +749,47 @@ def analyze_policy_with_claude(
             "Try re-running — adaptive thinking occasionally produces no text on the first pass."
         )
 
+    # ── Token Usage Monitoring ────────────────────────────────────────────────────
+    import logging
+    response_stripped = full_response_text.strip()
+    approx_tokens = len(full_response_text) // 4  # rough estimate: 1 token ≈ 4 chars
+    logging.info(
+        f"Response received: {len(full_response_text)} chars (≈{approx_tokens} tokens of 8192 max)"
+    )
+
+    # ── Truncation Guard: Check if response appears to be truncated ──────────────
+    if not response_stripped.endswith('}'):
+        # Response may be truncated - log warning but attempt recovery
+        logging.warning(
+            f"⚠️ Response appears truncated (does not end with closing brace). "
+            f"Length: {len(full_response_text)} chars. "
+            f"Last 100 chars: ...{response_stripped[-100:]}"
+        )
+        # Check if we're close to token limit
+        if approx_tokens > 7000:  # Lowered threshold from 7500 to 7000 for earlier warning
+            raise ValueError(
+                f"❌ Response truncated due to token limit (≈{approx_tokens} tokens, max 8192). "
+                f"The 8 deliverables exceeded available output space ({approx_tokens - 8192} tokens over). "
+                f"Try re-running with more aggressive brevity constraints. "
+                f"Last 200 chars: ...{response_stripped[-200:]}"
+            )
+    elif approx_tokens > 7500:
+        # Close to limit but completed - log warning
+        logging.warning(
+            f"⚠️ Response near token limit: {approx_tokens}/8192 tokens used "
+            f"({8192 - approx_tokens} tokens remaining)"
+        )
+
     # ── Parse JSON from accumulated stream text ─────────────────────────────────
     result = _safe_json_parse(full_response_text)
     if not result:
         preview = full_response_text[:600].replace("\n", " ")
+        tail_preview = full_response_text[-300:].replace("\n", " ")
         raise ValueError(
             f"JSON extraction failed — Claude did not return parseable JSON.\n"
-            f"Raw response preview (first 600 chars): {preview}"
+            f"Response length: {len(full_response_text)} chars\n"
+            f"First 600 chars: {preview}\n"
+            f"Last 300 chars: ...{tail_preview}"
         )
 
     # ── Pydantic structured-output validation ────────────────────────────────────
@@ -759,14 +815,26 @@ def analyze_policy_with_claude(
     deliverables_raw.setdefault("executive_briefing_memo", result.get("board_memo", ""))
     deliverables_raw.setdefault("business_impact_memo",    result.get("business_exposure_memo", ""))
     deliverables_raw.setdefault("negotiation_prep_memo",   result.get("negotiation_brief", ""))
+    deliverables_raw.setdefault("implementation_checklist", result.get("product_checklist", ""))
+    deliverables_raw.setdefault("policy_response_draft", "")
+
+    # Build metadata sub-object
+    metadata_raw = result.get("metadata") or {}
+    if not isinstance(metadata_raw, dict):
+        metadata_raw = {}
+    metadata_raw.setdefault("affected_departments", ["Legal", "Business", "Engineering"])
+    metadata_raw.setdefault("legal_certainty", "Medium")
+    metadata_raw.setdefault("primary_risk", result.get("executive_summary", "Risk assessment in progress."))
 
     try:
         validated = PolicyAnalysisOutput(
             decision=Decision(**decision_raw),
             deliverables=Deliverables(**deliverables_raw),
+            metadata=Metadata(**metadata_raw),
         )
         result["decision"]    = validated.decision.model_dump()
         result["deliverables"] = validated.deliverables.model_dump()
+        result["metadata"]    = validated.metadata.model_dump()
     except (ValidationError, Exception):
         # Non-fatal — write safe defaults so the UI always has these keys
         result["decision"] = {"stance": stance_raw, "rationale": decision_raw.get("rationale", "")}
@@ -774,6 +842,13 @@ def analyze_policy_with_claude(
             "executive_briefing_memo": deliverables_raw.get("executive_briefing_memo", ""),
             "business_impact_memo":    deliverables_raw.get("business_impact_memo", ""),
             "negotiation_prep_memo":   deliverables_raw.get("negotiation_prep_memo", ""),
+            "implementation_checklist": deliverables_raw.get("implementation_checklist", ""),
+            "policy_response_draft":   deliverables_raw.get("policy_response_draft", ""),
+        }
+        result["metadata"] = {
+            "affected_departments": metadata_raw.get("affected_departments", []),
+            "legal_certainty":      metadata_raw.get("legal_certainty", "Medium"),
+            "primary_risk":         metadata_raw.get("primary_risk", ""),
         }
 
     return result
@@ -1985,7 +2060,7 @@ def _build_debate_log(
 
     return [
         {
-            "agent": "⚖️ Legal Agent",
+            "agent": "⚖️ Legal",
             "color": "#8B2635",
             "message": (
                 f"IP exposure scored at {ip_score}/100 based on extracted obligations. "
@@ -1995,7 +2070,7 @@ def _build_debate_log(
             ),
         },
         {
-            "agent": "💰 Business Agent",
+            "agent": "💰 Business",
             "color": "#A8892A",
             "message": (
                 f"Revenue exposure at {rev_score}/100. Primary risk: '{threat_text}'. "
@@ -2005,22 +2080,22 @@ def _build_debate_log(
             ),
         },
         {
-            "agent": "🧩 Product Agent",
+            "agent": "⚙️ Engineering",
             "color": "#1A6B3C",
             "message": (
-                f"Product surface exposure at {prod_score}/100. "
-                f"Scope of required product changes should be confirmed after legal review "
+                f"Technical implementation exposure at {prod_score}/100. "
+                f"Scope of required engineering changes should be confirmed after legal review "
                 f"establishes which obligations are binding. No implementation timelines "
                 f"assumed until obligation scope and effective dates are verified."
             ),
         },
         {
-            "agent": "🏛️ Executive Alignment",
+            "agent": "🏛️ Management",
             "color": "#0ABAB5",
             "final": True,
             "message": (
                 f"Cross-functional assessment complete. Strategic Stance: {stance}. "
-                f"Legal, Business, and Product inputs consolidated from extracted policy changes. "
+                f"Legal, Business, Engineering, and Management inputs consolidated from extracted policy changes. "
                 f"Next action: domain lead to confirm binding scope and escalate to executive "
                 f"team for final decision — {domain}."
             ),
@@ -2254,6 +2329,40 @@ def main() -> None:
           <div style="height:1px;background:linear-gradient(90deg,{_ACCENT}33,transparent);
                       margin-top:12px"></div>
         </div>""", unsafe_allow_html=True)
+
+        # ── Company Context (Policy Memory Graph) ─────────────────────────────────
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;font-size:0.65rem;margin-bottom:1.2rem;
+                    background:rgba(10,186,181,0.03);border:1px solid rgba(10,186,181,0.12);
+                    border-radius:4px;padding:14px 16px">
+          <div style="color:{_ACCENT};letter-spacing:0.20em;font-size:0.56rem;
+                      font-weight:600;margin-bottom:12px;text-transform:uppercase">
+            🏢 適用コンテキスト (Policy Memory Graph)
+          </div>
+          <div style="color:#C4BFB8;line-height:1.8;font-size:0.66rem;margin-bottom:8px">
+            <div style="color:#9A9590;font-size:0.55rem;letter-spacing:0.12em;
+                        text-transform:uppercase;margin-bottom:4px">適用モデル</div>
+            <span style="color:{_ACCENT};font-weight:600">Media Publisher Profile v2.1</span>
+          </div>
+          <div style="color:#C4BFB8;line-height:1.8;font-size:0.66rem;margin-bottom:8px">
+            <div style="color:#9A9590;font-size:0.55rem;letter-spacing:0.12em;
+                        text-transform:uppercase;margin-bottom:4px">収益モデル</div>
+            Subscription (65%) + Advertising (35%)
+          </div>
+          <div style="color:#C4BFB8;line-height:1.8;font-size:0.66rem;margin-bottom:8px">
+            <div style="color:#9A9590;font-size:0.55rem;letter-spacing:0.12em;
+                        text-transform:uppercase;margin-bottom:4px">主要リスクベクトル</div>
+            AI Overviews · Zero-click Answers · Training Data Ingestion
+          </div>
+          <div style="color:#C4BFB8;line-height:1.8;font-size:0.66rem">
+            <div style="color:#9A9590;font-size:0.55rem;letter-spacing:0.12em;
+                        text-transform:uppercase;margin-bottom:4px">Policy Memory Index</div>
+            <span style="color:#1A6B3C;margin-right:4px">●</span> 340+ institutional red-lines loaded
+          </div>
+        </div>""", unsafe_allow_html=True)
+
+        st.markdown('<div style="height:1px;background:rgba(10,186,181,0.08);margin:0 0 1.2rem"></div>',
+                    unsafe_allow_html=True)
 
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;font-size:0.65rem;margin-bottom:10px">
@@ -2561,22 +2670,22 @@ def main() -> None:
         time.sleep(0.3)
 
         with st.status(
-            "◆  Deep-Parsing & Multi-Agent Deliberation in Progress...",
+            "◆  Constructing Policy Memory Graph & Metadata layers...",
             expanded=True,
         ) as pipeline_status:
             try:
                 # ── Step I: Extract substantive changes and map business impact ──
-                _prog.progress(6, text="Step I · Claude Sonnet 4.6 — Deep-parsing policy · Cross-referencing 340+ Policy Memory Graph entries...")
+                _prog.progress(6, text="Step I · Claude Sonnet 4.6 — Constructing Policy Memory Graph & Metadata layers...")
                 st.write(
                     "**Step I — Deep-Parsing & Multi-Agent Deliberation in Progress...**  \n"
                     "Claude Sonnet 4.6 is fully utilizing its reasoning capacity to cross-reference "
                     "the 340+ Policy Memory Graph entries against the new regulation, isolating "
                     "meaning-level changes — added obligations, removed rights, penalty thresholds, "
-                    "and effective-date triggers. The Virtual Expert Committee (Legal, Business, Product) "
+                    "and effective-date triggers. The Virtual Expert Committee (Legal, Business, Engineering, Management) "
                     "is currently debating complex legal and business trade-offs in comprehensive, "
                     "long-form reasoning.  \n\n"
-                    "⏱  **Expected reasoning time: 30–60 seconds.** "
-                    "Deep enterprise-grade analysis is running — do not close or sleep the window."
+                    "**High-fidelity reasoning is underway.** This deliberate process ensures enterprise-grade accuracy "
+                    "by cross-referencing institutional red-lines. Thank you for your patience."
                 )
                 time.sleep(0.3)
 
@@ -2651,18 +2760,19 @@ def main() -> None:
                 time.sleep(0.3)
 
                 pipeline_status.update(
-                    label="◆  Step II — Virtual Expert Committee Deliberation — Running...",
+                    label="◆  Constructing Policy Memory Graph & Metadata layers...",
                     state="running",
                 )
-                _prog.progress(54, text="Step II · Claude Sonnet 4.6 — Virtual Expert Committee formulating final strategic stance...")
+                _prog.progress(54, text="Step II · Claude Sonnet 4.6 — Constructing Policy Memory Graph & Metadata layers...")
                 st.write(
                     "**Step II — Virtual Expert Committee Deliberation**  \n"
-                    "Legal Counsel, Business Strategy, Product Leadership, and Executive Alignment agents "
+                    "Legal, Business, Engineering, and Management agents "
                     "are producing comprehensive, long-form adversarial debate grounded exclusively in "
                     "the extracted substantive changes from Step I. "
                     "Each agent is writing substantive paragraphs — not bullet summaries — "
-                    "covering specific obligations, revenue exposure, and strategic positioning.  \n\n"
-                    "⏱  Generating expert-level deliberation — expected completion in 30–60 seconds."
+                    "covering specific obligations, revenue exposure, technical feasibility, and strategic positioning.  \n\n"
+                    "**High-fidelity reasoning is underway.** This deliberate process ensures enterprise-grade accuracy "
+                    "by cross-referencing institutional red-lines. Thank you for your patience."
                 )
                 time.sleep(0.4)
 
@@ -2684,14 +2794,15 @@ def main() -> None:
                 time.sleep(0.3)
 
                 pipeline_status.update(
-                    label="◆  Step III — Agentic Execution — Running...",
+                    label="◆  Constructing Policy Memory Graph & Metadata layers...",
                     state="running",
                 )
-                _prog.progress(72, text="Step III · Agentic Execution — Generating 6 deliverables...")
+                _prog.progress(72, text="Step III · Agentic Execution — Generating 8 deliverables...")
                 st.write(
                     "**Step III — Agentic Execution & Deliverable Synthesis**  \n"
-                    "Generating 6 Deliverables: What Changed Brief · Business Exposure Memo · "
-                    "PPL Map · Negotiation Brief · Product / Legal Checklist · Board Memo — "
+                    "Generating 8 Deliverables: What Changed Brief · Business Exposure Memo · "
+                    "PPL Map · Negotiation Brief · Product / Legal Checklist · Board Memo · "
+                    "Implementation Checklist · Policy Response Draft — "
                     "each grounded with verbatim evidence citations and Policy Memory Graph matches. "
                     "Preparing execution payloads for Slack, Jira, and Docs..."
                 )
@@ -2719,7 +2830,7 @@ def main() -> None:
 
                 _prog.progress(100, text="◆  Response Package Ready — All steps complete ✓")
                 pipeline_status.update(
-                    label="◆  Execution Complete — 6 Deliverables Ready",
+                    label="◆  Execution Complete — 8 Deliverables Ready",
                     state="complete",
                     expanded=False,
                 )
@@ -2819,11 +2930,31 @@ def main() -> None:
             st.rerun()
 
     # ── Success Toast ─────────────────────────────────────────────────────────
-    st.toast("✅ Multi-Agent Synthesis Complete: Generated 6 role-specific actionable outputs.")
+    st.toast("✅ Multi-Agent Synthesis Complete: Generated 8 role-specific actionable outputs.")
 
     # ── Developer Mode: Full API Payload ──────────────────────────────────────
     if dev_mode:
         with st.expander("🔍 Full API Payload — Developer Mode", expanded=True):
+            _metadata_obj = analysis.get("metadata", {}) if analysis else {}
+            if _metadata_obj:
+                st.markdown(f"""
+                <div style="background:rgba(10,186,181,0.05);border:1px solid rgba(10,186,181,0.15);
+                            border-radius:4px;padding:12px 16px;margin-bottom:16px">
+                  <div style="font-family:'Montserrat',sans-serif;color:{_ACCENT};
+                              font-size:0.68rem;font-weight:700;letter-spacing:0.14em;
+                              text-transform:uppercase;margin-bottom:10px">
+                    📊 Metadata (Agentic Context)
+                  </div>
+                </div>""", unsafe_allow_html=True)
+                st.json(_metadata_obj)
+                st.markdown('<div style="height:1px;background:rgba(10,186,181,0.10);margin:1.2rem 0"></div>',
+                            unsafe_allow_html=True)
+
+            st.markdown(f"""
+            <div style="font-family:'Montserrat',sans-serif;color:#9A9590;
+                        font-size:0.62rem;letter-spacing:0.12em;margin-bottom:8px">
+              FULL JSON RESPONSE
+            </div>""", unsafe_allow_html=True)
             st.json(analysis or {})
 
     # ── THE STANCE PANEL ──────────────────────────────────────────────────────
@@ -3027,9 +3158,9 @@ def main() -> None:
         for thr in step2_data.get("key_threats", []):
             st.markdown(f'<div style="font-family:Montserrat,sans-serif;color:#8B2635;padding:4px 0 4px 10px;border-left:1px solid #8B263544;font-size:0.78rem;margin:3px 0">▸ {thr}</div>', unsafe_allow_html=True)
 
-    # ── STEP 3: Role-Specific Deliverables (6 Tabs) ───────────────────────────
+    # ── STEP 3: Role-Specific Deliverables (8 Tabs) ───────────────────────────
     _accent_divider()
-    _section_label("III", "Role-Specific Deliverables — 6 Actionable Outputs")
+    _section_label("III", "Role-Specific Deliverables — 8 Actionable Outputs")
 
     _wf_executed = st.session_state.get("workflow_executed", False)
     if _wf_executed:
@@ -3061,13 +3192,15 @@ def main() -> None:
           </span>
         </div>""", unsafe_allow_html=True)
 
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
         "◆  What Changed Brief",
         "◉  Business Exposure Memo",
         "🎯  Protect / Promote / License Map",
         "⚖  Negotiation Brief",
         "✓  Product / Legal Checklist",
         "▪  Board Memo",
+        "🛠  実装チェックリスト",
+        "📝  政策対応草案",
     ])
 
     def _fn(prefix: str) -> str:
@@ -3387,6 +3520,63 @@ def main() -> None:
         st.code(slack_text, language=None)
         if st.button("📨  Send to Slack  #exec-alerts  (Mock)", key="slack_export_tab6"):
             st.toast("📨 Slack message queued for #exec-alerts — delivery confirmed (mock).", icon="📨")
+
+    # ── Tab 7: 実装チェックリスト (Implementation Checklist) ──────────────────
+    with tab7:
+        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                    line-height:1.6;margin-bottom:16px">
+          プロダクト・開発部門向けの実装チェックリスト — 技術的な実装タスク、依存関係、工数見積もりを含みます。
+        </div>""", unsafe_allow_html=True)
+
+        _deliverables = analysis.get("deliverables", {})
+        implementation_checklist = _deliverables.get("implementation_checklist", "")
+
+        if implementation_checklist:
+            _prose_block(implementation_checklist)
+
+            _download_row(
+                label="📥  Export Implementation Checklist (.docx)",
+                data=_to_docx_bytes(
+                    f"Implementation Checklist — {domain}",
+                    implementation_checklist, domain, doc_id,
+                ),
+                file_name=_fn("implementation_checklist").replace(".md", ".docx"),
+                key="dl_tab7",
+            )
+        else:
+            st.caption("Implementation checklist not available.")
+
+        _governance_panel("tab7", _gov_risk_raw, step2_data)
+
+    # ── Tab 8: 政策対応草案 (Policy Response Draft) ────────────────────────────
+    with tab8:
+        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
+        st.markdown(f"""
+        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                    line-height:1.6;margin-bottom:16px">
+          外部発表用または交渉用の政策対応草案 — 政策提出、パートナー交渉、または公式声明に適した洗練された文書。
+        </div>""", unsafe_allow_html=True)
+
+        policy_response_draft = _deliverables.get("policy_response_draft", "")
+
+        if policy_response_draft:
+            _prose_block(policy_response_draft)
+
+            _download_row(
+                label="📥  Export Policy Response Draft (.docx)",
+                data=_to_docx_bytes(
+                    f"Policy Response Draft — {domain}",
+                    policy_response_draft, domain, doc_id,
+                ),
+                file_name=_fn("policy_response_draft").replace(".md", ".docx"),
+                key="dl_tab8",
+            )
+        else:
+            st.caption("Policy response draft not available.")
+
+        _governance_panel("tab8", _gov_risk_raw, step2_data)
 
     # ── Footer ────────────────────────────────────────────────────────────────
     _accent_divider()
