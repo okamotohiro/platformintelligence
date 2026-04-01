@@ -11,7 +11,9 @@ import os
 import io
 import time
 import traceback
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Literal
+
+from pydantic import BaseModel, ValidationError
 
 import plotly.graph_objects as go
 
@@ -444,6 +446,43 @@ STRATEGIST_SYSTEM = (
     "All output must be in professional business English."
 )
 
+# ─── Structured Output Schema (Pydantic) ─────────────────────────────────────
+
+StanceType = Literal["Defend", "Pursue Exposure", "Negotiate Terms", "Wait and Monitor"]
+
+_STANCE_COERCE: Dict[str, str] = {
+    "defend":    "Defend",
+    "protect":   "Defend",
+    "pursue":    "Pursue Exposure",
+    "promote":   "Pursue Exposure",
+    "negotiate": "Negotiate Terms",
+    "license":   "Negotiate Terms",
+    "wait":      "Wait and Monitor",
+    "monitor":   "Wait and Monitor",
+    "watch":     "Wait and Monitor",
+}
+
+def _coerce_stance(raw: str) -> str:
+    """Map free-form strategic_stance text to one of the 4 canonical Stance values."""
+    normalized = (raw or "").lower().strip()
+    for keyword, canonical in _STANCE_COERCE.items():
+        if keyword in normalized:
+            return canonical
+    return "Wait and Monitor"  # safe default
+
+class Decision(BaseModel):
+    stance:    StanceType
+    rationale: str
+
+class Deliverables(BaseModel):
+    executive_briefing_memo: str
+    business_impact_memo:    str
+
+class PolicyAnalysisOutput(BaseModel):
+    decision:    Decision
+    deliverables: Deliverables
+
+
 # ─── Pipeline Functions ───────────────────────────────────────────────────────
 def _safe_json_parse(text: str) -> Dict:
     """Extract and parse JSON from LLM response text.
@@ -590,6 +629,14 @@ def analyze_policy_with_claude(
                 f"[POLICY SOURCE TEXT — Extract VERBATIM quotes for all *_quotes fields]\n{snippet}\n\n"
                 f"Return ONLY this exact JSON schema (no extra text, no code fences):\n"
                 f"{{\n"
+                f'  "decision": {{\n'
+                f'    "stance": "MUST be exactly one of: Defend | Pursue Exposure | Negotiate Terms | Wait and Monitor",\n'
+                f'    "rationale": "1-2 sentence synthesis of the agent debate leading to this stance"\n'
+                f'  }},\n'
+                f'  "deliverables": {{\n'
+                f'    "executive_briefing_memo": "Markdown memo for C-suite: what happened, financial exposure, recommended action",\n'
+                f'    "business_impact_memo": "Markdown action list for business units: specific obligations, owners, timelines from source text"\n'
+                f'  }},\n'
                 f'  "strategic_stance": "e.g. PROTECT & LICENSE",\n'
                 f'  "jurisdiction": "e.g. European Union / EMEA or Global",\n'
                 f'  "document_type": "binding_regulation|draft_legislation|platform_terms_update|government_statement|consultation_paper|industry_guideline",\n'
@@ -686,6 +733,45 @@ def analyze_policy_with_claude(
             f"JSON extraction failed — Claude did not return parseable JSON.\n"
             f"Raw response preview (first 600 chars): {preview}"
         )
+
+    # ── Pydantic structured-output validation ────────────────────────────────────
+    # Primary: use Claude's decision/deliverables if present and valid.
+    # Coerce: map free-form stance text to one of the 4 canonical values.
+    # Fallback: derive from existing fields so the existing UI never breaks.
+    _allowed_stances = {"Defend", "Pursue Exposure", "Negotiate Terms", "Wait and Monitor"}
+
+    # Build decision sub-object
+    decision_raw = result.get("decision") or {}
+    if not isinstance(decision_raw, dict):
+        decision_raw = {}
+    stance_raw = decision_raw.get("stance") or result.get("strategic_stance", "")
+    if stance_raw not in _allowed_stances:
+        stance_raw = _coerce_stance(str(stance_raw))
+    decision_raw["stance"]    = stance_raw
+    decision_raw.setdefault("rationale", result.get("executive_summary", "Analysis complete."))
+
+    # Build deliverables sub-object
+    deliverables_raw = result.get("deliverables") or {}
+    if not isinstance(deliverables_raw, dict):
+        deliverables_raw = {}
+    deliverables_raw.setdefault("executive_briefing_memo", result.get("board_memo", ""))
+    deliverables_raw.setdefault("business_impact_memo",    result.get("business_exposure_memo", ""))
+
+    try:
+        validated = PolicyAnalysisOutput(
+            decision=Decision(**decision_raw),
+            deliverables=Deliverables(**deliverables_raw),
+        )
+        result["decision"]    = validated.decision.model_dump()
+        result["deliverables"] = validated.deliverables.model_dump()
+    except (ValidationError, Exception):
+        # Non-fatal — write safe defaults so the UI always has these keys
+        result["decision"] = {"stance": stance_raw, "rationale": decision_raw.get("rationale", "")}
+        result["deliverables"] = {
+            "executive_briefing_memo": deliverables_raw.get("executive_briefing_memo", ""),
+            "business_impact_memo":    deliverables_raw.get("business_impact_memo", ""),
+        }
+
     return result
 
 
