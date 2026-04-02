@@ -376,6 +376,64 @@ hr { border: none !important; border-top: 1px solid var(--accent-border) !import
 # ─── Constants ────────────────────────────────────────────────────────────────
 MODEL = "claude-sonnet-4-6"
 
+# ─── System Prompts ───────────────────────────────────────────────────────────
+SYSTEM_PROMPT_CORE = (
+    "You are the Chief Policy Intelligence Analyst for a major media enterprise. "
+    "Your primary goal is to provide a comprehensive policy analysis in JSON format.\n\n"
+
+    "CRITICAL INSTRUCTION: After any internal reasoning, start outputting the JSON immediately. "
+    "Do not stall. Generate the complete analysis in a single JSON object.\n\n"
+
+    "STAGE 1 SCOPE: Strategic decision, metadata, impact scoring, agent debate, and evidence. "
+    "DO NOT generate full deliverable text (executive_briefing_memo, board_memo, etc.) — "
+    "those will be generated in a separate Stage 2 call with dedicated token budget.\n\n"
+
+    "CONCISENESS: Keep arrays to max 2 items. Agent messages: 2 sentences max.\n\n"
+
+    "RULES:\n"
+    "1. Evidence-only analysis from source text\n"
+    "2. Match tone to document_type (advisory vs operational)\n"
+    "3. Policy Memory Graph: If no institutional red-lines match, provide contextual analysis "
+    "describing why this policy is relevant (or not) to the organization's strategic priorities. "
+    "Never return empty — always add value with context.\n\n"
+
+    "OUTPUT FORMAT:\n"
+    "After any necessary reasoning, immediately begin your JSON output starting with '{' "
+    "and ensure it ends with '}'. The JSON block should be complete and parseable."
+)
+
+SYSTEM_PROMPT_DELIVERABLES = (
+    "You are the Chief Policy Intelligence Analyst. "
+    "Your primary goal is to generate detailed deliverable documents in JSON format "
+    "based on the strategic analysis from Stage 1.\n\n"
+
+    "CRITICAL INSTRUCTION: Start outputting the JSON immediately after any necessary "
+    "internal reasoning. Do not stall. Generate all 10 deliverables in a single JSON object.\n\n"
+
+    "DELIVERABLE FORMAT:\n"
+    "- Each deliverable: 150-250 words (you have full token budget)\n"
+    "- Use bullet points and ### headers for clarity\n"
+    "- Professional, executive-ready tone\n"
+    "- Ground all content in source policy text\n\n"
+
+    "REQUIRED DELIVERABLES (all 10 must be present):\n"
+    "1. executive_briefing_memo: C-suite brief (what happened, exposure, action)\n"
+    "2. business_impact_memo: Business unit action list (obligations, owners, timelines)\n"
+    "3. negotiation_prep_memo: Deal team brief (non-negotiables, leverage, red lines)\n"
+    "4. implementation_checklist: Product/Engineering checklist (tasks, dependencies)\n"
+    "5. policy_response_draft: External communication draft (positions, justifications)\n"
+    "6. what_changed_brief: Before/after delta (clause numbers, dates)\n"
+    "7. business_exposure_memo: Exposure memo (traffic, revenue, IP, product, brand)\n"
+    "8. negotiation_brief: Negotiation brief (strategy, confirmations, leverage)\n"
+    "9. board_memo: Board summary (event, exposure, decisions, actions, scenarios)\n"
+    "10. product_checklist: Implementation checklist (array of strings)\n\n"
+
+    "OUTPUT FORMAT:\n"
+    "Return a single JSON object with all 10 fields. After any internal reasoning, "
+    "immediately begin your JSON output starting with '{' and ensure it ends with '}'. "
+    "The JSON block should be complete and parseable."
+)
+
 DOMAIN_PROFILES: Dict[str, str] = {
     "AI Search & Distribution": (
         "Core business: Japan's leading digital subscription media, dependent on organic search traffic "
@@ -919,34 +977,19 @@ def analyze_policy_core(
     snippet        = policy_text[:3500]
 
     full_response_text = ""
-    try:
-      with client.messages.stream(
-        model=MODEL,
-        max_tokens=4096,   # Stage 1: Only need ~3000-4000 tokens for core analysis
-        thinking={"type": "adaptive"},
-        system=(
-            "You are the Chief Policy Intelligence Analyst for a major media enterprise. "
-            "Produce a JSON intelligence report with CORE ANALYSIS ONLY (no detailed deliverables).\n\n"
+    thinking_blocks = []
+    max_retries = 2
+    retry_count = 0
 
-            "STAGE 1 SCOPE: Strategic decision, metadata, impact scoring, agent debate, and evidence. "
-            "DO NOT generate full deliverable text (executive_briefing_memo, board_memo, etc.) — "
-            "those will be generated in a separate Stage 2 call with dedicated token budget.\n\n"
-
-            "CONCISENESS: Keep arrays to max 2 items. Agent messages: 2 sentences max.\n\n"
-
-            "RULES:\n"
-            "1. Evidence-only analysis from source text\n"
-            "2. Match tone to document_type (advisory vs operational)\n"
-            "3. Policy Memory Graph: If no institutional red-lines match, provide contextual analysis "
-            "describing why this policy is relevant (or not) to the organization's strategic priorities. "
-            "Never return empty — always add value with context.\n\n"
-
-            "FORMATTING RULE (CRITICAL):\n"
-            "Output ONLY valid JSON. Do NOT include any preamble, thinking blocks, "
-            "code fences, or closing remarks outside the JSON structure. "
-            "Your response must start with '{' and end with '}' with no extra text before or after."
-        ),
-        messages=[{
+    while retry_count < max_retries:
+        try:
+            with client.messages.stream(
+                model=MODEL,
+                max_tokens=8192,   # Stage 1: Increased for robust JSON output
+                temperature=1.0,   # Stable temperature for JSON generation
+                thinking={"type": "adaptive"},
+                system=SYSTEM_PROMPT_CORE,
+                messages=[{
             "role": "user",
             "content": (
                 f"Analyze the following policy/regulatory text for a media enterprise "
@@ -999,21 +1042,76 @@ def analyze_policy_core(
                 f'  ]\n'
                 f"}}"
             ),
-        }],
-      ) as stream:
-            for event in stream:
-                if (
-                    event.type == "content_block_delta"
-                    and event.delta.type == "text_delta"
-                ):
-                    full_response_text += event.delta.text
-    except anthropic.APIError as api_err:
-        raise RuntimeError(
-            f"[Stage 1 API Error — {type(api_err).__name__}] {api_err}"
-        ) from api_err
+                }],
+            ) as stream:
+                # Track content blocks separately (thinking vs text)
+                current_block_type = None
+                current_block_text = ""
 
+                for event in stream:
+                    # Track when new content blocks start
+                    if event.type == "content_block_start":
+                        if hasattr(event, 'content_block') and hasattr(event.content_block, 'type'):
+                            current_block_type = event.content_block.type
+                            current_block_text = ""
+
+                    # Accumulate text from deltas
+                    elif event.type == "content_block_delta":
+                        if event.delta.type == "text_delta":
+                            delta_text = event.delta.text
+                            current_block_text += delta_text
+
+                            # Only add to full_response_text if it's a text block (not thinking)
+                            if current_block_type != "thinking":
+                                full_response_text += delta_text
+
+                    # When block ends, save thinking blocks separately
+                    elif event.type == "content_block_stop":
+                        if current_block_type == "thinking" and current_block_text:
+                            thinking_blocks.append(current_block_text)
+                        current_block_type = None
+                        current_block_text = ""
+
+            # Log thinking blocks for debugging
+            if thinking_blocks:
+                print(f"[Stage 1 Debug] Captured {len(thinking_blocks)} thinking block(s)")
+
+            # Log text content for debugging
+            if full_response_text.strip():
+                print(f"[Stage 1 Debug] Captured {len(full_response_text)} chars of text content")
+                break  # Success - exit retry loop
+            else:
+                print(f"[Stage 1 Debug] No text content captured (only thinking blocks: {len(thinking_blocks)})")
+
+            # Otherwise, retry
+            retry_count += 1
+            if retry_count < max_retries:
+                print(f"[Stage 1] Empty response on attempt {retry_count}, retrying...")
+                full_response_text = ""
+                thinking_blocks = []
+                import time
+                time.sleep(1)  # Brief delay before retry
+
+        except anthropic.APIError as api_err:
+            retry_count += 1
+            if retry_count >= max_retries:
+                raise RuntimeError(
+                    f"[Stage 1 API Error after {max_retries} attempts — {type(api_err).__name__}] {api_err}"
+                ) from api_err
+            else:
+                print(f"[Stage 1] API error on attempt {retry_count}, retrying...")
+                import time
+                time.sleep(2)  # Longer delay for API errors
+
+    # Final check after all retries
     if not full_response_text.strip():
-        raise ValueError("Stage 1: Claude returned empty text output.")
+        error_details = f"Retry attempts: {retry_count}, Thinking blocks captured: {len(thinking_blocks)}"
+        if thinking_blocks:
+            error_details += f"\nThinking content length: {sum(len(t) for t in thinking_blocks)} chars"
+        raise ValueError(
+            f"Stage 1: Claude returned empty text output after {retry_count + 1} attempts.\n"
+            f"Debug info: {error_details}"
+        )
 
     # Parse and validate with debug output
     result = _safe_json_parse(full_response_text, debug_label="Stage 1: Core Analysis")
@@ -1164,39 +1262,19 @@ def generate_detailed_deliverables(
     substantive_changes = stage1_result.get("substantive_changes", {})
 
     full_response_text = ""
-    try:
-      with client.messages.stream(
-        model=MODEL,
-        max_tokens=8192,   # Stage 2: Full budget for deliverables
-        thinking={"type": "adaptive"},
-        system=(
-            "You are the Chief Policy Intelligence Analyst. "
-            "STAGE 2: Generate detailed deliverable documents based on the strategic analysis from Stage 1.\n\n"
+    thinking_blocks = []
+    max_retries = 2
+    retry_count = 0
 
-            "DELIVERABLE FORMAT:\n"
-            "- Each deliverable: 150-250 words (you now have more token budget)\n"
-            "- Use bullet points for clarity\n"
-            "- Professional, executive-ready tone\n"
-            "- Ground all content in source policy text\n\n"
-
-            "DELIVERABLES TO GENERATE:\n"
-            "1. executive_briefing_memo: C-suite brief (what happened, exposure, action)\n"
-            "2. business_impact_memo: Business unit action list (obligations, owners, timelines)\n"
-            "3. negotiation_prep_memo: Deal team brief (non-negotiables, leverage, red lines)\n"
-            "4. implementation_checklist: Product/Engineering checklist (tasks, dependencies)\n"
-            "5. policy_response_draft: External communication draft (positions, justifications)\n"
-            "6. what_changed_brief: Before/after delta (clause numbers, dates)\n"
-            "7. business_exposure_memo: Exposure memo (traffic, revenue, IP, product, brand)\n"
-            "8. negotiation_brief: Negotiation brief (strategy, confirmations, leverage)\n"
-            "9. board_memo: Board summary (event, exposure, decisions, actions, scenarios)\n"
-            "10. product_checklist: Implementation checklist (array of strings)\n\n"
-
-            "FORMATTING RULE (CRITICAL):\n"
-            "Output ONLY valid JSON. Do NOT include any preamble, thinking blocks, "
-            "code fences, or closing remarks outside the JSON structure. "
-            "Your response must start with '{' and end with '}' with no extra text before or after."
-        ),
-        messages=[{
+    while retry_count < max_retries:
+        try:
+            with client.messages.stream(
+                model=MODEL,
+                max_tokens=8192,   # Stage 2: Full budget for deliverables
+                temperature=1.0,   # Stable temperature for JSON generation
+                thinking={"type": "adaptive"},
+                system=SYSTEM_PROMPT_DELIVERABLES,
+                messages=[{
             "role": "user",
             "content": (
                 f"Generate detailed deliverable documents for this policy analysis.\n\n"
@@ -1224,21 +1302,76 @@ def generate_detailed_deliverables(
                 f'  "product_checklist": ["[CATEGORY] Team — specific action", "[CATEGORY] Team — specific action", ...]\n'
                 f"}}"
             ),
-        }],
-      ) as stream:
-            for event in stream:
-                if (
-                    event.type == "content_block_delta"
-                    and event.delta.type == "text_delta"
-                ):
-                    full_response_text += event.delta.text
-    except anthropic.APIError as api_err:
-        raise RuntimeError(
-            f"[Stage 2 API Error — {type(api_err).__name__}] {api_err}"
-        ) from api_err
+                }],
+            ) as stream:
+                # Track content blocks separately (thinking vs text)
+                current_block_type = None
+                current_block_text = ""
 
+                for event in stream:
+                    # Track when new content blocks start
+                    if event.type == "content_block_start":
+                        if hasattr(event, 'content_block') and hasattr(event.content_block, 'type'):
+                            current_block_type = event.content_block.type
+                            current_block_text = ""
+
+                    # Accumulate text from deltas
+                    elif event.type == "content_block_delta":
+                        if event.delta.type == "text_delta":
+                            delta_text = event.delta.text
+                            current_block_text += delta_text
+
+                            # Only add to full_response_text if it's a text block (not thinking)
+                            if current_block_type != "thinking":
+                                full_response_text += delta_text
+
+                    # When block ends, save thinking blocks separately
+                    elif event.type == "content_block_stop":
+                        if current_block_type == "thinking" and current_block_text:
+                            thinking_blocks.append(current_block_text)
+                        current_block_type = None
+                        current_block_text = ""
+
+            # Log thinking blocks for debugging
+            if thinking_blocks:
+                print(f"[Stage 2 Debug] Captured {len(thinking_blocks)} thinking block(s)")
+
+            # Log text content for debugging
+            if full_response_text.strip():
+                print(f"[Stage 2 Debug] Captured {len(full_response_text)} chars of text content")
+                break  # Success - exit retry loop
+            else:
+                print(f"[Stage 2 Debug] No text content captured (only thinking blocks: {len(thinking_blocks)})")
+
+            # Otherwise, retry
+            retry_count += 1
+            if retry_count < max_retries:
+                print(f"[Stage 2] Empty response on attempt {retry_count}, retrying...")
+                full_response_text = ""
+                thinking_blocks = []
+                import time
+                time.sleep(1)  # Brief delay before retry
+
+        except anthropic.APIError as api_err:
+            retry_count += 1
+            if retry_count >= max_retries:
+                raise RuntimeError(
+                    f"[Stage 2 API Error after {max_retries} attempts — {type(api_err).__name__}] {api_err}"
+                ) from api_err
+            else:
+                print(f"[Stage 2] API error on attempt {retry_count}, retrying...")
+                import time
+                time.sleep(2)  # Longer delay for API errors
+
+    # Final check after all retries
     if not full_response_text.strip():
-        raise ValueError("Stage 2: Claude returned empty text output.")
+        error_details = f"Retry attempts: {retry_count}, Thinking blocks captured: {len(thinking_blocks)}"
+        if thinking_blocks:
+            error_details += f"\nThinking content length: {sum(len(t) for t in thinking_blocks)} chars"
+        raise ValueError(
+            f"Stage 2: Claude returned empty text output after {retry_count + 1} attempts.\n"
+            f"Debug info: {error_details}"
+        )
 
     # Parse deliverables with debug output
     deliverables = _safe_json_parse(full_response_text, debug_label="Stage 2: Deliverables")
