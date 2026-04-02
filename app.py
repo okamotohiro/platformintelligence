@@ -493,36 +493,39 @@ class PolicyAnalysisOutput(BaseModel):
 
 
 # ─── Pipeline Functions ───────────────────────────────────────────────────────
-def _safe_json_parse(text: str) -> Dict:
-    """Extract and parse JSON from LLM response text with truncation recovery.
+def _safe_json_parse(text: str, debug_label: str = "") -> Dict:
+    """Extract and parse JSON from LLM response text with robust recovery.
 
-    Extraction order:
-    1. Fenced code block  ```json … ```
-    2. First { … last }  (re.DOTALL greedy extraction)
-    3. Bare json.loads on stripped text
-    4. Truncation recovery: append missing closing braces
+    Extraction strategy:
+    1. Strip markdown code fences (```json ... ```)
+    2. Find FIRST '{' and LAST '}' to extract JSON object
+    3. Try direct parse
+    4. If failed, attempt truncation recovery (append missing braces)
+    5. If all fails, print debug output showing first/last 500 chars
 
-    Returns {} on any failure — callers that need to distinguish empty-from-error
-    should check `not result` after calling this function.
+    Args:
+        text: Raw LLM response text
+        debug_label: Label for debug output (e.g., "Stage 1", "Stage 2")
+
+    Returns:
+        Parsed dict, or {} on failure
     """
     if not text or not text.strip():
+        if debug_label:
+            print(f"[{debug_label}] _safe_json_parse: Empty input text")
         return {}
 
     def _attempt_truncation_recovery(json_str: str) -> Dict:
         """Attempt to recover truncated JSON by appending missing closing braces."""
-        # Count opening and closing braces
         open_braces = json_str.count('{')
         close_braces = json_str.count('}')
         open_brackets = json_str.count('[')
         close_brackets = json_str.count(']')
 
-        # If truncated, try to close
         if open_braces > close_braces or open_brackets > close_brackets:
             recovered = json_str
-            # Close missing brackets first (arrays)
             for _ in range(open_brackets - close_brackets):
                 recovered += ']'
-            # Then close missing braces (objects)
             for _ in range(open_braces - close_braces):
                 recovered += '}'
             try:
@@ -532,7 +535,7 @@ def _safe_json_parse(text: str) -> Dict:
         return {}
 
     try:
-        # ── Step 0: Strip markdown code fences if present ─────────────────────
+        # ── Step 1: Strip markdown code fences ─────────────────────────────────
         clean = text.strip()
         if clean.startswith("```json"):
             clean = clean.split("```json", 1)[1]
@@ -542,40 +545,62 @@ def _safe_json_parse(text: str) -> Dict:
             clean = clean.rsplit("```", 1)[0]
         clean = clean.strip()
 
-        # ── Step 1: Try direct parse on stripped text ─────────────────────────
+        # ── Step 2: Find FIRST '{' and LAST '}' (non-greedy extraction) ───────
+        first_brace = clean.find('{')
+        last_brace = clean.rfind('}')
+
+        if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+            json_candidate = clean[first_brace:last_brace + 1]
+
+            # Try direct parse
+            try:
+                return json.loads(json_candidate)
+            except json.JSONDecodeError as e:
+                # Try truncation recovery
+                recovered = _attempt_truncation_recovery(json_candidate)
+                if recovered:
+                    return recovered
+
+                # If still failing, print debug info
+                if debug_label:
+                    print(f"\n{'='*70}")
+                    print(f"[{debug_label}] JSON PARSE ERROR")
+                    print(f"{'='*70}")
+                    print(f"Error: {e}")
+                    print(f"\nFirst 500 chars of RAW response:")
+                    print(f"{text[:500]}")
+                    print(f"\nLast 500 chars of RAW response:")
+                    print(f"{text[-500:]}")
+                    print(f"\nFirst 500 chars of extracted JSON candidate:")
+                    print(f"{json_candidate[:500]}")
+                    print(f"\nLast 500 chars of extracted JSON candidate:")
+                    print(f"{json_candidate[-500:]}")
+                    print(f"{'='*70}\n")
+
+        # ── Step 3: Fallback - try direct parse of cleaned text ───────────────
         if clean.startswith("{"):
             try:
                 return json.loads(clean)
             except json.JSONDecodeError:
-                # Try truncation recovery
                 recovered = _attempt_truncation_recovery(clean)
                 if recovered:
                     return recovered
 
-        # ── Step 2: Greedy first-{ last-} extraction (handles surrounding prose) ──
-        m = re.search(r"\{.*\}", clean, re.DOTALL)
-        if m:
-            try:
-                return json.loads(m.group(0))
-            except json.JSONDecodeError:
-                # Try truncation recovery
-                recovered = _attempt_truncation_recovery(m.group(0))
-                if recovered:
-                    return recovered
-
-        # ── Step 3: Same extraction on original text as last resort ───────────
-        m2 = re.search(r"\{.*\}", text, re.DOTALL)
-        if m2:
-            try:
-                return json.loads(m2.group(0))
-            except json.JSONDecodeError:
-                # Try truncation recovery
-                recovered = _attempt_truncation_recovery(m2.group(0))
-                if recovered:
-                    return recovered
+        # All parsing attempts failed
+        if debug_label:
+            print(f"\n{'='*70}")
+            print(f"[{debug_label}] JSON EXTRACTION FAILED - No valid JSON found")
+            print(f"{'='*70}")
+            print(f"First 500 chars of RAW response:")
+            print(f"{text[:500]}")
+            print(f"\nLast 500 chars of RAW response:")
+            print(f"{text[-500:]}")
+            print(f"{'='*70}\n")
 
         return {}
-    except Exception:
+    except Exception as exc:
+        if debug_label:
+            print(f"[{debug_label}] Unexpected error in _safe_json_parse: {exc}")
         return {}
 
 
@@ -635,7 +660,10 @@ def analyze_policy_with_claude(
             "3. Policy memory graph: empty array if no genuine triggers\n"
             "4. All text fields: telegraphic, high-density prose only\n\n"
 
-            "Return ONLY valid JSON. No preamble, no code fences."
+            "FORMATTING RULE (CRITICAL):\n"
+            "Output ONLY valid JSON. Do NOT include any preamble, thinking blocks, "
+            "code fences, or closing remarks outside the JSON structure. "
+            "Your response must start with '{' and end with '}' with no extra text before or after."
         ),
         messages=[{
             "role": "user",
@@ -781,15 +809,12 @@ def analyze_policy_with_claude(
         )
 
     # ── Parse JSON from accumulated stream text ─────────────────────────────────
-    result = _safe_json_parse(full_response_text)
+    result = _safe_json_parse(full_response_text, debug_label="Single-Stage Analysis")
     if not result:
-        preview = full_response_text[:600].replace("\n", " ")
-        tail_preview = full_response_text[-300:].replace("\n", " ")
+        # Debug output already printed by _safe_json_parse
         raise ValueError(
-            f"JSON extraction failed — Claude did not return parseable JSON.\n"
-            f"Response length: {len(full_response_text)} chars\n"
-            f"First 600 chars: {preview}\n"
-            f"Last 300 chars: ...{tail_preview}"
+            f"JSON extraction failed — Claude did not return parseable JSON. "
+            f"See console/logs for detailed debug output."
         )
 
     # ── Pydantic structured-output validation ────────────────────────────────────
@@ -912,9 +937,14 @@ def analyze_policy_core(
             "RULES:\n"
             "1. Evidence-only analysis from source text\n"
             "2. Match tone to document_type (advisory vs operational)\n"
-            "3. Policy memory graph: empty array if no genuine triggers\n\n"
+            "3. Policy Memory Graph: If no institutional red-lines match, provide contextual analysis "
+            "describing why this policy is relevant (or not) to the organization's strategic priorities. "
+            "Never return empty — always add value with context.\n\n"
 
-            "Return ONLY valid JSON. No preamble, no code fences."
+            "FORMATTING RULE (CRITICAL):\n"
+            "Output ONLY valid JSON. Do NOT include any preamble, thinking blocks, "
+            "code fences, or closing remarks outside the JSON structure. "
+            "Your response must start with '{' and end with '}' with no extra text before or after."
         ),
         messages=[{
             "role": "user",
@@ -985,18 +1015,18 @@ def analyze_policy_core(
     if not full_response_text.strip():
         raise ValueError("Stage 1: Claude returned empty text output.")
 
-    # Parse and validate
-    result = _safe_json_parse(full_response_text)
+    # Parse and validate with debug output
+    result = _safe_json_parse(full_response_text, debug_label="Stage 1: Core Analysis")
     if not result:
-        preview = full_response_text[:600].replace("\n", " ")
+        # Debug output already printed by _safe_json_parse
         raise ValueError(
-            f"Stage 1: JSON extraction failed.\n"
-            f"First 600 chars: {preview}"
+            f"Stage 1: JSON extraction failed. See console/logs for detailed debug output."
         )
 
-    # Validate core fields
+    # Validate core fields and apply smart defaults
     _allowed_stances = {"Defend", "Pursue Exposure", "Negotiate Terms", "Wait and Monitor"}
 
+    # Decision
     decision_raw = result.get("decision") or {}
     if not isinstance(decision_raw, dict):
         decision_raw = {}
@@ -1007,6 +1037,7 @@ def analyze_policy_core(
     decision_raw.setdefault("rationale", result.get("executive_summary", "Analysis complete."))
     result["decision"] = decision_raw
 
+    # Metadata
     metadata_raw = result.get("metadata") or {}
     if not isinstance(metadata_raw, dict):
         metadata_raw = {}
@@ -1014,6 +1045,76 @@ def analyze_policy_core(
     metadata_raw.setdefault("legal_certainty", "Medium")
     metadata_raw.setdefault("primary_risk", result.get("executive_summary", "Risk assessment in progress."))
     result["metadata"] = metadata_raw
+
+    # Substantive Changes (Smart Defaults)
+    sc_raw = result.get("substantive_changes") or {}
+    if not isinstance(sc_raw, dict):
+        sc_raw = {}
+
+    # Added Obligations
+    if not sc_raw.get("added_obligations") or len(sc_raw.get("added_obligations", [])) == 0:
+        sc_raw["added_obligations"] = [{
+            "title": "No significant new obligations identified",
+            "severity": "low",
+            "description": "Analysis found no material new requirements in the policy document."
+        }]
+
+    # Removed Rights
+    if not sc_raw.get("removed_rights") or len(sc_raw.get("removed_rights", [])) == 0:
+        sc_raw["removed_rights"] = [{
+            "title": "No significant rights removal identified",
+            "severity": "low",
+            "description": "Analysis found no material removal of existing rights or permissions."
+        }]
+
+    # Key Thresholds
+    if not sc_raw.get("key_thresholds") or len(sc_raw.get("key_thresholds", [])) == 0:
+        sc_raw["key_thresholds"] = [{
+            "title": "No critical thresholds identified",
+            "value": "N/A",
+            "description": "Analysis found no specific compliance thresholds or deadlines."
+        }]
+
+    sc_raw.setdefault("context_summary", "Policy analysis complete. Review substantive changes above.")
+    result["substantive_changes"] = sc_raw
+
+    # Scores (ensure all axes present)
+    scores_raw = result.get("scores") or {}
+    for axis in ["IP", "Traffic", "Revenue", "Product"]:
+        if axis not in scores_raw:
+            scores_raw[axis] = 50  # Neutral default
+    result["scores"] = scores_raw
+
+    # Axis Actions (ensure all axes present)
+    axis_actions_raw = result.get("axis_actions") or {}
+    for axis in ["IP", "Traffic", "Revenue", "Product"]:
+        if axis not in axis_actions_raw or not isinstance(axis_actions_raw.get(axis), dict):
+            axis_actions_raw[axis] = {
+                "badge": "MONITOR",
+                "summary": f"Continue monitoring {axis} impact",
+                "evidence": "No specific action required at this time.",
+                "direction": "neutral",
+                "priority_actions": ["Monitor ongoing developments"]
+            }
+    result["axis_actions"] = axis_actions_raw
+
+    # Evidence (ensure structure exists)
+    evidence_raw = result.get("evidence") or {}
+    evidence_raw.setdefault("parsed_claims", ["Policy document analyzed"])
+    evidence_raw.setdefault("claim_level_provenance", [])
+    evidence_raw.setdefault("policy_memory_graph", [])
+    result["evidence"] = evidence_raw
+
+    # Other essential fields
+    result.setdefault("strategic_stance", decision_raw.get("stance", "Wait and Monitor"))
+    result.setdefault("jurisdiction", "Global")
+    result.setdefault("document_type", "policy_document")
+    result.setdefault("overall_risk_level", "medium")
+    result.setdefault("executive_summary", "Policy analysis complete.")
+    result.setdefault("key_opportunities", ["Review full analysis for opportunities"])
+    result.setdefault("key_threats", ["Review full analysis for threats"])
+    result.setdefault("agent_debate_messages", [])
+    result.setdefault("risk_matrix_points", [])
 
     return result
 
@@ -1090,7 +1191,10 @@ def generate_detailed_deliverables(
             "9. board_memo: Board summary (event, exposure, decisions, actions, scenarios)\n"
             "10. product_checklist: Implementation checklist (array of strings)\n\n"
 
-            "Return ONLY valid JSON with these fields. No preamble, no code fences."
+            "FORMATTING RULE (CRITICAL):\n"
+            "Output ONLY valid JSON. Do NOT include any preamble, thinking blocks, "
+            "code fences, or closing remarks outside the JSON structure. "
+            "Your response must start with '{' and end with '}' with no extra text before or after."
         ),
         messages=[{
             "role": "user",
@@ -1108,15 +1212,15 @@ def generate_detailed_deliverables(
                 f"[POLICY SOURCE TEXT]\n{snippet}\n\n"
                 f"Generate deliverables in this JSON format:\n"
                 f"{{\n"
-                f'  "executive_briefing_memo": "Markdown (150-250 words): C-suite brief with • What happened • Financial exposure • Recommended action",\n'
-                f'  "business_impact_memo": "Markdown (150-250 words): Business action list with • Obligations • Owners • Timelines",\n'
+                f'  "executive_briefing_memo": "Markdown (150-250 words): C-suite brief with sections: ### What Happened, ### Financial Exposure, ### Recommended Action. Use ### headers for visual clarity.",\n'
+                f'  "business_impact_memo": "Markdown (150-250 words): Business action list with sections: ### Key Obligations, ### Department Owners, ### Critical Timelines. Use ### headers for visual clarity.",\n'
                 f'  "negotiation_prep_memo": "Markdown (150-250 words): Deal team brief with • Non-negotiables • Written confirmations needed • Leverage points • Red lines",\n'
                 f'  "implementation_checklist": "Markdown (150-250 words): Implementation checklist with • Tasks • Technical details • Dependencies",\n'
                 f'  "policy_response_draft": "Markdown (150-250 words): External communication draft with • Key positions • Justifications • Proposed actions",\n'
                 f'  "what_changed_brief": "Markdown (150-200 words): Delta analysis with • Before/after changes • Clause numbers • Effective dates",\n'
                 f'  "business_exposure_memo": "Markdown (200-250 words): Exposure assessment with • Traffic impact • Revenue impact • IP impact • Product impact • Brand impact",\n'
                 f'  "negotiation_brief": "Markdown (150-200 words): Negotiation strategy with • Non-negotiables • Written confirmations • Leverage • Compromise zones • Red lines",\n'
-                f'  "board_memo": "Markdown (200-250 words): Board summary with • What happened • Financial exposure • Board decisions needed • Recommended actions with owners • Best/base/worst scenarios",\n'
+                f'  "board_memo": "Markdown (200-250 words): Board summary with sections: ### What Happened, ### Financial Exposure, ### Board Decisions Required, ### Recommended Actions (with owners), ### Scenarios (best/base/worst). Use ### headers for visual clarity.",\n'
                 f'  "product_checklist": ["[CATEGORY] Team — specific action", "[CATEGORY] Team — specific action", ...]\n'
                 f"}}"
             ),
@@ -1136,13 +1240,12 @@ def generate_detailed_deliverables(
     if not full_response_text.strip():
         raise ValueError("Stage 2: Claude returned empty text output.")
 
-    # Parse deliverables
-    deliverables = _safe_json_parse(full_response_text)
+    # Parse deliverables with debug output
+    deliverables = _safe_json_parse(full_response_text, debug_label="Stage 2: Deliverables")
     if not deliverables:
-        preview = full_response_text[:600].replace("\n", " ")
+        # Debug output already printed by _safe_json_parse
         raise ValueError(
-            f"Stage 2: JSON extraction failed.\n"
-            f"First 600 chars: {preview}"
+            f"Stage 2: JSON extraction failed. See console/logs for detailed debug output."
         )
 
     # Ensure all expected keys exist
@@ -1508,6 +1611,62 @@ def _accent_divider() -> None:
     )
 
 
+def _enhance_markdown_readability(content: str) -> str:
+    """
+    Enhances markdown deliverable readability by:
+    1. Converting ### headers to bold text for better visual hierarchy
+    2. Converting ## headers to larger bold text
+    3. Preserving bullet points and formatting
+    4. Adding subtle visual polish
+
+    Args:
+        content: Raw markdown content from deliverables
+
+    Returns:
+        Enhanced markdown with better visual formatting
+    """
+    if not content or not isinstance(content, str):
+        return ""
+
+    import re
+
+    # Replace ### headers with bold text (smaller sections)
+    content = re.sub(r'^### (.+)$', r'**\1**', content, flags=re.MULTILINE)
+
+    # Replace ## headers with larger bold text (major sections)
+    content = re.sub(r'^## (.+)$', r'### **\1**', content, flags=re.MULTILINE)
+
+    # Replace # headers with even larger text (top-level - rarely used in deliverables)
+    content = re.sub(r'^# (.+)$', r'## **\1**', content, flags=re.MULTILINE)
+
+    return content.strip()
+
+
+def _display_deliverable_with_highlights(content: str, title: str = "", highlight_sections: list = None):
+    """
+    Display a deliverable with enhanced formatting and optional highlighted sections.
+
+    Args:
+        content: Markdown content to display
+        title: Optional title to display above content
+        highlight_sections: List of section titles to highlight with background color
+    """
+    if title:
+        st.markdown(f"#### {title}")
+
+    enhanced_content = _enhance_markdown_readability(content)
+
+    # If specific sections should be highlighted
+    if highlight_sections and enhanced_content:
+        for section in highlight_sections:
+            # Add background highlight to specific sections
+            pattern = f"(\\*\\*{re.escape(section)}\\*\\*.*?)(?=\\*\\*|$)"
+            replacement = r'<div style="background-color: rgba(10, 186, 181, 0.08); padding: 8px 12px; border-left: 3px solid #0ABAB5; margin: 8px 0;">\1</div>'
+            enhanced_content = re.sub(pattern, replacement, enhanced_content, flags=re.DOTALL)
+
+    st.markdown(enhanced_content, unsafe_allow_html=True)
+
+
 def _engine_badge(label: str) -> str:
     """Return an inline HTML engine badge span."""
     return (
@@ -1599,8 +1758,11 @@ def _col_header(label: str, badge: str = "", badge_color: str = "#0ABAB5") -> No
 
 
 def _prose_block(text: str) -> None:
-    """Render prose with excess-newline sanitization and inline Markdown table support."""
+    """Render prose with excess-newline sanitization, enhanced markdown headers, and inline Markdown table support."""
     import re as _re
+
+    # ── 0. Enhance markdown readability (convert headers to bold) ──────────────
+    text = _enhance_markdown_readability(text)
 
     # ── 1. Sanitize: collapse 3+ consecutive newlines → single blank line ──────
     text = _re.sub(r'\n{3,}', '\n\n', text.strip())
@@ -1641,12 +1803,27 @@ def _prose_block(text: str) -> None:
         if seg_type == 'prose':
             body = '\n'.join(seg_lines).strip()
             if body:
-                # HTML-escape angle brackets, preserve newlines as <br>
-                safe = (body
-                        .replace('&', '&amp;')
-                        .replace('<', '&lt;')
-                        .replace('>', '&gt;')
-                        .replace('\n', '<br>'))
+                # Enhanced markdown to HTML conversion
+                safe = body.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+                # Convert **bold** to <strong> with enhanced styling
+                safe = _re.sub(
+                    r'\*\*(.+?)\*\*',
+                    r'<strong style="color:#0ABAB5;font-weight:600;letter-spacing:0.02em">\1</strong>',
+                    safe
+                )
+
+                # Convert bullet points (•, -, *) to styled bullets
+                safe = _re.sub(
+                    r'^([•\-\*])\s+(.+)$',
+                    r'<div style="margin-left:16px;margin-bottom:6px"><span style="color:#0ABAB5">•</span> \2</div>',
+                    safe,
+                    flags=_re.MULTILINE
+                )
+
+                # Preserve newlines as <br> for non-bullet text
+                safe = safe.replace('\n', '<br>')
+
                 html_parts.append(
                     f'<div style="font-family:\'Montserrat\',sans-serif;color:#C4BFB8;'
                     f'font-size:0.88rem;line-height:1.85;margin-bottom:0.8rem">'
@@ -3824,7 +4001,26 @@ def main() -> None:
         </div>""", unsafe_allow_html=True)
 
         board = step3_data.get("board_memo", "")
-        _prose_block(board)
+        # Highlight critical sections in board memo
+        if board and "Board Decisions Required" in board:
+            # Add visual highlight to critical decision sections
+            import re as _re_board
+            enhanced_board = _re_board.sub(
+                r'(\*\*Board Decisions Required\*\*.*?)(?=\*\*|$)',
+                r'<div style="background-color: rgba(10, 186, 181, 0.08); padding: 12px 16px; border-left: 4px solid #0ABAB5; margin: 12px 0; border-radius: 4px;">\1</div>',
+                board,
+                flags=_re_board.DOTALL
+            )
+            # Also highlight "Recommended Actions" if present
+            enhanced_board = _re_board.sub(
+                r'(\*\*Recommended Actions\*\*.*?)(?=\*\*|$)',
+                r'<div style="background-color: rgba(154, 69, 32, 0.08); padding: 12px 16px; border-left: 4px solid #9A4520; margin: 12px 0; border-radius: 4px;">\1</div>',
+                enhanced_board,
+                flags=_re_board.DOTALL
+            )
+            _prose_block(enhanced_board)
+        else:
+            _prose_block(board)
 
         _evidence_block(
             step3_data.get("board_memo_quotes", []),
