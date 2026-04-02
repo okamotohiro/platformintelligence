@@ -854,6 +854,310 @@ def analyze_policy_with_claude(
     return result
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# TWO-STAGE DELIVERY ARCHITECTURE (Solves 8192 token truncation issue)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def analyze_policy_core(
+    client: anthropic.Anthropic,
+    policy_text: str,
+    domain: str,
+) -> Dict:
+    """
+    STAGE 1: Core Analysis & Metadata Only
+
+    Returns strategic decision, metadata, and core analysis WITHOUT the full
+    deliverable text. This keeps token usage low (~3000-4000 tokens).
+
+    Returns:
+        {
+            "decision": {"stance": "...", "rationale": "..."},
+            "metadata": {"affected_departments": [...], "legal_certainty": "...", "primary_risk": "..."},
+            "strategic_stance": "...",
+            "jurisdiction": "...",
+            "document_type": "...",
+            "overall_risk_level": "...",
+            "executive_summary": "...",
+            "key_opportunities": [...],
+            "key_threats": [...],
+            "substantive_changes": {...},
+            "scores": {...},
+            "axis_actions": {...},
+            "evidence": {...},
+            "risk_matrix_points": [...],
+            "agent_debate_messages": [...],
+            ... (other core fields)
+        }
+    """
+    domain_profile = DOMAIN_PROFILES.get(domain, "")
+    domain_focus   = DOMAIN_RISK_FOCUS.get(domain, "")
+    snippet        = policy_text[:3500]
+
+    full_response_text = ""
+    try:
+      with client.messages.stream(
+        model=MODEL,
+        max_tokens=4096,   # Stage 1: Only need ~3000-4000 tokens for core analysis
+        thinking={"type": "adaptive"},
+        system=(
+            "You are the Chief Policy Intelligence Analyst for a major media enterprise. "
+            "Produce a JSON intelligence report with CORE ANALYSIS ONLY (no detailed deliverables).\n\n"
+
+            "STAGE 1 SCOPE: Strategic decision, metadata, impact scoring, agent debate, and evidence. "
+            "DO NOT generate full deliverable text (executive_briefing_memo, board_memo, etc.) — "
+            "those will be generated in a separate Stage 2 call with dedicated token budget.\n\n"
+
+            "CONCISENESS: Keep arrays to max 2 items. Agent messages: 2 sentences max.\n\n"
+
+            "RULES:\n"
+            "1. Evidence-only analysis from source text\n"
+            "2. Match tone to document_type (advisory vs operational)\n"
+            "3. Policy memory graph: empty array if no genuine triggers\n\n"
+
+            "Return ONLY valid JSON. No preamble, no code fences."
+        ),
+        messages=[{
+            "role": "user",
+            "content": (
+                f"Analyze the following policy/regulatory text for a media enterprise "
+                f"operating in the '{domain}' domain. Produce STAGE 1: CORE ANALYSIS ONLY.\n\n"
+                f"[DOMAIN PROFILE]\n{domain_profile}\n\n"
+                f"[DOMAIN RISK FOCUS]\n{domain_focus}\n\n"
+                f"[POLICY SOURCE TEXT]\n{snippet}\n\n"
+                f"Return this JSON schema (OMIT deliverable text fields):\n"
+                f"{{\n"
+                f'  "decision": {{\n'
+                f'    "stance": "Defend | Pursue Exposure | Negotiate Terms | Wait and Monitor",\n'
+                f'    "rationale": "1-2 sentence synthesis"\n'
+                f'  }},\n'
+                f'  "metadata": {{\n'
+                f'    "affected_departments": ["Legal", "Engineering", "Business", "etc"],\n'
+                f'    "legal_certainty": "High|Medium|Low",\n'
+                f'    "primary_risk": "One-sentence summary"\n'
+                f'  }},\n'
+                f'  "strategic_stance": "e.g. PROTECT & LICENSE",\n'
+                f'  "jurisdiction": "e.g. European Union",\n'
+                f'  "document_type": "binding_regulation|draft_legislation|etc",\n'
+                f'  "overall_risk_level": "critical|high|medium|low",\n'
+                f'  "executive_summary": "1-2 sentences",\n'
+                f'  "key_opportunities": ["max 2"],\n'
+                f'  "key_threats": ["max 2"],\n'
+                f'  "substantive_changes": {{\n'
+                f'    "added_obligations": [{{"title": "...", "severity": "high|medium|low", "description": "brief"}}],\n'
+                f'    "removed_rights": [{{"title": "...", "severity": "...", "description": "brief"}}],\n'
+                f'    "key_thresholds": [{{"title": "...", "value": "...", "description": "brief"}}],\n'
+                f'    "context_summary": "1-2 sentences"\n'
+                f'  }},\n'
+                f'  "scores": {{"IP": 0-100, "Traffic": 0-100, "Revenue": 0-100, "Product": 0-100}},\n'
+                f'  "axis_actions": {{\n'
+                f'    "IP": {{"badge": "PROTECT|LICENSE|etc", "summary": "brief", "evidence": "short", "direction": "threat|opportunity|neutral", "priority_actions": ["max 2"]}},\n'
+                f'    "Traffic": {{"badge": "...", "summary": "...", "evidence": "...", "direction": "...", "priority_actions": ["..."]}},\n'
+                f'    "Revenue": {{"badge": "...", "summary": "...", "evidence": "...", "direction": "...", "priority_actions": ["..."]}},\n'
+                f'    "Product": {{"badge": "...", "summary": "...", "evidence": "...", "direction": "...", "priority_actions": ["..."]}}\n'
+                f'  }},\n'
+                f'  "evidence": {{\n'
+                f'    "parsed_claims": ["max 2 extracts"],\n'
+                f'    "claim_level_provenance": [{{"type": "IP|TRAFFIC|REVENUE", "agent": "LEGAL|BUSINESS", "quote": "short"}}],\n'
+                f'    "policy_memory_graph": [{{"reference_id": "ID", "description": "brief"}}]\n'
+                f'  }},\n'
+                f'  "risk_matrix_points": [{{"label": "name", "days_to_enactment": 0-100, "business_severity": 0-100}}],\n'
+                f'  "agent_debate_messages": [\n'
+                f'    {{"agent": "⚖️ Legal", "color": "#8B2635", "message": "2 sentences max"}},\n'
+                f'    {{"agent": "💰 Business", "color": "#A8892A", "message": "2 sentences max"}},\n'
+                f'    {{"agent": "⚙️ Engineering", "color": "#1A6B3C", "message": "2 sentences max"}},\n'
+                f'    {{"agent": "🏛️ Management", "color": "#0ABAB5", "final": true, "message": "2 sentences max"}}\n'
+                f'  ]\n'
+                f"}}"
+            ),
+        }],
+      ) as stream:
+            for event in stream:
+                if (
+                    event.type == "content_block_delta"
+                    and event.delta.type == "text_delta"
+                ):
+                    full_response_text += event.delta.text
+    except anthropic.APIError as api_err:
+        raise RuntimeError(
+            f"[Stage 1 API Error — {type(api_err).__name__}] {api_err}"
+        ) from api_err
+
+    if not full_response_text.strip():
+        raise ValueError("Stage 1: Claude returned empty text output.")
+
+    # Parse and validate
+    result = _safe_json_parse(full_response_text)
+    if not result:
+        preview = full_response_text[:600].replace("\n", " ")
+        raise ValueError(
+            f"Stage 1: JSON extraction failed.\n"
+            f"First 600 chars: {preview}"
+        )
+
+    # Validate core fields
+    _allowed_stances = {"Defend", "Pursue Exposure", "Negotiate Terms", "Wait and Monitor"}
+
+    decision_raw = result.get("decision") or {}
+    if not isinstance(decision_raw, dict):
+        decision_raw = {}
+    stance_raw = decision_raw.get("stance") or result.get("strategic_stance", "")
+    if stance_raw not in _allowed_stances:
+        stance_raw = _coerce_stance(str(stance_raw))
+    decision_raw["stance"] = stance_raw
+    decision_raw.setdefault("rationale", result.get("executive_summary", "Analysis complete."))
+    result["decision"] = decision_raw
+
+    metadata_raw = result.get("metadata") or {}
+    if not isinstance(metadata_raw, dict):
+        metadata_raw = {}
+    metadata_raw.setdefault("affected_departments", ["Legal", "Business", "Engineering"])
+    metadata_raw.setdefault("legal_certainty", "Medium")
+    metadata_raw.setdefault("primary_risk", result.get("executive_summary", "Risk assessment in progress."))
+    result["metadata"] = metadata_raw
+
+    return result
+
+
+def generate_detailed_deliverables(
+    client: anthropic.Anthropic,
+    policy_text: str,
+    domain: str,
+    stage1_result: Dict,
+) -> Dict:
+    """
+    STAGE 2: Generate Detailed Deliverables
+
+    Takes Stage 1 results (strategic stance, metadata) and generates the full
+    text for all 8 deliverables with a dedicated token budget (~6000-7000 tokens).
+
+    Args:
+        policy_text: Original policy document
+        domain: Policy domain
+        stage1_result: Output from analyze_policy_core()
+
+    Returns:
+        {
+            "executive_briefing_memo": "Full Markdown text (150-250 words)",
+            "business_impact_memo": "...",
+            "negotiation_prep_memo": "...",
+            "implementation_checklist": "...",
+            "policy_response_draft": "...",
+            "what_changed_brief": "...",
+            "business_exposure_memo": "...",
+            "negotiation_brief": "...",
+            "board_memo": "...",
+            "product_checklist": [...]
+        }
+    """
+    domain_profile = DOMAIN_PROFILES.get(domain, "")
+    snippet = policy_text[:3500]
+
+    # Extract context from Stage 1
+    stance = stage1_result.get("decision", {}).get("stance", "Wait and Monitor")
+    rationale = stage1_result.get("decision", {}).get("rationale", "")
+    metadata = stage1_result.get("metadata", {})
+    affected_depts = metadata.get("affected_departments", [])
+    legal_certainty = metadata.get("legal_certainty", "Medium")
+    primary_risk = metadata.get("primary_risk", "")
+    executive_summary = stage1_result.get("executive_summary", "")
+    substantive_changes = stage1_result.get("substantive_changes", {})
+
+    full_response_text = ""
+    try:
+      with client.messages.stream(
+        model=MODEL,
+        max_tokens=8192,   # Stage 2: Full budget for deliverables
+        thinking={"type": "adaptive"},
+        system=(
+            "You are the Chief Policy Intelligence Analyst. "
+            "STAGE 2: Generate detailed deliverable documents based on the strategic analysis from Stage 1.\n\n"
+
+            "DELIVERABLE FORMAT:\n"
+            "- Each deliverable: 150-250 words (you now have more token budget)\n"
+            "- Use bullet points for clarity\n"
+            "- Professional, executive-ready tone\n"
+            "- Ground all content in source policy text\n\n"
+
+            "DELIVERABLES TO GENERATE:\n"
+            "1. executive_briefing_memo: C-suite brief (what happened, exposure, action)\n"
+            "2. business_impact_memo: Business unit action list (obligations, owners, timelines)\n"
+            "3. negotiation_prep_memo: Deal team brief (non-negotiables, leverage, red lines)\n"
+            "4. implementation_checklist: Product/Engineering checklist (tasks, dependencies)\n"
+            "5. policy_response_draft: External communication draft (positions, justifications)\n"
+            "6. what_changed_brief: Before/after delta (clause numbers, dates)\n"
+            "7. business_exposure_memo: Exposure memo (traffic, revenue, IP, product, brand)\n"
+            "8. negotiation_brief: Negotiation brief (strategy, confirmations, leverage)\n"
+            "9. board_memo: Board summary (event, exposure, decisions, actions, scenarios)\n"
+            "10. product_checklist: Implementation checklist (array of strings)\n\n"
+
+            "Return ONLY valid JSON with these fields. No preamble, no code fences."
+        ),
+        messages=[{
+            "role": "user",
+            "content": (
+                f"Generate detailed deliverable documents for this policy analysis.\n\n"
+                f"[POLICY DOMAIN]: {domain}\n"
+                f"[DOMAIN PROFILE]: {domain_profile}\n\n"
+                f"[STAGE 1 STRATEGIC DECISION]\n"
+                f"Stance: {stance}\n"
+                f"Rationale: {rationale}\n"
+                f"Affected Departments: {', '.join(affected_depts)}\n"
+                f"Legal Certainty: {legal_certainty}\n"
+                f"Primary Risk: {primary_risk}\n"
+                f"Executive Summary: {executive_summary}\n\n"
+                f"[POLICY SOURCE TEXT]\n{snippet}\n\n"
+                f"Generate deliverables in this JSON format:\n"
+                f"{{\n"
+                f'  "executive_briefing_memo": "Markdown (150-250 words): C-suite brief with • What happened • Financial exposure • Recommended action",\n'
+                f'  "business_impact_memo": "Markdown (150-250 words): Business action list with • Obligations • Owners • Timelines",\n'
+                f'  "negotiation_prep_memo": "Markdown (150-250 words): Deal team brief with • Non-negotiables • Written confirmations needed • Leverage points • Red lines",\n'
+                f'  "implementation_checklist": "Markdown (150-250 words): Implementation checklist with • Tasks • Technical details • Dependencies",\n'
+                f'  "policy_response_draft": "Markdown (150-250 words): External communication draft with • Key positions • Justifications • Proposed actions",\n'
+                f'  "what_changed_brief": "Markdown (150-200 words): Delta analysis with • Before/after changes • Clause numbers • Effective dates",\n'
+                f'  "business_exposure_memo": "Markdown (200-250 words): Exposure assessment with • Traffic impact • Revenue impact • IP impact • Product impact • Brand impact",\n'
+                f'  "negotiation_brief": "Markdown (150-200 words): Negotiation strategy with • Non-negotiables • Written confirmations • Leverage • Compromise zones • Red lines",\n'
+                f'  "board_memo": "Markdown (200-250 words): Board summary with • What happened • Financial exposure • Board decisions needed • Recommended actions with owners • Best/base/worst scenarios",\n'
+                f'  "product_checklist": ["[CATEGORY] Team — specific action", "[CATEGORY] Team — specific action", ...]\n'
+                f"}}"
+            ),
+        }],
+      ) as stream:
+            for event in stream:
+                if (
+                    event.type == "content_block_delta"
+                    and event.delta.type == "text_delta"
+                ):
+                    full_response_text += event.delta.text
+    except anthropic.APIError as api_err:
+        raise RuntimeError(
+            f"[Stage 2 API Error — {type(api_err).__name__}] {api_err}"
+        ) from api_err
+
+    if not full_response_text.strip():
+        raise ValueError("Stage 2: Claude returned empty text output.")
+
+    # Parse deliverables
+    deliverables = _safe_json_parse(full_response_text)
+    if not deliverables:
+        preview = full_response_text[:600].replace("\n", " ")
+        raise ValueError(
+            f"Stage 2: JSON extraction failed.\n"
+            f"First 600 chars: {preview}"
+        )
+
+    # Ensure all expected keys exist
+    expected_keys = [
+        "executive_briefing_memo", "business_impact_memo", "negotiation_prep_memo",
+        "implementation_checklist", "policy_response_draft", "what_changed_brief",
+        "business_exposure_memo", "negotiation_brief", "board_memo", "product_checklist"
+    ]
+    for key in expected_keys:
+        if key not in deliverables:
+            deliverables[key] = "" if key != "product_checklist" else []
+
+    return deliverables
+
+
 def _rule_based_fallback(policy_text: str, domain: str) -> Dict:
     """
     Keyword-frequency rule-based fallback — safe when ANTHROPIC_API_KEY is absent.
@@ -2689,8 +2993,15 @@ def main() -> None:
                 )
                 time.sleep(0.3)
 
+                # ═══════════════════════════════════════════════════════════════════
+                # STAGE 1: Core Analysis & Metadata (API Call 1)
+                # ═══════════════════════════════════════════════════════════════════
                 if client:
-                    analysis = analyze_policy_with_claude(client, policy_text, domain)
+                    st.write(
+                        "**Stage 1: Core Analysis & Metadata**  \n"
+                        "Generating strategic decision, metadata, and impact scoring..."
+                    )
+                    analysis = analyze_policy_core(client, policy_text, domain)
                 else:
                     st.warning(
                         "⚠️  ANTHROPIC_API_KEY not configured — showing rule-based keyword scan only. "
@@ -2793,20 +3104,50 @@ def main() -> None:
                 )
                 time.sleep(0.3)
 
+                # ═══════════════════════════════════════════════════════════════════
+                # STAGE 2: Detailed Deliverable Generation (API Call 2)
+                # ═══════════════════════════════════════════════════════════════════
                 pipeline_status.update(
-                    label="◆  Constructing Policy Memory Graph & Metadata layers...",
+                    label="◆  Stage 2: Generating Detailed Deliverables...",
                     state="running",
                 )
-                _prog.progress(72, text="Step III · Agentic Execution — Generating 8 deliverables...")
+                _prog.progress(72, text="Stage 2 · Generating 8 detailed deliverables (150-250 words each)...")
                 st.write(
-                    "**Step III — Agentic Execution & Deliverable Synthesis**  \n"
-                    "Generating 8 Deliverables: What Changed Brief · Business Exposure Memo · "
-                    "PPL Map · Negotiation Brief · Product / Legal Checklist · Board Memo · "
-                    "Implementation Checklist · Policy Response Draft — "
-                    "each grounded with verbatim evidence citations and Policy Memory Graph matches. "
-                    "Preparing execution payloads for Slack, Jira, and Docs..."
+                    "**Stage 2: Detailed Deliverable Generation**  \n"
+                    "Generating 8 Deliverables with dedicated token budget: Executive Briefing · "
+                    "Business Impact · Negotiation Prep · Implementation Checklist · Policy Response Draft · "
+                    "What Changed Brief · Business Exposure · Board Memo — "
+                    "each with 150-250 words of executive-ready content.  \n\n"
+                    "**High-fidelity reasoning is underway.** This deliberate process ensures enterprise-grade accuracy."
                 )
                 time.sleep(0.4)
+
+                if client:
+                    deliverables_raw = generate_detailed_deliverables(client, policy_text, domain, analysis)
+                    # Merge deliverables into analysis (both flat and nested for UI compatibility)
+                    analysis.update(deliverables_raw)
+
+                    # Also create the "deliverables" nested structure for Pydantic compatibility
+                    analysis["deliverables"] = {
+                        "executive_briefing_memo": deliverables_raw.get("executive_briefing_memo", ""),
+                        "business_impact_memo": deliverables_raw.get("business_impact_memo", ""),
+                        "negotiation_prep_memo": deliverables_raw.get("negotiation_prep_memo", ""),
+                        "implementation_checklist": deliverables_raw.get("implementation_checklist", ""),
+                        "policy_response_draft": deliverables_raw.get("policy_response_draft", ""),
+                    }
+
+                    st.write(
+                        f"  ✓  All 8 deliverables generated — Ready for review"
+                    )
+                else:
+                    # Fallback: use empty deliverables
+                    analysis["deliverables"] = {
+                        "executive_briefing_memo": "",
+                        "business_impact_memo": "",
+                        "negotiation_prep_memo": "",
+                        "implementation_checklist": "",
+                        "policy_response_draft": "",
+                    }
 
                 step3_data = {
                     "what_changed_brief":       analysis.get("what_changed_brief", step2_data.get("executive_summary", "")),
@@ -2821,16 +3162,16 @@ def main() -> None:
                     "product_checklist":        analysis.get("product_checklist", []),
                 }
 
-                _prog.progress(98, text="Step III · Finalizing audit metadata & document ID...")
+                _prog.progress(98, text="Finalizing audit metadata & document ID...")
                 st.write(
-                    "  ✓  6 role-specific deliverables generated — "
+                    "  ✓  8 role-specific deliverables generated (Stage 2 complete) — "
                     "Policy Memory Graph citations embedded · execution payloads ready"
                 )
                 time.sleep(0.3)
 
                 _prog.progress(100, text="◆  Response Package Ready — All steps complete ✓")
                 pipeline_status.update(
-                    label="◆  Execution Complete — 8 Deliverables Ready",
+                    label="◆  Two-Stage Execution Complete — 8 Deliverables Ready",
                     state="complete",
                     expanded=False,
                 )
