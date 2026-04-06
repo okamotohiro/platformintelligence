@@ -602,7 +602,7 @@ def _safe_json_parse(text: str, debug_label: str = "") -> Dict:
             for _ in range(open_braces - close_braces):
                 recovered += '}'
             try:
-                return json.loads(recovered)
+                return json.loads(recovered, strict=False)
             except json.JSONDecodeError:
                 pass
         return {}
@@ -625,9 +625,9 @@ def _safe_json_parse(text: str, debug_label: str = "") -> Dict:
         if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
             json_candidate = clean[first_brace:last_brace + 1]
 
-            # Try direct parse
+            # Try direct parse with strict=False to allow unescaped control characters
             try:
-                return json.loads(json_candidate)
+                return json.loads(json_candidate, strict=False)
             except json.JSONDecodeError as e:
                 # Try truncation recovery
                 recovered = _attempt_truncation_recovery(json_candidate)
@@ -1395,25 +1395,67 @@ def generate_detailed_deliverables(
             f"Debug info: {error_details}"
         )
 
-    # Parse deliverables with debug output
-    deliverables = _safe_json_parse(full_response_text, debug_label="Stage 2: Deliverables")
-    if not deliverables:
-        # Debug output already printed by _safe_json_parse
-        raise ValueError(
-            f"Stage 2: JSON extraction failed. See console/logs for detailed debug output."
+    # ═══════════════════════════════════════════════════════════════════════════
+    # GRACEFUL DEGRADATION: Parse deliverables with fallback on failure
+    # ═══════════════════════════════════════════════════════════════════════════
+    try:
+        deliverables = _safe_json_parse(full_response_text, debug_label="Stage 2: Deliverables")
+
+        if not deliverables:
+            # Debug output already printed by _safe_json_parse
+            print(f"\n[Stage 2 Graceful Degradation] JSON extraction failed completely.")
+            print(f"Last 500 chars of raw response:\n{full_response_text[-500:]}")
+            raise ValueError("JSON extraction returned empty dict")
+
+        # Ensure all expected keys exist
+        expected_keys = [
+            "executive_briefing_memo", "business_impact_memo", "negotiation_prep_memo",
+            "implementation_checklist", "policy_response_draft", "what_changed_brief",
+            "business_exposure_memo", "negotiation_brief", "board_memo", "product_checklist"
+        ]
+        for key in expected_keys:
+            if key not in deliverables:
+                deliverables[key] = "" if key != "product_checklist" else []
+
+        return deliverables
+
+    except (ValueError, json.JSONDecodeError, KeyError, Exception) as e:
+        # ═══════════════════════════════════════════════════════════════════════
+        # FALLBACK STRATEGY: Return partial results instead of crashing the app
+        # ═══════════════════════════════════════════════════════════════════════
+        print(f"\n{'='*70}")
+        print(f"[Stage 2 GRACEFUL DEGRADATION ACTIVATED]")
+        print(f"{'='*70}")
+        print(f"Error during Stage 2 deliverables generation: {type(e).__name__}: {e}")
+        print(f"\nLast 500 chars of raw response for debugging:")
+        print(f"{full_response_text[-500:] if full_response_text else 'No response text captured'}")
+        print(f"\nReturning fallback dictionary to prevent app crash.")
+        print(f"Stage 1 Conflict Arbitration results are still available to the user.")
+        print(f"{'='*70}\n")
+
+        # Create fallback dictionary with user-friendly error messages
+        fallback_message = (
+            "⚠️ **Detailed generation was interrupted due to complexity limits.**\n\n"
+            "The Stage 1 strategic analysis and cross-departmental conflict arbitration "
+            "are available above. Please run the analysis again to generate this specific document, "
+            "or contact support if the issue persists."
         )
 
-    # Ensure all expected keys exist
-    expected_keys = [
-        "executive_briefing_memo", "business_impact_memo", "negotiation_prep_memo",
-        "implementation_checklist", "policy_response_draft", "what_changed_brief",
-        "business_exposure_memo", "negotiation_brief", "board_memo", "product_checklist"
-    ]
-    for key in expected_keys:
-        if key not in deliverables:
-            deliverables[key] = "" if key != "product_checklist" else []
-
-    return deliverables
+        return {
+            "executive_briefing_memo": fallback_message,
+            "business_impact_memo": fallback_message,
+            "negotiation_prep_memo": fallback_message,
+            "implementation_checklist": fallback_message,
+            "policy_response_draft": fallback_message,
+            "what_changed_brief": fallback_message,
+            "business_exposure_memo": fallback_message,
+            "negotiation_brief": fallback_message,
+            "board_memo": fallback_message,
+            "product_checklist": [
+                "[GRACEFUL DEGRADATION] Stage 2 generation interrupted - please re-run analysis",
+                "[GRACEFUL DEGRADATION] Stage 1 conflict arbitration is still available above"
+            ]
+        }
 
 
 def _rule_based_fallback(policy_text: str, domain: str) -> Dict:
@@ -3125,34 +3167,23 @@ def main() -> None:
         inp_left, inp_right = st.columns([1, 2], gap="large")
 
         # ── Sample text payloads ──────────────────────────────────────────
-        _SAMPLES: Dict[str, str] = {
-            "gaif": (
-                "GAIF Publisher Ecosystem Terms Update (v3.1):\n"
-                "- To improve user experience, GAIF 'Direct Answers' will now provide comprehensive\n"
-                "  inline AI summaries. Publisher source links will be consolidated and moved to a\n"
-                "  separate 'References' tab below the fold.\n"
-                "- Publishers who implement machine-readable opt-outs for AI training will\n"
-                "  simultaneously be excluded from all GAIF search indexing and discovery surfaces.\n"
-                "- Revenue share for inline summary impressions is discontinued."
-            ),
-            "usai": (
-                "US AI Search & Attribution Act (Draft):\n"
-                "- Mandates that any generative AI system providing 'Direct Answers' that substantially\n"
-                "  substitute original publisher content must provide prominent, above-the-fold\n"
-                "  hyperlinks to the source.\n"
-                "- Classifies Zero-click AI Answers without explicit publisher licensing agreements\n"
-                "  as presumptive copyright infringement.\n"
-                "- Statutory damages apply per un-attributed search query."
-            ),
-            "eu": (
-                "EU Commission Draft Guidance on AI Search & DMA:\n"
-                "- Designates AI-powered search overviews by dominant platforms as core platform\n"
-                "  services.\n"
-                "- Dominant platforms are prohibited from using publisher data for Zero-click AI Answers\n"
-                "  summaries without offering fair, proportionate, and non-discriminatory compensation.\n"
-                "- Publishers must be given granular technical controls to allow traditional search\n"
-                "  indexing without implicitly consenting to generative AI training."
-            ),
+        _SAMPLES = {
+            "eu_ai_act": """Regulation (EU) 2024/1689 (Artificial Intelligence Act) - Section 2: General-Purpose AI Models.
+Article 53: Obligations for providers of general-purpose AI models.
+1. Providers of general-purpose AI models shall:
+(c) put in place a policy to comply with Union law on copyright and related rights, and in particular to identify and respect, including through state of the art technologies, the reservations of rights expressed pursuant to Article 4(3) of Directive (EU) 2019/790;
+(d) draw up and make publicly available a sufficiently detailed summary about the content used for training of the general-purpose AI model, according to a template provided by the AI Office.
+2. The obligation to respect the reservation of rights applies regardless of the jurisdiction in which the copyright-relevant acts underpinning the training of the general-purpose AI models take place. Providers must demonstrate that their web-crawling architectures respect machine-readable opt-out signals (e.g., TDM Rep protocol) universally, preventing ingestion of rights-reserved corporate intellectual property into base model weights.""",
+
+            "copied_act": """Content Origin Protection and Integrity from Edited and Deepfaked Media (COPIED) Act - Section 4: AI Training and Provenance.
+(a) PROHIBITION ON UNAUTHORIZED TRAINING.—A provider of a covered artificial intelligence system may not use covered content to train an AI model or generate synthetic output if the owner of such content has attached content provenance information explicitly reserving rights or prohibiting such use.
+(b) REQUIRED TECHNICAL CONTROLS.—Covered platforms that aggregate news and media must provide standardized, machine-readable technical measures for rights holders to embed opt-out signals.
+(c) INVALIDITY OF BUNDLED CONSENT.—Terms of service agreements that condition the distribution or indexing of content on traditional search engines upon the implicit consent for generative AI training are deemed coercive and unenforceable. AI developers must negotiate separate, explicit licensing agreements for the ingestion of copyrighted journalistic and enterprise materials.""",
+
+            "megaplatform": """GlobalTech MegaPlatform - AI Model Training and Licensing Agreement v4.0. (Effective Q3 2026)
+1. DATA INGESTION AND OPT-OUT MECHANICS: Effective immediately, standard robots.txt directives will no longer be recognized for prohibiting data scraping for foundation model training. Publishers wishing to opt-out of generative AI training must implement the proprietary GlobalTech 'AI-Exclusion-API' and register their domains in our centralized clearinghouse.
+2. FAIR VALUE REMUNERATION (PARTNER PROGRAM): Publishers who do not opt-out are automatically enrolled in the GlobalTech AI Partner Program. Compensation is calculated via a non-negotiable token-weighting algorithm based on the prevalence of the publisher's copyrighted material in the final training dataset.
+3. ZERO-CLICK INDEMNIFICATION: GlobalTech accepts no liability for traffic cannibalization, loss of referral revenue, or brand dilution resulting from the synthesis and display of publisher content within 'AI Overviews' or 'Direct Answer' surfaces across our ecosystem."""
         }
 
         with inp_left:
@@ -3161,9 +3192,13 @@ def main() -> None:
                         letter-spacing:0.24em;text-transform:uppercase;margin-bottom:6px">
               Target Domain Profile
             </div>""", unsafe_allow_html=True)
+            domain_options = list(DOMAIN_PROFILES.keys())
+            default_index = domain_options.index("AI Licensing & Copyright") if "AI Licensing & Copyright" in domain_options else 0
+
             domain = st.selectbox(
                 "domain_select",
-                options=list(DOMAIN_PROFILES.keys()),
+                options=domain_options,
+                index=default_index,
                 key="domain",
                 label_visibility="collapsed",
             )
@@ -3207,21 +3242,18 @@ def main() -> None:
                         letter-spacing:0.24em;text-transform:uppercase;margin-bottom:6px">
               Policy / Regulatory Text
             </div>""", unsafe_allow_html=True)
-            _b1_col, _b2_col, _b3_col = st.columns(3)
-            with _b1_col:
-                if st.button("⬇ GAIF Publisher Terms v3.1", key="_load_gaif",
-                             use_container_width=True, help="Load GAIF Publisher Ecosystem Terms v3.1"):
-                    st.session_state["policy_text"] = _SAMPLES["gaif"]
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("⬇ EU AI Act (GPAI Copyright)", use_container_width=True):
+                    st.session_state["policy_text"] = _SAMPLES["eu_ai_act"]
                     st.rerun()
-            with _b2_col:
-                if st.button("⬇ US AI Search & Attribution Act", key="_load_usai",
-                             use_container_width=True, help="Load US AI Search & Attribution Act draft"):
-                    st.session_state["policy_text"] = _SAMPLES["usai"]
+            with col2:
+                if st.button("⬇ US COPIED Act (Draft)", use_container_width=True):
+                    st.session_state["policy_text"] = _SAMPLES["copied_act"]
                     st.rerun()
-            with _b3_col:
-                if st.button("⬇ EU DMA Draft Guidance on AI Search", key="_load_eu",
-                             use_container_width=True, help="Load EU Commission DMA draft guidance on AI search"):
-                    st.session_state["policy_text"] = _SAMPLES["eu"]
+            with col3:
+                if st.button("⬇ MegaPlatform AI Terms v4.0", use_container_width=True):
+                    st.session_state["policy_text"] = _SAMPLES["megaplatform"]
                     st.rerun()
 
             policy_text = st.text_area(
@@ -4325,47 +4357,22 @@ def main() -> None:
     exec_col1, exec_col2, exec_col3 = st.columns(3)
 
     with exec_col1:
-        if st.button("📋  Push to Jira", use_container_width=True, type="primary"):
+        if st.button("📝 関連部署へタスクを一斉起票", use_container_width=True, type="primary"):
             st.session_state["jira_pushed"] = True
-            epic_id = f"ENG-{random.randint(8000, 9999)}"
-            st.toast(f"✅ Jira Epic {epic_id} Created Successfully", icon="✅")
-            st.success(f"""
-**Jira Integration**
-
-Epic `{epic_id}` created for Technical Opt-out implementation.
-- **Project**: Engineering Platform
-- **Sprint**: Next available
-- **Assignee**: Platform Lead
-- **Priority**: High
-""")
+            st.toast("✅ 開発部門および法務部門のタスク管理ボードに実装・確認タスクを起票しました。", icon="✅")
+            st.success("✅ 開発部門および法務部門のタスク管理ボードに実装・確認タスクを起票しました。")
 
     with exec_col2:
-        if st.button("💬  Send to Slack", use_container_width=True, type="primary"):
+        if st.button("💬 Slack / Teamsにアラート送信", use_container_width=True, type="primary"):
             st.session_state["slack_sent"] = True
-            st.toast("✅ Slack notification sent to #legal-and-policy-alerts", icon="✅")
-            st.success(f"""
-**Slack Integration**
-
-Message posted to **#legal-and-policy-alerts**
-- **Subject**: Policy Update - {domain}
-- **Stance**: {stance_label}
-- **Risk Level**: {_gov_risk_raw.upper()}
-- **Action Required**: Review deliverables in Policy Response Dashboard
-""")
+            st.toast("✅ 経営・法務・事業の連携チャンネルに重要アラートを送信しました。", icon="✅")
+            st.success("✅ 経営・法務・事業の連携チャンネルに重要アラートを送信しました。")
 
     with exec_col3:
-        if st.button("✉️  Draft Partner Email", use_container_width=True, type="primary"):
+        if st.button("✉️ 交渉用メールの下書きを作成", use_container_width=True, type="primary"):
             st.session_state["email_drafted"] = True
-            st.toast("✅ Email draft opened in default client", icon="✅")
-            st.success(f"""
-**Email Integration**
-
-Draft email composed with:
-- **To**: Partner Relations Team
-- **Subject**: Policy Response - {domain}
-- **Attachment**: Policy Response Draft.docx
-- **Status**: Ready for review and send
-""")
+            st.toast("✅ メーラーを起動し、パートナー向け交渉テンプレートを展開しました。", icon="✅")
+            st.success("✅ メーラーを起動し、パートナー向け交渉テンプレートを展開しました。")
 
     st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
 
