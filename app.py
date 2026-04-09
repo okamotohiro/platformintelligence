@@ -4243,54 +4243,54 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
     with tab5:
         with st.container():
             _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
-        checklist = step3_data.get("product_checklist", [])
-        st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
-                    line-height:1.6;margin-bottom:16px">
-          {len(checklist)} implementation items — features, UI elements, terms, and technical changes to review.
-        </div>""", unsafe_allow_html=True)
+            checklist = step3_data.get("product_checklist", [])
+            st.markdown(f"""
+            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                        line-height:1.6;margin-bottom:16px">
+              {len(checklist)} implementation items — features, UI elements, terms, and technical changes to review.
+            </div>""", unsafe_allow_html=True)
 
-        if checklist:
-            _checklist_items(checklist)
-            checklist_body = "\n\n".join(f"{i}. {item}" for i, item in enumerate(checklist, 1))
-            _download_row(
-                label="📥  Export Product / Legal Checklist (.docx)",
-                data=_to_docx_bytes(
-                    f"Product & Legal Checklist — {domain}",
-                    checklist_body, domain, doc_id,
-                ),
-                file_name=_fn("product_checklist").replace(".md", ".docx"),
-                key="dl_tab5",
-            )
+            if checklist:
+                _checklist_items(checklist)
+                checklist_body = "\n\n".join(f"{i}. {item}" for i, item in enumerate(checklist, 1))
+                _download_row(
+                    label="📥  Export Product / Legal Checklist (.docx)",
+                    data=_to_docx_bytes(
+                        f"Product & Legal Checklist — {domain}",
+                        checklist_body, domain, doc_id,
+                    ),
+                    file_name=_fn("product_checklist").replace(".md", ".docx"),
+                    key="dl_tab5",
+                )
             else:
                 st.caption("No checklist items generated.")
 
             _governance_panel("tab5", _gov_risk_raw, step2_data)
 
             # ── Jira Export ───────────────────────────────────────────────────────
-                if checklist:
-                    st.markdown(f"""
-                    <div style="border-top:1px solid rgba(10,186,181,0.10);margin:2.2rem 0 1rem;padding-top:1.2rem">
-                      <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
-                                  letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
-                        ◆ &nbsp; SYSTEM OF ACTION — JIRA EXPORT
-                      </div>
-                    </div>""", unsafe_allow_html=True)
+            if checklist:
+                st.markdown(f"""
+                <div style="border-top:1px solid rgba(10,186,181,0.10);margin:2.2rem 0 1rem;padding-top:1.2rem">
+                  <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
+                              letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
+                    ◆ &nbsp; SYSTEM OF ACTION — JIRA EXPORT
+                  </div>
+                </div>""", unsafe_allow_html=True)
 
-                    jira_text = _format_jira_export(checklist, domain)
-                    st.code(jira_text, language=None)
-                    jc1, jc2 = st.columns([1, 2])
-                    with jc1:
-                        if st.button("🎯  Export to Jira  (Mock)", key="jira_export_tab5", use_container_width=True):
-                            st.toast("🎯 Jira Epic + Stories queued for import — ticket IDs assigned (mock).", icon="🎯")
-                    with jc2:
-                        st.download_button(
-                            "Download Jira Export (.txt)",
-                            data=jira_text,
-                            file_name=_fn("jira_export").replace(".md", ".txt"),
-                            mime="text/plain",
-                            use_container_width=True,
-                        )
+                jira_text = _format_jira_export(checklist, domain)
+                st.code(jira_text, language=None)
+                jc1, jc2 = st.columns([1, 2])
+                with jc1:
+                    if st.button("🎯  Export to Jira  (Mock)", key="jira_export_tab5", use_container_width=True):
+                        st.toast("🎯 Jira Epic + Stories queued for import — ticket IDs assigned (mock).", icon="🎯")
+                with jc2:
+                    st.download_button(
+                        "Download Jira Export (.txt)",
+                        data=jira_text,
+                        file_name=_fn("jira_export").replace(".md", ".txt"),
+                        mime="text/plain",
+                        use_container_width=True,
+                    )
 
     # ── Tab 6: Board Memo ─────────────────────────────────────────────────────
     with tab6:
