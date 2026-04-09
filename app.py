@@ -2531,6 +2531,8 @@ def _governance_panel(tab_key: str, risk_raw: str = "high", step2_data: Optional
       </div>
     </div>""", unsafe_allow_html=True)
 
+    st.info("🔄 **継続的運用イベント (Continuous Operational Event)**: 本規制は一度の対応では完了しません。\n\n🗓️ **次回レビュー期日 (Next Scheduled Review)**: 2026年8月 (フェーズ2施行時)\n\n※Policy Memory Graphが次回の規制アップデートを検知し、自動的に関係部署へ再評価タスクを通知します。")
+
     rl_key   = (risk_raw or "medium").lower()
     stance_label, rl_color, stance_sub = _risk_config(rl_key)
     stance_label = step2_data.get("stance_label") or stance_label
@@ -3183,12 +3185,24 @@ def main() -> None:
 
         # ── Sample text payloads ──────────────────────────────────────────
         _SAMPLES = {
-            "eu_ai_act": """Regulation (EU) 2024/1689 (Artificial Intelligence Act) - Section 2: General-Purpose AI Models.
+            "eu_ai_act": """REGULATION (EU) 2024/1689 OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL of 13 June 2024 laying down harmonised rules on artificial intelligence (Artificial Intelligence Act).
+
+CHAPTER V: CLASSIFICATION OF AI SYSTEMS AND OBLIGATIONS FOR GPAI MODELS
+SECTION 2: OBLIGATIONS FOR PROVIDERS OF GENERAL-PURPOSE AI MODELS
+
 Article 53: Obligations for providers of general-purpose AI models.
 1. Providers of general-purpose AI models shall:
+(a) draw up and keep up-to-date the technical documentation of the model, including its training and testing process and the results of its evaluation, which shall contain, at a minimum, the information set out in Annex IX for the purpose of providing it, upon request, to the AI Office and the national competent authorities;
+(b) draw up, keep up-to-date and make available information and documentation to providers of AI systems who intend to integrate the general-purpose AI model into their AI systems.
 (c) put in place a policy to comply with Union law on copyright and related rights, and in particular to identify and respect, including through state of the art technologies, the reservations of rights expressed pursuant to Article 4(3) of Directive (EU) 2019/790;
 (d) draw up and make publicly available a sufficiently detailed summary about the content used for training of the general-purpose AI model, according to a template provided by the AI Office.
-2. The obligation to respect the reservation of rights applies regardless of the jurisdiction in which the copyright-relevant acts underpinning the training of the general-purpose AI models take place. Providers must demonstrate that their web-crawling architectures respect machine-readable opt-out signals (e.g., TDM Rep protocol) universally, preventing ingestion of rights-reserved corporate intellectual property into base model weights.""",
+
+2. The obligation referred to in paragraph 1, point (c) shall apply regardless of the jurisdiction in which the copyright-relevant acts underpinning the training of those general-purpose AI models take place. Providers must demonstrate that their web-crawling architectures respect machine-readable opt-out signals (e.g., TDM Rep protocol) universally, preventing ingestion of rights-reserved corporate intellectual property into base model weights.
+
+RECITALS (EXCERPTS RELEVANT TO COPYRIGHT):
+(105) General-purpose AI models, in particular large generative AI models, capable of generating text, images, and other content, present unique challenges to the protection of copyright and related rights. The ingestion of massive amounts of data, often protected by intellectual property, without prior authorization from rights holders, has created a significant legal imbalance.
+(106) Any provider of a general-purpose AI model placed on the Union market should comply with the obligations provided for in this Regulation. To that end, providers should put in place a policy to comply with Union law on copyright. Any use of copyright-protected content requires the authorization of the right holder concerned unless relevant copyright exceptions and limitations apply.
+(107) In order to increase transparency, providers of general-purpose AI models should make publicly available a sufficiently detailed summary of the content used for training. This summary should be generally comprehensive in its scope to facilitate the exercise of rights by holders of copyright, for example by listing the main collections or sets of data that went into training the model, such as large private or public databases or data archives.""",
 
             "copied_act": """Content Origin Protection and Integrity from Edited and Deepfaked Media (COPIED) Act - Section 4: AI Training and Provenance.
 (a) PROHIBITION ON UNAUTHORIZED TRAINING.—A provider of a covered artificial intelligence system may not use covered content to train an AI model or generate synthetic output if the owner of such content has attached content provenance information explicitly reserving rights or prohibiting such use.
@@ -3217,7 +3231,19 @@ EFFECTIVE DATE: September 1, 2026
 4.2 Absolute Waiver of Liability. GlobalTech accepts no liability, and Publisher explicitly waives any and all claims, for traffic cannibalization, loss of referral revenue, diminished advertising impressions, or brand dilution resulting directly or indirectly from the synthesis and display of Publisher Content within 'AI Overviews' or 'Direct Answer' products.
 
 5. DISPUTE RESOLUTION AND SEVERABILITY
-5.1 Any disputes arising out of or relating to this Agreement must be resolved through binding arbitration in Santa Clara County, California. Class action lawsuits are strictly prohibited."""
+5.1 Any disputes arising out of or relating to this Agreement must be resolved through binding arbitration in Santa Clara County, California. Class action lawsuits are strictly prohibited.""",
+
+            "meti_guidelines": """経済産業省・総務省「AI事業者ガイドライン（第1.2版）」(2026年3月)
+第3部：生成AI開発者・提供者向けの特有の事項
+
+(1) 学習データにおける知的財産権の保護とオプトアウトの尊重
+生成AIの開発においてデータセットを構築する際、著作権法第30条の4の適用範囲を逸脱し、権利者の利益を不当に害することのないよう、適切な技術的・運用的措置を講じること。特に、権利者が機械読取可能な形式（robots.txtやTDMプロトコル等）で学習利用のオプトアウトの意思を表示している場合、これを技術的に検知し、尊重するための仕組みを実装・運用することが強く推奨される。
+
+(2) 透明性と説明責任の確保
+基盤モデルの提供者は、学習に利用されたデータの出所、権利関係、およびデータ収集のプロセスに関する十分な情報（学習データの要約等）を、利用可能な範囲で公開すること。これにより、権利者が自身のコンテンツの利用状況を把握し、必要な対応をとれるよう透明性を確保しなければならない。
+
+(3) 継続的なガバナンス要件
+AI技術と関連法規は急速に変化しているため、一度の対応で完了するものではない。事業者は本ガイドラインの継続的な改訂をモニタリングし、自社のAIガバナンス体制と実装タスクを、規制の段階的施行（2025年、2026年等のフェーズ）に合わせて適宜アップデートする体制を構築すること。"""
         }
 
         with inp_left:
@@ -3276,18 +3302,24 @@ EFFECTIVE DATE: September 1, 2026
                         letter-spacing:0.24em;text-transform:uppercase;margin-bottom:6px">
               Policy / Regulatory Text
             </div>""", unsafe_allow_html=True)
-            col1, col2, col3 = st.columns(3)
-            with col1:
+            row1_col1, row1_col2 = st.columns(2)
+            with row1_col1:
                 if st.button("⬇ EU AI Act (GPAI Copyright)", use_container_width=True):
                     st.session_state["policy_text"] = _SAMPLES["eu_ai_act"]
                     st.rerun()
-            with col2:
+            with row1_col2:
                 if st.button("⬇ US COPIED Act (Draft)", use_container_width=True):
                     st.session_state["policy_text"] = _SAMPLES["copied_act"]
                     st.rerun()
-            with col3:
+
+            row2_col1, row2_col2 = st.columns(2)
+            with row2_col1:
                 if st.button("⬇ MegaPlatform AI Terms v4.0", use_container_width=True):
                     st.session_state["policy_text"] = _SAMPLES["megaplatform"]
+                    st.rerun()
+            with row2_col2:
+                if st.button("⬇ 経産省・総務省 AI事業者ガイドライン", use_container_width=True):
+                    st.session_state["policy_text"] = _SAMPLES["meti_guidelines"]
                     st.rerun()
 
             policy_text = st.text_area(
