@@ -4015,109 +4015,112 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
 
     # ── Tab 1: Executive Summary & Delta ─────────────────────────────────────
     with tab1:
-        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
-        rl3 = step3_data.get("overall_risk", "—")
-        rl3_label, rl3_color, rl3_sub = _risk_config(rl3)
-        st.markdown(f"""
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
-          <div style="background:#111111;border:1px solid {rl3_color}55;
-                      padding:14px 20px;text-align:center;min-width:170px">
-            <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.48rem;
-                        letter-spacing:0.22em;text-transform:uppercase;margin-bottom:5px">
-              Strategic Stance
-            </div>
-            <div style="font-family:'Montserrat',sans-serif;color:{rl3_color};
-                        font-size:0.92rem;font-weight:700;letter-spacing:0.04em;line-height:1.2">
-              {rl3_label}
-            </div>
-            <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.44rem;
-                        font-style:italic;margin-top:6px;line-height:1.4">
-              {rl3_sub}
-            </div>
-          </div>
-          <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.76rem;
-                      line-height:1.6;flex:1">
-            90-second delta brief — what specifically changed and why it matters now.
-          </div>
-        </div>""", unsafe_allow_html=True)
+        with st.container():
+            _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
+            rl3 = step3_data.get("overall_risk", "—")
+            rl3_label, rl3_color, rl3_sub = _risk_config(rl3)
+            st.markdown(f"""
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+              <div style="background:#111111;border:1px solid {rl3_color}55;
+                          padding:14px 20px;text-align:center;min-width:170px">
+                <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.48rem;
+                            letter-spacing:0.22em;text-transform:uppercase;margin-bottom:5px">
+                  Strategic Stance
+                </div>
+                <div style="font-family:'Montserrat',sans-serif;color:{rl3_color};
+                            font-size:0.92rem;font-weight:700;letter-spacing:0.04em;line-height:1.2">
+                  {rl3_label}
+                </div>
+                <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.44rem;
+                            font-style:italic;margin-top:6px;line-height:1.4">
+                  {rl3_sub}
+                </div>
+              </div>
+              <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.76rem;
+                          line-height:1.6;flex:1">
+                90-second delta brief — what specifically changed and why it matters now.
+              </div>
+            </div>""", unsafe_allow_html=True)
 
-        what_changed = step3_data.get("what_changed_brief", "")
-        _prose_block(what_changed)
+            what_changed = step3_data.get("what_changed_brief", "")
+            _prose_block(what_changed)
 
-        # ── Parsed Claims — verbatim extracts from source policy document ──────
-        _parsed_claims = step1_data.get("parsed_claims", [])
-        if _parsed_claims:
+            # ── Parsed Claims — verbatim extracts from source policy document ──────
+            _parsed_claims = step1_data.get("parsed_claims", [])
+            if _parsed_claims:
+                _evidence_block(
+                    _parsed_claims,
+                    claim_tag="📄 Parsed Claim",
+                    claim_color="#6B8F71",
+                    agent_tag="Policy Parser",
+                )
+
             _evidence_block(
-                _parsed_claims,
-                claim_tag="📄 Parsed Claim",
-                claim_color="#6B8F71",
-                agent_tag="Policy Parser",
+                step3_data.get("what_changed_quotes", []),
+                claim_tag="🔵 Policy Delta",
+                claim_color="#0ABAB5",
+                agent_tag="Executive Summary",
             )
 
-        _evidence_block(
-            step3_data.get("what_changed_quotes", []),
-            claim_tag="🔵 Policy Delta",
-            claim_color="#0ABAB5",
-            agent_tag="Executive Summary",
-        )
+            # ── Policy Memory Graph evidence — scenario-driven or domain fallback ──
+            _pmg_quotes = step2_data.get("pmg_evidence") or ["Policy Memory Graph analysis complete — no matching institutional red-lines identified for this policy text."]
+            _evidence_block(
+                _pmg_quotes,
+                claim_tag="🎯 Policy Memory Graph",
+                claim_color="#9B59B6",
+                agent_tag="Institutional Memory",
+            )
 
-        # ── Policy Memory Graph evidence — scenario-driven or domain fallback ──
-        _pmg_quotes = step2_data.get("pmg_evidence") or ["Policy Memory Graph analysis complete — no matching institutional red-lines identified for this policy text."]
-        _evidence_block(
-            _pmg_quotes,
-            claim_tag="🎯 Policy Memory Graph",
-            claim_color="#9B59B6",
-            agent_tag="Institutional Memory",
-        )
+            _download_row(
+                label="📥  Export Executive Delta Brief (.docx)",
+                data=_to_docx_bytes(
+                    f"Executive Delta Brief — {domain}",
+                    f"Strategic Stance: {rl3_label}\n\n{what_changed}",
+                    domain, doc_id,
+                ),
+                file_name=_fn("delta_brief").replace(".md", ".docx"),
+                key="dl_tab1",
+            )
 
-        _download_row(
-            label="📥  Export Executive Delta Brief (.docx)",
-            data=_to_docx_bytes(
-                f"Executive Delta Brief — {domain}",
-                f"Strategic Stance: {rl3_label}\n\n{what_changed}",
-                domain, doc_id,
-            ),
-            file_name=_fn("delta_brief").replace(".md", ".docx"),
-            key="dl_tab1",
-        )
-
-        _governance_panel("tab1", _gov_risk_raw, step2_data)
+            _governance_panel("tab1", _gov_risk_raw, step2_data)
 
     # ── Tab 2: Business Exposure ──────────────────────────────────────────────
     with tab2:
-        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
-        st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
-                    line-height:1.6;margin-bottom:16px">
-          Impact on traffic, revenue, IP rights, product capabilities, and competitive position.
-        </div>""", unsafe_allow_html=True)
-        _pplw_map_block(analysis.get("strategic_stance", ""), _gov_risk_raw)
+        with st.container():
+            _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
+            st.markdown(f"""
+            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                        line-height:1.6;margin-bottom:16px">
+              Impact on traffic, revenue, IP rights, product capabilities, and competitive position.
+            </div>""", unsafe_allow_html=True)
+            _pplw_map_block(analysis.get("strategic_stance", ""), _gov_risk_raw)
 
-        exposure = step3_data.get("business_exposure_memo", "")
-        _prose_block(exposure)
+            exposure = step3_data.get("business_exposure_memo", "")
+            _prose_block(exposure)
 
-        _evidence_block(
-            step3_data.get("business_exposure_quotes", []),
-            claim_tag="🟡 Revenue Impact",
-            claim_color="#A8892A",
-            agent_tag="Business Agent",
-        )
+            _evidence_block(
+                step3_data.get("business_exposure_quotes", []),
+                claim_tag="🟡 Revenue Impact",
+                claim_color="#A8892A",
+                agent_tag="Business Agent",
+            )
 
-        _download_row(
-            label="📥  Export Business Exposure Memo (.docx)",
-            data=_to_docx_bytes(
-                f"Business Exposure Memo — {domain}",
-                exposure, domain, doc_id,
-            ),
-            file_name=_fn("business_exposure").replace(".md", ".docx"),
-            key="dl_tab2",
-        )
+            _download_row(
+                label="📥  Export Business Exposure Memo (.docx)",
+                data=_to_docx_bytes(
+                    f"Business Exposure Memo — {domain}",
+                    exposure, domain, doc_id,
+                ),
+                file_name=_fn("business_exposure").replace(".md", ".docx"),
+                key="dl_tab2",
+            )
 
-        _governance_panel("tab2", _gov_risk_raw, step2_data)
+            _governance_panel("tab2", _gov_risk_raw, step2_data)
 
     # ── Tab 3: Protect / Promote / License Map ────────────────────────────────
     with tab3:
-        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
+        with st.container():
+            _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:20px">
@@ -4190,12 +4193,13 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
               </div>
             </div>""", unsafe_allow_html=True)
 
-        _policy_memory_block(domain, pmg_hits)
-        _governance_panel("tab3", _gov_risk_raw, step2_data)
+            _policy_memory_block(domain, pmg_hits)
+            _governance_panel("tab3", _gov_risk_raw, step2_data)
 
     # ── Tab 4: Negotiation Brief ──────────────────────────────────────────────
     with tab4:
-        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
+        with st.container():
+            _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:16px">
@@ -4221,13 +4225,14 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
             ),
             file_name=_fn("negotiation_brief").replace(".md", ".docx"),
             key="dl_tab4",
-        )
+            )
 
-        _governance_panel("tab4", _gov_risk_raw, step2_data)
+            _governance_panel("tab4", _gov_risk_raw, step2_data)
 
     # ── Tab 5: Product / Legal Checklist ─────────────────────────────────────
     with tab5:
-        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
+        with st.container():
+            _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
         checklist = step3_data.get("product_checklist", [])
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
@@ -4247,39 +4252,40 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
                 file_name=_fn("product_checklist").replace(".md", ".docx"),
                 key="dl_tab5",
             )
-        else:
-            st.caption("No checklist items generated.")
+            else:
+                st.caption("No checklist items generated.")
 
-        _governance_panel("tab5", _gov_risk_raw, step2_data)
+            _governance_panel("tab5", _gov_risk_raw, step2_data)
 
-        # ── Jira Export ───────────────────────────────────────────────────────
-        if checklist:
-            st.markdown(f"""
-            <div style="border-top:1px solid rgba(10,186,181,0.10);margin:2.2rem 0 1rem;padding-top:1.2rem">
-              <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
-                          letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
-                ◆ &nbsp; SYSTEM OF ACTION — JIRA EXPORT
-              </div>
-            </div>""", unsafe_allow_html=True)
+            # ── Jira Export ───────────────────────────────────────────────────────
+                if checklist:
+                    st.markdown(f"""
+                    <div style="border-top:1px solid rgba(10,186,181,0.10);margin:2.2rem 0 1rem;padding-top:1.2rem">
+                      <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
+                                  letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
+                        ◆ &nbsp; SYSTEM OF ACTION — JIRA EXPORT
+                      </div>
+                    </div>""", unsafe_allow_html=True)
 
-            jira_text = _format_jira_export(checklist, domain)
-            st.code(jira_text, language=None)
-            jc1, jc2 = st.columns([1, 2])
-            with jc1:
-                if st.button("🎯  Export to Jira  (Mock)", key="jira_export_tab5", use_container_width=True):
-                    st.toast("🎯 Jira Epic + Stories queued for import — ticket IDs assigned (mock).", icon="🎯")
-            with jc2:
-                st.download_button(
-                    "Download Jira Export (.txt)",
-                    data=jira_text,
-                    file_name=_fn("jira_export").replace(".md", ".txt"),
-                    mime="text/plain",
-                    use_container_width=True,
-                )
+                    jira_text = _format_jira_export(checklist, domain)
+                    st.code(jira_text, language=None)
+                    jc1, jc2 = st.columns([1, 2])
+                    with jc1:
+                        if st.button("🎯  Export to Jira  (Mock)", key="jira_export_tab5", use_container_width=True):
+                            st.toast("🎯 Jira Epic + Stories queued for import — ticket IDs assigned (mock).", icon="🎯")
+                    with jc2:
+                        st.download_button(
+                            "Download Jira Export (.txt)",
+                            data=jira_text,
+                            file_name=_fn("jira_export").replace(".md", ".txt"),
+                            mime="text/plain",
+                            use_container_width=True,
+                        )
 
     # ── Tab 6: Board Memo ─────────────────────────────────────────────────────
     with tab6:
-        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
+        with st.container():
+            _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:16px">
@@ -4324,29 +4330,30 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
             ),
             file_name=_fn("board_memo").replace(".md", ".docx"),
             key="dl_tab6",
-        )
+            )
 
-        _governance_panel("tab6", _gov_risk_raw, step2_data)
+            _governance_panel("tab6", _gov_risk_raw, step2_data)
 
-        # ── Slack Export ──────────────────────────────────────────────────────
-        st.markdown(f"""
-        <div style="border-top:1px solid rgba(10,186,181,0.10);margin:2.2rem 0 1rem;padding-top:1.2rem">
-          <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
-                      letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
-            ◆ &nbsp; SYSTEM OF ACTION — SLACK EXPORT
-          </div>
-        </div>""", unsafe_allow_html=True)
+            # ── Slack Export ──────────────────────────────────────────────────────
+            st.markdown(f"""
+            <div style="border-top:1px solid rgba(10,186,181,0.10);margin:2.2rem 0 1rem;padding-top:1.2rem">
+              <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
+                          letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
+                ◆ &nbsp; SYSTEM OF ACTION — SLACK EXPORT
+              </div>
+            </div>""", unsafe_allow_html=True)
 
-        rl3_slack = step3_data.get("overall_risk", step2_data.get("overall_risk_level", "medium"))
-        rl3_label_slack, *_ = _risk_config(rl3_slack)
-        slack_text = _format_slack_export(board, domain, rl3_label_slack)
-        st.code(slack_text, language=None)
-        if st.button("📨  Send to Slack  #exec-alerts  (Mock)", key="slack_export_tab6"):
-            st.toast("📨 Slack message queued for #exec-alerts — delivery confirmed (mock).", icon="📨")
+            rl3_slack = step3_data.get("overall_risk", step2_data.get("overall_risk_level", "medium"))
+            rl3_label_slack, *_ = _risk_config(rl3_slack)
+            slack_text = _format_slack_export(board, domain, rl3_label_slack)
+            st.code(slack_text, language=None)
+            if st.button("📨  Send to Slack  #exec-alerts  (Mock)", key="slack_export_tab6"):
+                st.toast("📨 Slack message queued for #exec-alerts — delivery confirmed (mock).", icon="📨")
 
     # ── Tab 7: Implementation Checklist ──────────────────────────────────────────
     with tab7:
-        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
+        with st.container():
+            _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:16px">
@@ -4368,14 +4375,15 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
                 file_name=_fn("implementation_checklist").replace(".md", ".docx"),
                 key="dl_tab7",
             )
-        else:
-            st.caption("Implementation checklist not available.")
+            else:
+                st.caption("Implementation checklist not available.")
 
-        _governance_panel("tab7", _gov_risk_raw, step2_data)
+            _governance_panel("tab7", _gov_risk_raw, step2_data)
 
     # ── Tab 8: Policy Response Draft ─────────────────────────────────────────────
     with tab8:
-        _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
+        with st.container():
+            _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
         st.markdown(f"""
         <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
                     line-height:1.6;margin-bottom:16px">
@@ -4396,10 +4404,10 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
                 file_name=_fn("policy_response_draft").replace(".md", ".docx"),
                 key="dl_tab8",
             )
-        else:
-            st.caption("Policy response draft not available.")
+            else:
+                st.caption("Policy response draft not available.")
 
-        _governance_panel("tab8", _gov_risk_raw, step2_data)
+            _governance_panel("tab8", _gov_risk_raw, step2_data)
 
     # ═══════════════════════════════════════════════════════════════════════════
     # EXECUTION CONTROL PANEL — Business Integration Layer
