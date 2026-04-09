@@ -4210,31 +4210,31 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
     with tab4:
         with st.container():
             _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
-        st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
-                    line-height:1.6;margin-bottom:16px">
-          Deal team briefing: non-negotiable conditions, confirmation points, leverage, and red lines.
-        </div>""", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                        line-height:1.6;margin-bottom:16px">
+              Deal team briefing: non-negotiable conditions, confirmation points, leverage, and red lines.
+            </div>""", unsafe_allow_html=True)
 
-        negotiation = step3_data.get("negotiation_brief", "")
-        _prose_block(negotiation)
+            negotiation = step3_data.get("negotiation_brief", "")
+            _prose_block(negotiation)
 
-        _evidence_block(
-            step3_data.get("negotiation_quotes", []),
-            claim_tag="🔴 IP Risk",
-            claim_color="#8B2635",
-            agent_tag="Legal Agent",
-        )
-        _policy_memory_block(domain, pmg_hits)
+            _evidence_block(
+                step3_data.get("negotiation_quotes", []),
+                claim_tag="🔴 IP Risk",
+                claim_color="#8B2635",
+                agent_tag="Legal Agent",
+            )
+            _policy_memory_block(domain, pmg_hits)
 
-        _download_row(
-            label="📥  Export Negotiation Brief (.docx)",
-            data=_to_docx_bytes(
-                f"Negotiation Brief — {domain}",
-                negotiation, domain, doc_id,
-            ),
-            file_name=_fn("negotiation_brief").replace(".md", ".docx"),
-            key="dl_tab4",
+            _download_row(
+                label="📥  Export Negotiation Brief (.docx)",
+                data=_to_docx_bytes(
+                    f"Negotiation Brief — {domain}",
+                    negotiation, domain, doc_id,
+                ),
+                file_name=_fn("negotiation_brief").replace(".md", ".docx"),
+                key="dl_tab4",
             )
 
             _governance_panel("tab4", _gov_risk_raw, step2_data)
