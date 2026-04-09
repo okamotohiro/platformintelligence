@@ -3304,22 +3304,22 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
             </div>""", unsafe_allow_html=True)
             row1_col1, row1_col2 = st.columns(2)
             with row1_col1:
-                if st.button("⬇ EU AI Act (GPAI Copyright)", use_container_width=True):
-                    st.session_state["policy_text"] = _SAMPLES["eu_ai_act"]
-                    st.rerun()
-            with row1_col2:
                 if st.button("⬇ US COPIED Act (Draft)", use_container_width=True):
                     st.session_state["policy_text"] = _SAMPLES["copied_act"]
+                    st.rerun()
+            with row1_col2:
+                if st.button("⬇ EU AI Act (GPAI Copyright)", use_container_width=True):
+                    st.session_state["policy_text"] = _SAMPLES["eu_ai_act"]
                     st.rerun()
 
             row2_col1, row2_col2 = st.columns(2)
             with row2_col1:
-                if st.button("⬇ MegaPlatform AI Terms v4.0", use_container_width=True):
-                    st.session_state["policy_text"] = _SAMPLES["megaplatform"]
-                    st.rerun()
-            with row2_col2:
                 if st.button("⬇ 経産省・総務省 AI事業者ガイドライン", use_container_width=True):
                     st.session_state["policy_text"] = _SAMPLES["meti_guidelines"]
+                    st.rerun()
+            with row2_col2:
+                if st.button("⬇ MegaPlatform AI Terms v4.0", use_container_width=True):
+                    st.session_state["policy_text"] = _SAMPLES["megaplatform"]
                     st.rerun()
 
             policy_text = st.text_area(
