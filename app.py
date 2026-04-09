@@ -3987,6 +3987,16 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
             ⚖️  Cross-Departmental Conflict & Arbitration
         </div>""", unsafe_allow_html=True)
 
+        st.markdown("""
+        <div style="font-size: 0.85em; color: #888; margin-bottom: 15px; padding: 10px; background-color: rgba(255,255,255,0.05); border-radius: 5px;">
+            <b>Strategic Decision Framework:</b>&nbsp;
+            🛡️ <b>PROTECT</b> (Defend rights) &nbsp;|&nbsp;
+            🚀 <b>PROMOTE</b> (Prioritize exposure) &nbsp;|&nbsp;
+            🤝 <b>NEGOTIATE</b> (License & terms) &nbsp;|&nbsp;
+            👁️ <b>MONITOR</b> (Wait & observe)
+        </div>
+        """, unsafe_allow_html=True)
+
         st.info(f"""
 **Multi-Agent Conflict Resolution**
 
