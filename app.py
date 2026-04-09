@@ -2611,17 +2611,17 @@ def _governance_panel(tab_key: str, risk_raw: str = "high", step2_data: Optional
         rc1, rc2, rc3, rc4 = st.columns(4)
         with rc1:
             st.checkbox(
-                "Push Product Checklist to Jira  (Epic)",
+                "Push Product Checklist to Issue Tracking System",
                 value=True, key=f"r_jira_{tab_key}",
             )
         with rc2:
             st.checkbox(
-                "Send Board Memo to Slack  (#exec-alerts)",
+                "Send Board Memo to Internal Team Chat  (#exec-alerts)",
                 value=True, key=f"r_slack_{tab_key}",
             )
         with rc3:
             st.checkbox(
-                "Generate Policy Response Draft in Google Docs",
+                "Generate Policy Response Draft in Enterprise Document Workspace",
                 value=True, key=f"r_docs_{tab_key}",
             )
         with rc4:
