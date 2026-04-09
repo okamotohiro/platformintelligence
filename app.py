@@ -4296,50 +4296,50 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
     with tab6:
         with st.container():
             _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
-        st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
-                    line-height:1.6;margin-bottom:16px">
-          One-page board summary: business significance, decisions required, and recommended actions.
-        </div>""", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                        line-height:1.6;margin-bottom:16px">
+              One-page board summary: business significance, decisions required, and recommended actions.
+            </div>""", unsafe_allow_html=True)
 
-        board = step3_data.get("board_memo", "")
-        # Highlight critical sections in board memo
-        if board and "Board Decisions Required" in board:
-            # Add visual highlight to critical decision sections
-            import re as _re_board
-            enhanced_board = _re_board.sub(
-                r'(\*\*Board Decisions Required\*\*.*?)(?=\*\*|$)',
-                r'<div style="background-color: rgba(10, 186, 181, 0.08); padding: 12px 16px; border-left: 4px solid #0ABAB5; margin: 12px 0; border-radius: 4px;">\1</div>',
-                board,
-                flags=_re_board.DOTALL
+            board = step3_data.get("board_memo", "")
+            # Highlight critical sections in board memo
+            if board and "Board Decisions Required" in board:
+                # Add visual highlight to critical decision sections
+                import re as _re_board
+                enhanced_board = _re_board.sub(
+                    r'(\*\*Board Decisions Required\*\*.*?)(?=\*\*|$)',
+                    r'<div style="background-color: rgba(10, 186, 181, 0.08); padding: 12px 16px; border-left: 4px solid #0ABAB5; margin: 12px 0; border-radius: 4px;">\1</div>',
+                    board,
+                    flags=_re_board.DOTALL
+                )
+                # Also highlight "Recommended Actions" if present
+                enhanced_board = _re_board.sub(
+                    r'(\*\*Recommended Actions\*\*.*?)(?=\*\*|$)',
+                    r'<div style="background-color: rgba(154, 69, 32, 0.08); padding: 12px 16px; border-left: 4px solid #9A4520; margin: 12px 0; border-radius: 4px;">\1</div>',
+                    enhanced_board,
+                    flags=_re_board.DOTALL
+                )
+                _prose_block(enhanced_board)
+            else:
+                _prose_block(board)
+
+            _evidence_block(
+                step3_data.get("board_memo_quotes", []),
+                claim_tag="🟠 Strategic Risk",
+                claim_color="#9A4520",
+                agent_tag="Board Level",
             )
-            # Also highlight "Recommended Actions" if present
-            enhanced_board = _re_board.sub(
-                r'(\*\*Recommended Actions\*\*.*?)(?=\*\*|$)',
-                r'<div style="background-color: rgba(154, 69, 32, 0.08); padding: 12px 16px; border-left: 4px solid #9A4520; margin: 12px 0; border-radius: 4px;">\1</div>',
-                enhanced_board,
-                flags=_re_board.DOTALL
-            )
-            _prose_block(enhanced_board)
-        else:
-            _prose_block(board)
+            _policy_memory_block(domain, pmg_hits)
 
-        _evidence_block(
-            step3_data.get("board_memo_quotes", []),
-            claim_tag="🟠 Strategic Risk",
-            claim_color="#9A4520",
-            agent_tag="Board Level",
-        )
-        _policy_memory_block(domain, pmg_hits)
-
-        _download_row(
-            label="📥  Export Board Memorandum (.docx)",
-            data=_to_docx_bytes(
-                f"Board Memorandum — {domain}",
-                board, domain, doc_id,
-            ),
-            file_name=_fn("board_memo").replace(".md", ".docx"),
-            key="dl_tab6",
+            _download_row(
+                label="📥  Export Board Memorandum (.docx)",
+                data=_to_docx_bytes(
+                    f"Board Memorandum — {domain}",
+                    board, domain, doc_id,
+                ),
+                file_name=_fn("board_memo").replace(".md", ".docx"),
+                key="dl_tab6",
             )
 
             _governance_panel("tab6", _gov_risk_raw, step2_data)
@@ -4347,7 +4347,7 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
             # ── Slack Export ──────────────────────────────────────────────────────
             st.markdown(f"""
             <div style="border-top:1px solid rgba(10,186,181,0.10);margin:2.2rem 0 1rem;padding-top:1.2rem">
-              <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
+              <div style="font-family:'Montserart',sans-serif;color:#9A9590;font-size:0.58rem;
                           letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
                 ◆ &nbsp; SYSTEM OF ACTION — SLACK EXPORT
               </div>
@@ -4364,27 +4364,27 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
     with tab7:
         with st.container():
             _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
-        st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
-                    line-height:1.6;margin-bottom:16px">
-          Implementation checklist for product and engineering teams — includes technical tasks, dependencies, and effort estimates.
-        </div>""", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                        line-height:1.6;margin-bottom:16px">
+              Implementation checklist for product and engineering teams — includes technical tasks, dependencies, and effort estimates.
+            </div>""", unsafe_allow_html=True)
 
-        _deliverables = analysis.get("deliverables", {})
-        implementation_checklist = _deliverables.get("implementation_checklist", "")
+            _deliverables = analysis.get("deliverables", {})
+            implementation_checklist = _deliverables.get("implementation_checklist", "")
 
-        if implementation_checklist:
-            _prose_block(implementation_checklist)
+            if implementation_checklist:
+                _prose_block(implementation_checklist)
 
-            _download_row(
-                label="📥  Export Implementation Checklist (.docx)",
-                data=_to_docx_bytes(
-                    f"Implementation Checklist — {domain}",
-                    implementation_checklist, domain, doc_id,
-                ),
-                file_name=_fn("implementation_checklist").replace(".md", ".docx"),
-                key="dl_tab7",
-            )
+                _download_row(
+                    label="📥  Export Implementation Checklist (.docx)",
+                    data=_to_docx_bytes(
+                        f"Implementation Checklist — {domain}",
+                        implementation_checklist, domain, doc_id,
+                    ),
+                    file_name=_fn("implementation_checklist").replace(".md", ".docx"),
+                    key="dl_tab7",
+                )
             else:
                 st.caption("Implementation checklist not available.")
 
@@ -4394,26 +4394,26 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
     with tab8:
         with st.container():
             _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
-        st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
-                    line-height:1.6;margin-bottom:16px">
-          Policy response draft for external communication or negotiation — a refined document suitable for policy submission, partner negotiations, or official statements.
-        </div>""", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                        line-height:1.6;margin-bottom:16px">
+              Policy response draft for external communication or negotiation — a refined document suitable for policy submission, partner negotiations, or official statements.
+            </div>""", unsafe_allow_html=True)
 
-        policy_response_draft = _deliverables.get("policy_response_draft", "")
+            policy_response_draft = _deliverables.get("policy_response_draft", "")
 
-        if policy_response_draft:
-            _prose_block(policy_response_draft)
+            if policy_response_draft:
+                _prose_block(policy_response_draft)
 
-            _download_row(
-                label="📥  Export Policy Response Draft (.docx)",
-                data=_to_docx_bytes(
-                    f"Policy Response Draft — {domain}",
-                    policy_response_draft, domain, doc_id,
-                ),
-                file_name=_fn("policy_response_draft").replace(".md", ".docx"),
-                key="dl_tab8",
-            )
+                _download_row(
+                    label="📥  Export Policy Response Draft (.docx)",
+                    data=_to_docx_bytes(
+                        f"Policy Response Draft — {domain}",
+                        policy_response_draft, domain, doc_id,
+                    ),
+                    file_name=_fn("policy_response_draft").replace(".md", ".docx"),
+                    key="dl_tab8",
+                )
             else:
                 st.caption("Policy response draft not available.")
 
