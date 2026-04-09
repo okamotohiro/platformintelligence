@@ -4131,77 +4131,77 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
     with tab3:
         with st.container():
             _audit_block(doc_id, domain, step2_data, policy_text, jurisdiction)
-        st.markdown(f"""
-        <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
-                    line-height:1.6;margin-bottom:20px">
-          Axis-by-axis recommended business action — derived from Policy Memory Graph + impact scoring.
-        </div>""", unsafe_allow_html=True)
-
-        # Use card_scores (scenario-specific) if available, fall back to scores
-        _display_scores = step2_data.get("card_scores", step2_data.get("scores", {}))
-
-        # Badge config: badge_name → (color, icon)
-        _BADGE_CFG = {
-            "PROTECT":  ("#8B2635", "🛡"),
-            "LICENSE":  ("#0ABAB5", "💼"),
-            "PROMOTE":  ("#1A6B3C", "📣"),
-            "WAIT":     ("#A8892A", "⏳"),
-            "MONITOR":  ("#6B6560", "🔍"),
-            "NEGOTIATE":("#A8892A", "⚖"),
-        }
-
-        def _ppl_action(ax_data: dict, direction: str, score: int):
-            """Return (action, color, icon, summary) — prefer explicit badge fields."""
-            badge   = ax_data.get("action_badge")
-            summary = ax_data.get("action_summary")
-            if badge and summary:
-                color, icon = _BADGE_CFG.get(badge.upper(), ("#6B6560", "🔍"))
-                return badge.upper(), color, icon, summary
-            # Fallback derivation
-            if direction == "threat":
-                if score >= 70:
-                    return "PROTECT",  "#8B2635", "🛡", "High-severity threat — activate IP defense and contract protections immediately."
-                return "NEGOTIATE", "#A8892A", "⚖", "Material threat — engage counterparty to renegotiate terms before enforcement."
-            if direction == "opportunity":
-                if score >= 60:
-                    return "LICENSE",  "#0ABAB5", "💼", "Monetisation opportunity — formalise licensing arrangement to capture upside."
-                return "PROMOTE",  "#1A6B3C", "📣", "Positive development — proactively promote capabilities and market positioning."
-            return "MONITOR", "#6B6560", "🔍", "Neutral impact — continue monitoring; no urgent action required."
-
-        ppl_rows = []
-        for ax, icon in [("IP", "◈"), ("Traffic", "◉"), ("Revenue", "◆"), ("Product", "◇")]:
-            ax_data   = _display_scores.get(ax, {})
-            direction = ax_data.get("direction", "neutral")
-            score     = ax_data.get("score", 0)
-            evidence  = ax_data.get("evidence", "")
-            action, acolor, aicon, rationale = _ppl_action(ax_data, direction, score)
-            ppl_rows.append((ax, icon, score, direction, action, acolor, aicon, rationale, evidence))
-
-        for ax, axicon, score, direction, action, acolor, aicon, rationale, evidence in ppl_rows:
             st.markdown(f"""
-            <div style="background:#111111;border:1px solid {acolor}44;
-                        border-left:4px solid {acolor};border-radius:0 6px 6px 0;
-                        padding:16px 20px;margin-bottom:12px;
-                        display:flex;align-items:flex-start;gap:16px">
-              <div style="min-width:80px;text-align:center">
-                <div style="font-family:'Montserrat',system-ui,sans-serif;color:{acolor};
-                            font-size:1.6rem;line-height:1">{aicon}</div>
-                <div style="font-family:'Montserrat',sans-serif;color:{acolor};font-size:0.52rem;
-                            font-weight:700;letter-spacing:0.12em;margin-top:4px">{action}</div>
-              </div>
-              <div style="flex:1">
-                <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
-                  <span style="font-family:'Montserrat',system-ui,sans-serif;color:#F0EDE6;
-                               font-size:0.95rem;font-weight:600">{axicon} {ax}</span>
-                  <span style="font-family:'Montserrat',sans-serif;color:{acolor};
-                               font-size:0.52rem;letter-spacing:0.10em">{score}/100 · {direction.upper()}</span>
-                </div>
-                <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.66rem;
-                            line-height:1.6;margin-bottom:6px">{rationale}</div>
-                <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.60rem;
-                            font-style:italic;line-height:1.5">{evidence[:140]}{"…" if len(evidence) > 140 else ""}</div>
-              </div>
+            <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.72rem;
+                        line-height:1.6;margin-bottom:20px">
+              Axis-by-axis recommended business action — derived from Policy Memory Graph + impact scoring.
             </div>""", unsafe_allow_html=True)
+
+            # Use card_scores (scenario-specific) if available, fall back to scores
+            _display_scores = step2_data.get("card_scores", step2_data.get("scores", {}))
+
+            # Badge config: badge_name → (color, icon)
+            _BADGE_CFG = {
+                "PROTECT":  ("#8B2635", "🛡"),
+                "LICENSE":  ("#0ABAB5", "💼"),
+                "PROMOTE":  ("#1A6B3C", "📣"),
+                "WAIT":     ("#A8892A", "⏳"),
+                "MONITOR":  ("#6B6560", "🔍"),
+                "NEGOTIATE":("#A8892A", "⚖"),
+            }
+
+            def _ppl_action(ax_data: dict, direction: str, score: int):
+                """Return (action, color, icon, summary) — prefer explicit badge fields."""
+                badge   = ax_data.get("action_badge")
+                summary = ax_data.get("action_summary")
+                if badge and summary:
+                    color, icon = _BADGE_CFG.get(badge.upper(), ("#6B6560", "🔍"))
+                    return badge.upper(), color, icon, summary
+                # Fallback derivation
+                if direction == "threat":
+                    if score >= 70:
+                        return "PROTECT",  "#8B2635", "🛡", "High-severity threat — activate IP defense and contract protections immediately."
+                    return "NEGOTIATE", "#A8892A", "⚖", "Material threat — engage counterparty to renegotiate terms before enforcement."
+                if direction == "opportunity":
+                    if score >= 60:
+                        return "LICENSE",  "#0ABAB5", "💼", "Monetisation opportunity — formalise licensing arrangement to capture upside."
+                    return "PROMOTE",  "#1A6B3C", "📣", "Positive development — proactively promote capabilities and market positioning."
+                return "MONITOR", "#6B6560", "🔍", "Neutral impact — continue monitoring; no urgent action required."
+
+            ppl_rows = []
+            for ax, icon in [("IP", "◈"), ("Traffic", "◉"), ("Revenue", "◆"), ("Product", "◇")]:
+                ax_data   = _display_scores.get(ax, {})
+                direction = ax_data.get("direction", "neutral")
+                score     = ax_data.get("score", 0)
+                evidence  = ax_data.get("evidence", "")
+                action, acolor, aicon, rationale = _ppl_action(ax_data, direction, score)
+                ppl_rows.append((ax, icon, score, direction, action, acolor, aicon, rationale, evidence))
+
+            for ax, axicon, score, direction, action, acolor, aicon, rationale, evidence in ppl_rows:
+                st.markdown(f"""
+                <div style="background:#111111;border:1px solid {acolor}44;
+                            border-left:4px solid {acolor};border-radius:0 6px 6px 0;
+                            padding:16px 20px;margin-bottom:12px;
+                            display:flex;align-items:flex-start;gap:16px">
+                  <div style="min-width:80px;text-align:center">
+                    <div style="font-family:'Montserrat',system-ui,sans-serif;color:{acolor};
+                                font-size:1.6rem;line-height:1">{aicon}</div>
+                    <div style="font-family:'Montserrat',sans-serif;color:{acolor};font-size:0.52rem;
+                                font-weight:700;letter-spacing:0.12em;margin-top:4px">{action}</div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
+                      <span style="font-family:'Montserrat',system-ui,sans-serif;color:#F0EDE6;
+                                   font-size:0.95rem;font-weight:600">{axicon} {ax}</span>
+                      <span style="font-family:'Montserrat',sans-serif;color:{acolor};
+                                   font-size:0.52rem;letter-spacing:0.10em">{score}/100 · {direction.upper()}</span>
+                    </div>
+                    <div style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.66rem;
+                                line-height:1.6;margin-bottom:6px">{rationale}</div>
+                    <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.60rem;
+                                font-style:italic;line-height:1.5">{evidence[:140]}{"…" if len(evidence) > 140 else ""}</div>
+                  </div>
+                </div>""", unsafe_allow_html=True)
 
             _policy_memory_block(domain, pmg_hits)
             _governance_panel("tab3", _gov_risk_raw, step2_data)
