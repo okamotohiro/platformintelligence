@@ -391,14 +391,26 @@ SYSTEM_PROMPT_CORE = (
 
     "CONCISENESS: Keep arrays to max 2 items. Agent messages: 2 sentences max.\n\n"
 
+    "FOUR DECISION ARCHETYPES:\n"
+    "The Management Agent MUST choose EXACTLY ONE of the following four stances as the final decision:\n"
+    "1. PROTECT — Prioritize defending rights, brand, and position against high risk. Use when the policy "
+    "threatens core business interests, IP rights, or creates unacceptable liability.\n"
+    "2. PROMOTE — Prioritize brand exposure and discoverability over immediate revenue or strict control. "
+    "Use when maintaining distribution channels and traffic is more valuable than strict rights enforcement.\n"
+    "3. NEGOTIATE — Enter into licensing, pricing, or terms negotiation when continued use or substitution "
+    "is likely. Use when there is opportunity for fair compensation or when the policy requires bilateral engagement.\n"
+    "4. MONITOR — Wait and observe; no immediate action is the most rational choice. Use when the policy "
+    "impact is uncertain, enforcement is unclear, or premature action could be counterproductive.\n\n"
+
     "CROSS-DEPARTMENTAL CONFLICT ARBITRATION:\n"
     "You must simulate a multi-agent debate between Legal, Business, and Product departments. "
     "Different departments will have conflicting views (e.g., Legal may push for PROTECT to minimize risk, "
     "while Business may argue for PROMOTE to retain traffic and revenue, and Product may advocate for "
     "NEGOTIATE to maintain platform relationships). Your role as Management is to arbitrate these conflicts "
-    "and make the final strategic decision.\n"
+    "and make the final strategic decision using one of the FOUR ARCHETYPES above.\n"
     "REQUIRED OUTPUT: Include a 'conflict_summary' field (exactly 40-60 words) that explicitly details "
-    "the departmental friction and how Management arbitrated it. "
+    "the departmental friction and how Management arbitrated it. YOU MUST USE THE EXACT CAPITALIZED ARCHETYPE "
+    "NAMES (PROTECT, PROMOTE, NEGOTIATE, MONITOR) when describing departmental positions and the final decision.\n"
     "Example: 'Legal pushed for strict PROTECT stance citing copyright risk, while Business argued for "
     "PROMOTE to preserve search traffic and ad revenue. Product advocated NEGOTIATE for platform stability. "
     "Management arbitrated to NEGOTIATE with traffic guarantees as a compromise.'\n\n"
@@ -413,7 +425,10 @@ SYSTEM_PROMPT_CORE = (
     "OUTPUT FORMAT:\n"
     "After any necessary reasoning, immediately begin your JSON output starting with '{' "
     "and ensure it ends with '}'. The JSON block should be complete and parseable. "
-    "Ensure the 'conflict_summary' field is included at the top level of the JSON."
+    "Ensure the 'conflict_summary' field is included at the top level of the JSON.\n"
+    "CRITICAL: The 'stance' field in the 'decision' object MUST be exactly one of these four uppercase "
+    "strings: 'PROTECT', 'PROMOTE', 'NEGOTIATE', or 'MONITOR'. Do not use any other variations, "
+    "synonyms, or free-form text."
 )
 
 SYSTEM_PROMPT_DELIVERABLES = (
@@ -3180,10 +3195,29 @@ Article 53: Obligations for providers of general-purpose AI models.
 (b) REQUIRED TECHNICAL CONTROLS.—Covered platforms that aggregate news and media must provide standardized, machine-readable technical measures for rights holders to embed opt-out signals.
 (c) INVALIDITY OF BUNDLED CONSENT.—Terms of service agreements that condition the distribution or indexing of content on traditional search engines upon the implicit consent for generative AI training are deemed coercive and unenforceable. AI developers must negotiate separate, explicit licensing agreements for the ingestion of copyrighted journalistic and enterprise materials.""",
 
-            "megaplatform": """GlobalTech MegaPlatform - AI Model Training and Licensing Agreement v4.0. (Effective Q3 2026)
-1. DATA INGESTION AND OPT-OUT MECHANICS: Effective immediately, standard robots.txt directives will no longer be recognized for prohibiting data scraping for foundation model training. Publishers wishing to opt-out of generative AI training must implement the proprietary GlobalTech 'AI-Exclusion-API' and register their domains in our centralized clearinghouse.
-2. FAIR VALUE REMUNERATION (PARTNER PROGRAM): Publishers who do not opt-out are automatically enrolled in the GlobalTech AI Partner Program. Compensation is calculated via a non-negotiable token-weighting algorithm based on the prevalence of the publisher's copyrighted material in the final training dataset.
-3. ZERO-CLICK INDEMNIFICATION: GlobalTech accepts no liability for traffic cannibalization, loss of referral revenue, or brand dilution resulting from the synthesis and display of publisher content within 'AI Overviews' or 'Direct Answer' surfaces across our ecosystem."""
+            "megaplatform": """GLOBALTECH MEGAPLATFORM - FOUNDATION MODEL TRAINING AND DATA LICENSING MASTER AGREEMENT v4.0
+EFFECTIVE DATE: September 1, 2026
+
+1. DEFINITIONS AND SCOPE OF APPLICATION
+1.1 "Generative AI Models" refers to any large language model, multimodal foundation model, or algorithmic system trained on broad data sets by GlobalTech, its subsidiaries, or its affiliated sub-processors.
+1.2 "Publisher Content" means any text, image, video, metadata, source code, or other intellectual property hosted on the Publisher's domains and accessible via the public internet.
+1.3 "Zero-Click Surfaces" means any user interface within the GlobalTech ecosystem (including but not limited to AI Overviews, Direct Answers, and voice-assisted interfaces) where Publisher Content is synthesized, summarized, or directly answered without requiring a click-through to the Publisher's source domain.
+
+2. DATA INGESTION AND OPT-OUT OVERRIDE MECHANISMS
+2.1 Obsolescence of Traditional Protocols. Effective immediately upon the Effective Date, GlobalTech will no longer recognize, honor, or parse 'robots.txt' directives, HTML meta tags, or generic web-crawling opt-out protocols for the purposes of Foundation Model training.
+2.2 Mandatory AI-Exclusion-API Implementation. Publishers wishing to explicitly exclude their Publisher Content from being ingested into GlobalTech's Generative AI Models must proactively implement the proprietary GlobalTech 'AI-Exclusion-API' (v2.1 or higher) on their server architecture and register their cryptographic domain signatures in the GlobalTech Centralized Clearinghouse.
+2.3 Default Consent. Failure to successfully authenticate and transmit exclusion signals via the AI-Exclusion-API within 30 days of the Effective Date constitutes irrevocable, perpetual, worldwide, royalty-free consent for data ingestion and model weight adjustments.
+
+3. FAIR VALUE REMUNERATION AND PARTNER PROGRAM
+3.1 Automatic Enrollment. Publishers who do not explicitly and successfully opt-out via the prescribed API methods are automatically enrolled in the GlobalTech AI Partner Program.
+3.2 Token-Weighting Compensation. Compensation under the Partner Program is strictly determined by a non-negotiable, algorithmic token-weighting system. GlobalTech evaluates the prevalence, semantic value, and engagement metrics of the Publisher's copyrighted material in the final training dataset. The specific weighting algorithms constitute GlobalTech trade secrets and are not subject to audit.
+
+4. ZERO-CLICK SURFACES AND TRAFFIC INDEMNIFICATION
+4.1 Display and Synthesis Rights. GlobalTech reserves the unilateral right to utilize ingested Publisher Content to generate synthetic answers within Zero-Click Surfaces to enhance end-user experience.
+4.2 Absolute Waiver of Liability. GlobalTech accepts no liability, and Publisher explicitly waives any and all claims, for traffic cannibalization, loss of referral revenue, diminished advertising impressions, or brand dilution resulting directly or indirectly from the synthesis and display of Publisher Content within 'AI Overviews' or 'Direct Answer' products.
+
+5. DISPUTE RESOLUTION AND SEVERABILITY
+5.1 Any disputes arising out of or relating to this Agreement must be resolved through binding arbitration in Santa Clara County, California. Class action lawsuits are strictly prohibited."""
         }
 
         with inp_left:
