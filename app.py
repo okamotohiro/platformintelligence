@@ -3219,37 +3219,32 @@ PENALTIES
 Article 99: Fines for providers of general-purpose AI models.
 1. Non-compliance with the obligations laid down in Article 53 shall be subject to administrative fines of up to 15 000 000 EUR or, if the offender is an undertaking, up to 3 % of its total worldwide annual turnover for the preceding financial year, whichever is higher.""",
 
-            "copied_act": """118th CONGRESS
-2d Session
-S. 4696
+            "copied_act": """THE WHITE HOUSE
+EXECUTIVE ORDER 14110
 
-IN THE SENATE OF THE UNITED STATES
-July 11, 2024
-Ms. CANTWELL (for herself, Mrs. BLACKBURN, and Mr. HEINRICH) introduced the following bill; which was read twice and referred to the Committee on Commerce, Science, and Transportation
+Safe, Secure, and Trustworthy Development and Use of Artificial Intelligence
+October 30, 2023
 
-A BILL
-To provide for the protection of content origin and integrity from edited and deepfaked media, and for other purposes.
+By the authority vested in me as President by the Constitution and the laws of the United States of America, it is hereby ordered as follows:
 
-Be it enacted by the Senate and House of Representatives of the United States of America in Congress assembled,
+Sec. 4.5. Reducing the Risks Posed by Synthetic Content.
+To foster capabilities for identifying and labeling synthetic content produced by AI systems, and to establish the authenticity and provenance of digital content, both creators and consumers should be able to interact with digital content and reliably determine how it was created or modified.
+(a) Within 240 days of the date of this order, the Secretary of Commerce, in consultation with the heads of other relevant agencies, shall submit a report to the Director of OMB and the Assistant to the President for National Security Affairs identifying the existing standards, tools, methods, and practices, as well as the potential development of further science-backed standards and techniques, for:
+     (i) authenticating content and tracking its provenance;
+     (ii) labeling synthetic content, such as using watermarking;
+     (iii) detecting synthetic content;
+     (iv) preventing generative AI from producing child sexual abuse material or producing non-consensual intimate imagery of real individuals;
+     (v) testing software used for the above purposes; and
+     (vi) auditing and maintaining synthetic content.
 
-SECTION 1. SHORT TITLE.
-This Act may be cited as the "Content Origin Protection and Integrity from Edited and Deepfaked Media Act of 2024" or the "COPIED Act".
+Sec. 5.2. Promoting Innovation and Protecting Intellectual Property.
+(c) To promote innovation and clarify issues related to AI and copyrightability of works created using AI, the United States Copyright Office shall:
+     (i) consult with the Director of the United States Patent and Trademark Office on the potential for AI to be used to infringe on copyright;
+     (ii) evaluate the scope of protection for works generated using AI and the treatment of copyrighted works in AI training; and
+     (iii) within 270 days of the date of this order, issue official guidance or recommendations for executive action on copyright and AI, including the ingestion of copyrighted works into AI training data and the downstream liability for synthetic media generation.
 
-SEC. 2. DEFINITIONS.
-In this Act:
-(1) COVERED ARTIFICIAL INTELLIGENCE SYSTEM.—The term "covered artificial intelligence system" means any generative model, foundation model, or machine learning system that relies on the ingestion of large-scale datasets to generate text, audio, images, or video.
-(2) CONTENT PROVENANCE INFORMATION.—The term "content provenance information" means machine-readable data cryptographically bound to digital content that specifies the creator, origin, and permitted downstream uses of such content.
-
-SEC. 4. AI TRAINING AND PROVENANCE.
-(a) PROHIBITION ON UNAUTHORIZED TRAINING.—A provider of a covered artificial intelligence system may not use covered content to train an AI model or generate synthetic output if the owner of such content has attached content provenance information explicitly reserving rights or prohibiting such use.
-
-(b) REQUIRED TECHNICAL CONTROLS.—Covered platforms that aggregate news and media must provide standardized, machine-readable technical measures for rights holders to embed opt-out signals.
-
-(c) INVALIDITY OF BUNDLED CONSENT.—Terms of service agreements that condition the distribution or indexing of content on traditional search engines upon the implicit consent for generative AI training are deemed coercive and unenforceable. AI developers must negotiate separate, explicit licensing agreements for the ingestion of copyrighted journalistic and enterprise materials.
-
-SEC. 5. ENFORCEMENT BY THE FEDERAL TRADE COMMISSION.
-(a) UNFAIR OR DECEPTIVE ACTS OR PRACTICES.—A violation of section 4 shall be treated as a violation of a rule defining an unfair or deceptive act or practice prescribed under section 18(a)(1)(B) of the Federal Trade Commission Act (15 U.S.C. 57a(a)(1)(B)).
-(b) PENALTIES.—Any developer of a covered artificial intelligence system found in violation of Section 4(a) shall be liable for statutory damages of not less than $150,000 per infringed work, or disgorgement of profits directly attributable to the unauthorized ingestion, whichever is greater.""",
+Sec. 8. Protecting Consumers, Patients, Passengers, and Students.
+(a) Independent regulatory agencies are encouraged, as they deem appropriate, to consider using their full range of authorities to protect American consumers from fraud, discrimination, and threats to privacy and to address other risks that may arise from the use of AI, including emphasizing or clarifying where existing regulations and guidance apply to AI.""",
 
             "megaplatform": """MegaPlatform Universal Terms of Service - API & Ecosystem Agreement (Version 4.0, Effective Q3 2026).
 
@@ -3348,7 +3343,7 @@ Section IV: Governance, Auditing, and Human-in-the-Loop (HITL) Controls.
             </div>""", unsafe_allow_html=True)
             row1_col1, row1_col2 = st.columns(2)
             with row1_col1:
-                if st.button("⬇ US Senate Bill 4696 (AI Copyright & Provenance)", use_container_width=True):
+                if st.button("⬇ US Executive Order 14110 (AI & Provenance)", use_container_width=True):
                     st.session_state["policy_text"] = _SAMPLES["copied_act"]
                     st.rerun()
             with row1_col2:
