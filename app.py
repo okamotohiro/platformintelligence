@@ -3335,10 +3335,10 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
                 "policy_input",
                 height=248,
                 placeholder=(
-                    "Example: Platform Search Terms Update\n"
-                    "- Generative AI overviews will now appear at the top of all query results.\n"
-                    "- Outbound referral links to publisher content will be collapsed by default.\n"
-                    "- Continued indexing requires acceptance of uncompensated AI feature integration."
+                    "Example: MegaPlatform AI Terms v4.0 Update\n"
+                    "- Generative AI synthetic outputs will supersede direct publisher attribution.\n"
+                    "- Opt-out protocols (e.g., robots.txt, C2PA) rendered void without Enterprise API validation.\n"
+                    "- Continued ecosystem access requires mandatory, uncompensated AI training data ingestion."
                 ),
                 key="policy_text",
                 label_visibility="collapsed",
