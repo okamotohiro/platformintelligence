@@ -4439,22 +4439,22 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
     exec_col1, exec_col2, exec_col3 = st.columns(3)
 
     with exec_col1:
-        if st.button("📝 関連部署へタスクを一斉起票", use_container_width=True, type="primary"):
+        if st.button("📝 Dispatch Tasks to Issue Tracker", use_container_width=True, type="primary"):
             st.session_state["jira_pushed"] = True
-            st.toast("✅ 開発部門および法務部門のタスク管理ボードに実装・確認タスクを起票しました。", icon="✅")
-            st.success("✅ 開発部門および法務部門のタスク管理ボードに実装・確認タスクを起票しました。")
+            st.toast("✅ Implementation and review tasks dispatched to development and legal tracking boards.", icon="✅")
+            st.success("✅ Implementation and review tasks dispatched to development and legal tracking boards.")
 
     with exec_col2:
-        if st.button("💬 Slack / Teamsにアラート送信", use_container_width=True, type="primary"):
+        if st.button("💬 Broadcast Alerts to Team Chat", use_container_width=True, type="primary"):
             st.session_state["slack_sent"] = True
-            st.toast("✅ 経営・法務・事業の連携チャンネルに重要アラートを送信しました。", icon="✅")
-            st.success("✅ 経営・法務・事業の連携チャンネルに重要アラートを送信しました。")
+            st.toast("✅ Critical alerts broadcast to executive, legal, and business collaboration channels.", icon="✅")
+            st.success("✅ Critical alerts broadcast to executive, legal, and business collaboration channels.")
 
     with exec_col3:
-        if st.button("✉️ 交渉用メールの下書きを作成", use_container_width=True, type="primary"):
+        if st.button("✉️ Generate Negotiation Drafts", use_container_width=True, type="primary"):
             st.session_state["email_drafted"] = True
-            st.toast("✅ メーラーを起動し、パートナー向け交渉テンプレートを展開しました。", icon="✅")
-            st.success("✅ メーラーを起動し、パートナー向け交渉テンプレートを展開しました。")
+            st.toast("✅ Email client launched with partner negotiation templates ready for review.", icon="✅")
+            st.success("✅ Email client launched with partner negotiation templates ready for review.")
 
     st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
 
