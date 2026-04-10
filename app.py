@@ -3002,8 +3002,9 @@ def render_login() -> None:
 
 # ─── Main App ─────────────────────────────────────────────────────────────────
 def main() -> None:
-    if not st.session_state.get("authenticated", False):
-        render_login()
+    # Authentication disabled for live presentation
+    # if not st.session_state.get("authenticated", False):
+    #     render_login()
 
     if "results" not in st.session_state:
         st.session_state.results = None
