@@ -3314,7 +3314,7 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
 
             row2_col1, row2_col2 = st.columns(2)
             with row2_col1:
-                if st.button("⬇ 経産省・総務省 AI事業者ガイドライン", use_container_width=True):
+                if st.button("⬇ Japan AI Guidelines (METI/MIC)", use_container_width=True):
                     st.session_state["policy_text"] = _SAMPLES["meti_guidelines"]
                     st.rerun()
             with row2_col2:
