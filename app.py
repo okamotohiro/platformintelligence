@@ -2544,7 +2544,7 @@ def _governance_panel(tab_key: str, risk_raw: str = "high", step2_data: Optional
     all_stances = [
         ("critical", "ENFORCE OPT-OUT & DEMAND COMPENSATION"),
         ("high",     "NEGOTIATE & LICENSE"),
-        ("medium",   "ALLOW FOR TRAFFIC (SEO) & AUDIT"),
+        ("medium",   "ALLOW FOR ORGANIC REACH & AUDIT"),
         ("low",      "FULL OPEN ACCESS (MAXIMIZE PRESENCE)"),
     ]
     keep_opt = f"— Keep AI Stance: {stance_label} —"
