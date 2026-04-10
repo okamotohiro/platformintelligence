@@ -3189,65 +3189,32 @@ def main() -> None:
 
         # ── Sample text payloads ──────────────────────────────────────────
         _SAMPLES = {
-            "eu_ai_act": """REGULATION (EU) 2024/1689 OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL of 13 June 2024 laying down harmonised rules on artificial intelligence (Artificial Intelligence Act).
-
-CHAPTER V: CLASSIFICATION OF AI SYSTEMS AND OBLIGATIONS FOR GPAI MODELS
-SECTION 2: OBLIGATIONS FOR PROVIDERS OF GENERAL-PURPOSE AI MODELS
+            "eu_ai_act": """Regulation (EU) 2024/1689 of the European Parliament and of the Council laying down harmonised rules on artificial intelligence (Artificial Intelligence Act).
 
 Article 53: Obligations for providers of general-purpose AI models.
 1. Providers of general-purpose AI models shall:
-(a) draw up and keep up-to-date the technical documentation of the model, including its training and testing process and the results of its evaluation, which shall contain, at a minimum, the information set out in Annex IX for the purpose of providing it, upon request, to the AI Office and the national competent authorities;
-(b) draw up, keep up-to-date and make available information and documentation to providers of AI systems who intend to integrate the general-purpose AI model into their AI systems.
-(c) put in place a policy to comply with Union law on copyright and related rights, and in particular to identify and respect, including through state of the art technologies, the reservations of rights expressed pursuant to Article 4(3) of Directive (EU) 2019/790;
+(c) put in place a policy to comply with Union copyright law, and in particular to identify and respect, including through state-of-the-art technologies, a reservation of rights expressed pursuant to Article 4(3) of Directive (EU) 2019/790;
 (d) draw up and make publicly available a sufficiently detailed summary about the content used for training of the general-purpose AI model, according to a template provided by the AI Office.
-
-2. The obligation referred to in paragraph 1, point (c) shall apply regardless of the jurisdiction in which the copyright-relevant acts underpinning the training of those general-purpose AI models take place. Providers must demonstrate that their web-crawling architectures respect machine-readable opt-out signals (e.g., TDM Rep protocol) universally, preventing ingestion of rights-reserved corporate intellectual property into base model weights.
-
-RECITALS (EXCERPTS RELEVANT TO COPYRIGHT):
-(105) General-purpose AI models, in particular large generative AI models, capable of generating text, images, and other content, present unique challenges to the protection of copyright and related rights. The ingestion of massive amounts of data, often protected by intellectual property, without prior authorization from rights holders, has created a significant legal imbalance.
-(106) Any provider of a general-purpose AI model placed on the Union market should comply with the obligations provided for in this Regulation. To that end, providers should put in place a policy to comply with Union law on copyright. Any use of copyright-protected content requires the authorization of the right holder concerned unless relevant copyright exceptions and limitations apply.
-(107) In order to increase transparency, providers of general-purpose AI models should make publicly available a sufficiently detailed summary of the content used for training. This summary should be generally comprehensive in its scope to facilitate the exercise of rights by holders of copyright, for example by listing the main collections or sets of data that went into training the model, such as large private or public databases or data archives.""",
+2. The obligations set out in paragraph 1 shall not apply to providers of AI models that are released under a free and open-source licence, unless the general-purpose AI model presents a systemic risk.""",
 
             "copied_act": """Content Origin Protection and Integrity from Edited and Deepfaked Media (COPIED) Act - Section 4: AI Training and Provenance.
 (a) PROHIBITION ON UNAUTHORIZED TRAINING.—A provider of a covered artificial intelligence system may not use covered content to train an AI model or generate synthetic output if the owner of such content has attached content provenance information explicitly reserving rights or prohibiting such use.
 (b) REQUIRED TECHNICAL CONTROLS.—Covered platforms that aggregate news and media must provide standardized, machine-readable technical measures for rights holders to embed opt-out signals.
 (c) INVALIDITY OF BUNDLED CONSENT.—Terms of service agreements that condition the distribution or indexing of content on traditional search engines upon the implicit consent for generative AI training are deemed coercive and unenforceable. AI developers must negotiate separate, explicit licensing agreements for the ingestion of copyrighted journalistic and enterprise materials.""",
 
-            "megaplatform": """GLOBALTECH MEGAPLATFORM - FOUNDATION MODEL TRAINING AND DATA LICENSING MASTER AGREEMENT v4.0
-EFFECTIVE DATE: September 1, 2026
+            "megaplatform": """MegaPlatform Universal Terms of Service - API & Ecosystem Agreement (Version 4.0, Effective Q3 2026).
 
-1. DEFINITIONS AND SCOPE OF APPLICATION
-1.1 "Generative AI Models" refers to any large language model, multimodal foundation model, or algorithmic system trained on broad data sets by GlobalTech, its subsidiaries, or its affiliated sub-processors.
-1.2 "Publisher Content" means any text, image, video, metadata, source code, or other intellectual property hosted on the Publisher's domains and accessible via the public internet.
-1.3 "Zero-Click Surfaces" means any user interface within the GlobalTech ecosystem (including but not limited to AI Overviews, Direct Answers, and voice-assisted interfaces) where Publisher Content is synthesized, summarized, or directly answered without requiring a click-through to the Publisher's source domain.
+Section 8: Generative AI and Platform Data Rights.
+8.1 Broad License Grant: By maintaining an active Developer API Key, utilizing MegaPlatform Authentication, or allowing your content to be indexed by our services, you grant MegaPlatform a perpetual, irrevocable, worldwide, royalty-free license to ingest, analyze, and utilize your content, metadata, and user interaction signals for the purpose of training, fine-tuning, and deploying our proprietary Large Language Models (LLMs) and other generative AI features.
+8.2 Invalidation of Technical Opt-Outs: Publisher-side technical restrictions, including but not limited to robots.txt directives, C2PA metadata, or similar provenance tags, shall not apply to MegaPlatform's internal crawlers (MegaBot) when crawling for the purpose of ecosystem service enhancements.
+8.3 No Compensation: You acknowledge that MegaPlatform's AI features drive incremental value to the ecosystem and agree that no monetary compensation, licensing fees, or revenue sharing shall be owed to you for the use of your data in AI training.""",
 
-2. DATA INGESTION AND OPT-OUT OVERRIDE MECHANISMS
-2.1 Obsolescence of Traditional Protocols. Effective immediately upon the Effective Date, GlobalTech will no longer recognize, honor, or parse 'robots.txt' directives, HTML meta tags, or generic web-crawling opt-out protocols for the purposes of Foundation Model training.
-2.2 Mandatory AI-Exclusion-API Implementation. Publishers wishing to explicitly exclude their Publisher Content from being ingested into GlobalTech's Generative AI Models must proactively implement the proprietary GlobalTech 'AI-Exclusion-API' (v2.1 or higher) on their server architecture and register their cryptographic domain signatures in the GlobalTech Centralized Clearinghouse.
-2.3 Default Consent. Failure to successfully authenticate and transmit exclusion signals via the AI-Exclusion-API within 30 days of the Effective Date constitutes irrevocable, perpetual, worldwide, royalty-free consent for data ingestion and model weight adjustments.
+            "meti_guidelines": """Ministry of Economy, Trade and Industry (METI) & Ministry of Internal Affairs and Communications (MIC) - AI Guidelines for Business.
 
-3. FAIR VALUE REMUNERATION AND PARTNER PROGRAM
-3.1 Automatic Enrollment. Publishers who do not explicitly and successfully opt-out via the prescribed API methods are automatically enrolled in the GlobalTech AI Partner Program.
-3.2 Token-Weighting Compensation. Compensation under the Partner Program is strictly determined by a non-negotiable, algorithmic token-weighting system. GlobalTech evaluates the prevalence, semantic value, and engagement metrics of the Publisher's copyrighted material in the final training dataset. The specific weighting algorithms constitute GlobalTech trade secrets and are not subject to audit.
-
-4. ZERO-CLICK SURFACES AND TRAFFIC INDEMNIFICATION
-4.1 Display and Synthesis Rights. GlobalTech reserves the unilateral right to utilize ingested Publisher Content to generate synthetic answers within Zero-Click Surfaces to enhance end-user experience.
-4.2 Absolute Waiver of Liability. GlobalTech accepts no liability, and Publisher explicitly waives any and all claims, for traffic cannibalization, loss of referral revenue, diminished advertising impressions, or brand dilution resulting directly or indirectly from the synthesis and display of Publisher Content within 'AI Overviews' or 'Direct Answer' products.
-
-5. DISPUTE RESOLUTION AND SEVERABILITY
-5.1 Any disputes arising out of or relating to this Agreement must be resolved through binding arbitration in Santa Clara County, California. Class action lawsuits are strictly prohibited.""",
-
-            "meti_guidelines": """経済産業省・総務省「AI事業者ガイドライン（第1.2版）」(2026年3月)
-第3部：生成AI開発者・提供者向けの特有の事項
-
-(1) 学習データにおける知的財産権の保護とオプトアウトの尊重
-生成AIの開発においてデータセットを構築する際、著作権法第30条の4の適用範囲を逸脱し、権利者の利益を不当に害することのないよう、適切な技術的・運用的措置を講じること。特に、権利者が機械読取可能な形式（robots.txtやTDMプロトコル等）で学習利用のオプトアウトの意思を表示している場合、これを技術的に検知し、尊重するための仕組みを実装・運用することが強く推奨される。
-
-(2) 透明性と説明責任の確保
-基盤モデルの提供者は、学習に利用されたデータの出所、権利関係、およびデータ収集のプロセスに関する十分な情報（学習データの要約等）を、利用可能な範囲で公開すること。これにより、権利者が自身のコンテンツの利用状況を把握し、必要な対応をとれるよう透明性を確保しなければならない。
-
-(3) 継続的なガバナンス要件
-AI技術と関連法規は急速に変化しているため、一度の対応で完了するものではない。事業者は本ガイドラインの継続的な改訂をモニタリングし、自社のAIガバナンス体制と実装タスクを、規制の段階的施行（2025年、2026年等のフェーズ）に合わせて適宜アップデートする体制を構築すること。"""
+Section III: Specific Guidelines for AI Developers and Providers.
+3.2.1 Data Collection and Copyright Compliance
+Developers must respect the intention of copyright holders regarding machine learning. If a rights holder expresses an intent to opt-out of data scraping through technical means (e.g., robots.txt) or clear terms of use, developers should refrain from collecting such data to avoid potential infringement under Article 30-4 of the Copyright Act.
+Furthermore, developers are strongly encouraged to implement mechanisms to verify the origin of training data (such as Originator Profile or C2PA) and proactively negotiate voluntary licensing agreements with major content publishers to ensure a fair and sustainable AI ecosystem."""
         }
 
         with inp_left:
