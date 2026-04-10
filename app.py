@@ -3397,12 +3397,12 @@ Developers must proactively identify and respect the intention of copyright hold
             _accent_divider()
             c1, c2, c3 = st.columns(3)
             for col, icon, cap, sub in [
-                (c1, "◈", "Substantive Change Analysis",
-                 "Identifies meaning-level policy changes—not just text diffs. Maps added obligations and removed rights directly to your unique Media Business Ontology."),
-                (c2, "◉", "Policy Memory Graph",
-                 "Evaluates external threats against your institutional memory (past partner contracts, board red-lines) to recommend 4 Strategic Stances: PROTECT, PROMOTE, LICENSE, or WAIT."),
-                (c3, "◆", "Agentic Execution",
-                 "Generates 6 role-specific outputs (incl. PPL Map & Board Memo) and autonomously routes approved cross-functional workflows to Jira, Slack, and Docs."),
+                (c1, "◈", "Semantic Obligation Mapping",
+                 "Moves beyond simple syntactic text diffs to perform deep semantic analysis. Autonomously extracts hidden liabilities, altered compliance thresholds, and shifts in copyright frameworks, mapping them directly to your proprietary Enterprise Ontology."),
+                (c2, "◉", "Institutional Memory Graph",
+                 "Cross-references emerging regulatory requirements against your historical data, past API licensing deals, and board-approved risk thresholds. Instantly synthesizes actionable executive strategies (e.g., Enforce Opt-Outs, Negotiate Licensing, or Allow Organic Reach)."),
+                (c3, "◆", "Autonomous Governance Orchestration",
+                 "Translates executive decisions into immediate, cross-functional realities. Autonomously drafts legal board memos, updates compliance protocols, and orchestrates remediation workflows across your entire corporate infrastructure without manual intervention."),
             ]:
                 with col:
                     st.markdown(f"""
