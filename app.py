@@ -3148,7 +3148,7 @@ def main() -> None:
                       margin:1.4rem auto"></div>
           <p style="font-family:'Montserrat',sans-serif;color:#C4BFB8;font-size:0.78rem;
                     letter-spacing:0.14em;text-transform:uppercase;margin:0">
-            External Change &nbsp;→&nbsp; 6 Role-Specific Actionable Outputs
+            External Change &nbsp;→&nbsp; 8 Role-Specific Actionable Outputs
           </p>
         </div>""", unsafe_allow_html=True)
 
