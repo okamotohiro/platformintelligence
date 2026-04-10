@@ -2542,10 +2542,10 @@ def _governance_panel(tab_key: str, risk_raw: str = "high", step2_data: Optional
 
     # Override dropdown uses human-readable stance options
     all_stances = [
-        ("critical", "PROTECT & LICENSE"),
+        ("critical", "ENFORCE OPT-OUT & DEMAND COMPENSATION"),
         ("high",     "NEGOTIATE & LICENSE"),
-        ("medium",   "MONITOR & PROMOTE"),
-        ("low",      "PROMOTE & WAIT"),
+        ("medium",   "ALLOW FOR TRAFFIC (SEO) & AUDIT"),
+        ("low",      "FULL OPEN ACCESS (MAXIMIZE PRESENCE)"),
     ]
     keep_opt = f"— Keep AI Stance: {stance_label} —"
     other_opts = [f"Override → {s}" for k, s in all_stances if k != rl_key]
