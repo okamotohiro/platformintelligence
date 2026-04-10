@@ -3281,17 +3281,22 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="font-size:0.55rem;line-height:1">🟢</span>
                 <span style="font-family:'Montserrat',sans-serif;color:#C8C3BD;font-size:0.60rem;
-                             letter-spacing:0.04em">Enterprise IP &amp; Content Archive</span>
+                             letter-spacing:0.04em">Enterprise IP &amp; Content Rights Registry</span>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="font-size:0.55rem;line-height:1">🟢</span>
                 <span style="font-family:'Montserrat',sans-serif;color:#C8C3BD;font-size:0.60rem;
-                             letter-spacing:0.04em">Active Partner Contract DB</span>
+                             letter-spacing:0.04em">Contract Lifecycle Management (CLM) DB</span>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="font-size:0.55rem;line-height:1">🟢</span>
                 <span style="font-family:'Montserrat',sans-serif;color:#C8C3BD;font-size:0.60rem;
-                             letter-spacing:0.04em">Audience Traffic Analytics</span>
+                             letter-spacing:0.04em">Cross-Channel Revenue &amp; Traffic Analytics</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:0.55rem;line-height:1">🟢</span>
+                <span style="font-family:'Montserrat',sans-serif;color:#C8C3BD;font-size:0.60rem;
+                             letter-spacing:0.04em">Executive Resolution &amp; Board Minutes Archive</span>
               </div>
             </div>""", unsafe_allow_html=True)
             st.caption(
