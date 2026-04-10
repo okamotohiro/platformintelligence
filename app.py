@@ -56,7 +56,10 @@ st.markdown("""
 .stApp { background: var(--bg) !important; }
 .main .block-container {
     background: var(--bg) !important;
-    padding: 2.5rem 3.5rem !important;
+    padding-top: 1rem !important;
+    padding-bottom: 0rem !important;
+    padding-left: 3.5rem !important;
+    padding-right: 3.5rem !important;
     max-width: 1440px !important;
 }
 
