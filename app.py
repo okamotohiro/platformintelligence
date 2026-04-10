@@ -3192,11 +3192,13 @@ def main() -> None:
             "eu_ai_act": """Official Journal of the European Union
 REGULATION (EU) 2024/1689 OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL
 of 13 June 2024
-laying down harmonised rules on artificial intelligence (Artificial Intelligence Act) and amending certain Union legislative acts
+laying down harmonised rules on artificial intelligence (Artificial Intelligence Act)
 
 THE EUROPEAN PARLIAMENT AND THE COUNCIL OF THE EUROPEAN UNION,
-Having regard to the Treaty on the Functioning of the European Union, and in particular Articles 114 and 16(2) thereof,
-Having regard to the proposal from the European Commission,
+
+(105) General-purpose AI models, in particular large generative models, capable of generating text, images, and other content, present unique innovation opportunities but also challenges to artists, authors, and other creators and the way their creative content is created, distributed, used and consumed. The development and training of such models require access to vast amounts of text, images, videos, and other data. Text and data mining techniques may be used extensively in this context for the retrieval and analysis of such content, which may be protected by copyright and related rights.
+
+(106) Providers of general-purpose AI models should ensure compliance with Union copyright law, regardless of the jurisdiction in which the copyright-relevant acts underpinning the training of those models take place. In particular, they should respect the reservation of rights expressed by rightsholders pursuant to Article 4(3) of Directive (EU) 2019/790. Any provider placing a general-purpose AI model on the Union market should put in place a policy to comply with Union law on copyright and related rights, and use state-of-the-art technologies to identify and respect such opt-outs, such as machine-readable protocols.
 
 CHAPTER V
 GENERAL-PURPOSE AI MODELS
@@ -3206,9 +3208,7 @@ Article 53: Obligations for providers of general-purpose AI models.
 (a) draw up and keep up-to-date the technical documentation of the model, including its training and testing process and the results of its evaluation;
 (b) draw up, keep up-to-date and make available information and documentation to providers of AI systems who intend to integrate the general-purpose AI model into their AI systems;
 (c) put in place a policy to comply with Union copyright law, and in particular to identify and respect, including through state-of-the-art technologies, a reservation of rights expressed pursuant to Article 4(3) of Directive (EU) 2019/790;
-(d) draw up and make publicly available a sufficiently detailed summary about the content used for training of the general-purpose AI model, according to a template provided by the AI Office.
-
-2. The obligations set out in paragraph 1, points (a) and (b), shall not apply to providers of AI models that are released under a free and open-source licence, whose parameters, including the weights, the information on the model architecture, and the information on model usage, are made publicly available, unless the general-purpose AI model presents a systemic risk.
+(d) draw up and make publicly available a sufficiently detailed summary about the content used for training of the general-purpose AI model, according to a template provided by the AI Office, allowing parties with legitimate interests, including copyright holders, to exercise and enforce their rights.
 
 Article 54: Authorised representatives of providers of general-purpose AI models.
 1. Prior to placing a general-purpose AI model on the Union market, providers established in a third country shall, by written mandate, appoint an authorised representative which is established in the Union.
