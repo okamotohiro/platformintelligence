@@ -4267,27 +4267,26 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
 
             _governance_panel("tab5", _gov_risk_raw, step2_data)
 
-            # ── Jira Export ───────────────────────────────────────────────────────
+            # ── Issue Tracking Export ───────────────────────────────────────────────────────
             if checklist:
-                st.markdown(f"""
+                st.markdown("""
                 <div style="border-top:1px solid rgba(10,186,181,0.10);margin:2.2rem 0 1rem;padding-top:1.2rem">
-                  <div style="font-family:'Montserrat',sans-serif;color:#9A9590;font-size:0.58rem;
-                              letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
-                    ◆ &nbsp; SYSTEM OF ACTION — JIRA EXPORT
-                  </div>
                 </div>""", unsafe_allow_html=True)
 
                 jira_text = _format_jira_export(checklist, domain)
-                st.code(jira_text, language=None)
+
+                with st.expander("📦 View Issue Tracking Export (Epics & Stories)", expanded=False):
+                    st.code(jira_text, language="markdown")
+
                 jc1, jc2 = st.columns([1, 2])
                 with jc1:
-                    if st.button("🎯  Export to Jira  (Mock)", key="jira_export_tab5", use_container_width=True):
-                        st.toast("🎯 Jira Epic + Stories queued for import — ticket IDs assigned (mock).", icon="🎯")
+                    if st.button("🎯  Export to Issue Tracker  (Mock)", key="jira_export_tab5", use_container_width=True):
+                        st.toast("🎯 Epic + Stories queued for import — ticket IDs assigned (mock).", icon="🎯")
                 with jc2:
                     st.download_button(
-                        "Download Jira Export (.txt)",
+                        "Download Issue Tracking Export (.txt)",
                         data=jira_text,
-                        file_name=_fn("jira_export").replace(".md", ".txt"),
+                        file_name=_fn("issue_tracking_export").replace(".md", ".txt"),
                         mime="text/plain",
                         use_container_width=True,
                     )
@@ -4344,21 +4343,20 @@ AI技術と関連法規は急速に変化しているため、一度の対応で
 
             _governance_panel("tab6", _gov_risk_raw, step2_data)
 
-            # ── Slack Export ──────────────────────────────────────────────────────
-            st.markdown(f"""
+            # ── Team Chat Export ──────────────────────────────────────────────────────
+            st.markdown("""
             <div style="border-top:1px solid rgba(10,186,181,0.10);margin:2.2rem 0 1rem;padding-top:1.2rem">
-              <div style="font-family:'Montserart',sans-serif;color:#9A9590;font-size:0.58rem;
-                          letter-spacing:0.26em;text-transform:uppercase;margin-bottom:0.9rem">
-                ◆ &nbsp; SYSTEM OF ACTION — SLACK EXPORT
-              </div>
             </div>""", unsafe_allow_html=True)
 
             rl3_slack = step3_data.get("overall_risk", step2_data.get("overall_risk_level", "medium"))
             rl3_label_slack, *_ = _risk_config(rl3_slack)
             slack_text = _format_slack_export(board, domain, rl3_label_slack)
-            st.code(slack_text, language=None)
-            if st.button("📨  Send to Slack  #exec-alerts  (Mock)", key="slack_export_tab6"):
-                st.toast("📨 Slack message queued for #exec-alerts — delivery confirmed (mock).", icon="📨")
+
+            with st.expander("💬 View Team Chat Export (#exec-alerts)", expanded=False):
+                st.code(slack_text, language="markdown")
+
+            if st.button("📨  Send to Team Chat  #exec-alerts  (Mock)", key="slack_export_tab6", use_container_width=True):
+                st.toast("📨 Team chat message queued for #exec-alerts — delivery confirmed (mock).", icon="📨")
 
     # ── Tab 7: Implementation Checklist ──────────────────────────────────────────
     with tab7:
