@@ -2531,7 +2531,7 @@ def _governance_panel(tab_key: str, risk_raw: str = "high", step2_data: Optional
       </div>
     </div>""", unsafe_allow_html=True)
 
-    st.info("🔄 **継続的運用イベント (Continuous Operational Event)**: 本規制は一度の対応では完了しません。\n\n🗓️ **次回レビュー期日 (Next Scheduled Review)**: 2026年8月 (フェーズ2施行時)\n\n※Policy Memory Graphが次回の規制アップデートを検知し、自動的に関係部署へ再評価タスクを通知します。")
+    st.info("🔄 **Continuous Operational Event**: Compliance with this regulation is an ongoing process, not a one-time fix.\n\n🗓️ **Next Scheduled Review**: August 2026 (Phase 2 Enforcement)\n\n*Note: The Policy Memory Graph will automatically detect future regulatory updates and trigger re-evaluation tasks for relevant departments.*")
 
     rl_key   = (risk_raw or "medium").lower()
     stance_label, rl_color, stance_sub = _risk_config(rl_key)
