@@ -3258,12 +3258,31 @@ Section 8: Generative AI and Platform Data Rights.
 8.2 Invalidation of Technical Opt-Outs: Publisher-side technical restrictions, including but not limited to robots.txt directives, C2PA metadata, or similar provenance tags, shall not apply to MegaPlatform's internal crawlers (MegaBot) when crawling for the purpose of ecosystem service enhancements.
 8.3 No Compensation: You acknowledge that MegaPlatform's AI features drive incremental value to the ecosystem and agree that no monetary compensation, licensing fees, or revenue sharing shall be owed to you for the use of your data in AI training.""",
 
-            "meti_guidelines": """Ministry of Economy, Trade and Industry (METI) & Ministry of Internal Affairs and Communications (MIC) - AI Guidelines for Business.
+            "meti_guidelines": """Ministry of Economy, Trade and Industry (METI) & Ministry of Internal Affairs and Communications (MIC)
+AI Guidelines for Business (Version 2.0 - Revised April 2026)
 
-Section III: Specific Guidelines for AI Developers and Providers.
-3.2.1 Data Collection and Copyright Compliance
-Developers must respect the intention of copyright holders regarding machine learning. If a rights holder expresses an intent to opt-out of data scraping through technical means (e.g., robots.txt) or clear terms of use, developers should refrain from collecting such data to avoid potential infringement under Article 30-4 of the Copyright Act.
-Furthermore, developers are strongly encouraged to implement mechanisms to verify the origin of training data (such as Originator Profile or C2PA) and proactively negotiate voluntary licensing agreements with major content publishers to ensure a fair and sustainable AI ecosystem."""
+PART 2: OBLIGATIONS FOR AI DEVELOPERS AND FOUNDATION MODEL PROVIDERS
+
+Section III: Specific Guidelines for Data Procurement, Intellectual Property, and Copyright Compliance.
+
+3.2.1 Interpretation of Article 30-4 of the Copyright Act
+While Article 30-4 of the Copyright Act allows the exploitation of a work "in any way and to the extent considered necessary" for data analysis, including AI training, this exception is strictly limited when such use "unreasonably prejudices the interests of the copyright owner." Developers must conduct rigorous risk assessments before ingesting commercial datasets, journalistic archives, and proprietary enterprise data. If the generated output is capable of competing with or substituting the original work in the market, the training process may be deemed an infringement.
+
+3.2.2 Respect for Machine-Readable Opt-Outs and Terms of Service
+Developers must proactively identify and respect the intention of copyright holders regarding machine learning. If a rights holder expresses a clear intent to opt-out of data scraping through technical means (e.g., standard protocols like robots.txt, metadata tags) or explicitly prohibits such use in their Terms of Service (ToS), developers are strongly instructed to refrain from collecting such data. Ignoring these signals not only violates these guidelines but exposes the developer to civil liability for tort and breach of contract.
+
+3.2.3 Implementation of Provenance and Content Authenticity Technologies
+To foster a sustainable AI ecosystem, developers must implement robust, interoperable mechanisms to verify the origin of training data and the outputs generated. This includes:
+(a) Adoption of international standards such as the Coalition for Content Provenance and Authenticity (C2PA) and Originator Profile (OP).
+(b) Embedding cryptographic watermarks in all synthetic outputs (text, audio, video, and source code) to ensure downstream traceability.
+(c) Maintaining an immutable, audit-ready registry of all ingested data sources, their licensing status, and applied opt-out checks for a minimum of five (5) years.
+
+3.2.4 Voluntary Licensing and Fair Compensation Frameworks
+Where high-quality, specialized, or journalistic data is essential for model training, developers must not rely solely on copyright exceptions. Instead, developers are urged to proactively negotiate voluntary, transparent licensing agreements with rights holders. These frameworks should include tiered compensation models reflecting the volume of data ingested and its proportional contribution to the model's commercial value.
+
+Section IV: Governance, Auditing, and Human-in-the-Loop (HITL) Controls.
+4.1 Internal Review Boards: Developers must establish an independent AI Ethics and Compliance Board comprising legal, technical, and domain experts.
+4.2 Incident Reporting: Any unintended ingestion of protected intellectual property must be reported to the relevant rights holder and the regulatory oversight committee within 72 hours of discovery, followed by immediate retraining or targeted unlearning protocols."""
         }
 
         with inp_left:
