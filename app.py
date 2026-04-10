@@ -3189,28 +3189,67 @@ def main() -> None:
 
         # ── Sample text payloads ──────────────────────────────────────────
         _SAMPLES = {
-            "eu_ai_act": """Regulation (EU) 2024/1689 of the European Parliament and of the Council laying down harmonised rules on artificial intelligence (Artificial Intelligence Act).
+            "eu_ai_act": """Official Journal of the European Union
+REGULATION (EU) 2024/1689 OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL
+of 13 June 2024
+laying down harmonised rules on artificial intelligence (Artificial Intelligence Act) and amending certain Union legislative acts
+
+THE EUROPEAN PARLIAMENT AND THE COUNCIL OF THE EUROPEAN UNION,
+Having regard to the Treaty on the Functioning of the European Union, and in particular Articles 114 and 16(2) thereof,
+Having regard to the proposal from the European Commission,
+
+CHAPTER V
+GENERAL-PURPOSE AI MODELS
 
 Article 53: Obligations for providers of general-purpose AI models.
 1. Providers of general-purpose AI models shall:
+(a) draw up and keep up-to-date the technical documentation of the model, including its training and testing process and the results of its evaluation;
+(b) draw up, keep up-to-date and make available information and documentation to providers of AI systems who intend to integrate the general-purpose AI model into their AI systems;
 (c) put in place a policy to comply with Union copyright law, and in particular to identify and respect, including through state-of-the-art technologies, a reservation of rights expressed pursuant to Article 4(3) of Directive (EU) 2019/790;
 (d) draw up and make publicly available a sufficiently detailed summary about the content used for training of the general-purpose AI model, according to a template provided by the AI Office.
-2. The obligations set out in paragraph 1 shall not apply to providers of AI models that are released under a free and open-source licence, unless the general-purpose AI model presents a systemic risk.""",
+
+2. The obligations set out in paragraph 1, points (a) and (b), shall not apply to providers of AI models that are released under a free and open-source licence, whose parameters, including the weights, the information on the model architecture, and the information on model usage, are made publicly available, unless the general-purpose AI model presents a systemic risk.
+
+Article 54: Authorised representatives of providers of general-purpose AI models.
+1. Prior to placing a general-purpose AI model on the Union market, providers established in a third country shall, by written mandate, appoint an authorised representative which is established in the Union.
+
+CHAPTER XII
+PENALTIES
+
+Article 99: Fines for providers of general-purpose AI models.
+1. Non-compliance with the obligations laid down in Article 53 shall be subject to administrative fines of up to 15 000 000 EUR or, if the offender is an undertaking, up to 3 % of its total worldwide annual turnover for the preceding financial year, whichever is higher.""",
 
             "copied_act": """118th CONGRESS
 2d Session
 S. 4696
 
 IN THE SENATE OF THE UNITED STATES
+July 11, 2024
+Ms. CANTWELL (for herself, Mrs. BLACKBURN, and Mr. HEINRICH) introduced the following bill; which was read twice and referred to the Committee on Commerce, Science, and Transportation
+
 A BILL
 To provide for the protection of content origin and integrity from edited and deepfaked media, and for other purposes.
+
+Be it enacted by the Senate and House of Representatives of the United States of America in Congress assembled,
+
+SECTION 1. SHORT TITLE.
+This Act may be cited as the "Content Origin Protection and Integrity from Edited and Deepfaked Media Act of 2024" or the "COPIED Act".
+
+SEC. 2. DEFINITIONS.
+In this Act:
+(1) COVERED ARTIFICIAL INTELLIGENCE SYSTEM.—The term "covered artificial intelligence system" means any generative model, foundation model, or machine learning system that relies on the ingestion of large-scale datasets to generate text, audio, images, or video.
+(2) CONTENT PROVENANCE INFORMATION.—The term "content provenance information" means machine-readable data cryptographically bound to digital content that specifies the creator, origin, and permitted downstream uses of such content.
 
 SEC. 4. AI TRAINING AND PROVENANCE.
 (a) PROHIBITION ON UNAUTHORIZED TRAINING.—A provider of a covered artificial intelligence system may not use covered content to train an AI model or generate synthetic output if the owner of such content has attached content provenance information explicitly reserving rights or prohibiting such use.
 
 (b) REQUIRED TECHNICAL CONTROLS.—Covered platforms that aggregate news and media must provide standardized, machine-readable technical measures for rights holders to embed opt-out signals.
 
-(c) INVALIDITY OF BUNDLED CONSENT.—Terms of service agreements that condition the distribution or indexing of content on traditional search engines upon the implicit consent for generative AI training are deemed coercive and unenforceable. AI developers must negotiate separate, explicit licensing agreements for the ingestion of copyrighted journalistic and enterprise materials.""",
+(c) INVALIDITY OF BUNDLED CONSENT.—Terms of service agreements that condition the distribution or indexing of content on traditional search engines upon the implicit consent for generative AI training are deemed coercive and unenforceable. AI developers must negotiate separate, explicit licensing agreements for the ingestion of copyrighted journalistic and enterprise materials.
+
+SEC. 5. ENFORCEMENT BY THE FEDERAL TRADE COMMISSION.
+(a) UNFAIR OR DECEPTIVE ACTS OR PRACTICES.—A violation of section 4 shall be treated as a violation of a rule defining an unfair or deceptive act or practice prescribed under section 18(a)(1)(B) of the Federal Trade Commission Act (15 U.S.C. 57a(a)(1)(B)).
+(b) PENALTIES.—Any developer of a covered artificial intelligence system found in violation of Section 4(a) shall be liable for statutory damages of not less than $150,000 per infringed work, or disgorgement of profits directly attributable to the unauthorized ingestion, whichever is greater.""",
 
             "megaplatform": """MegaPlatform Universal Terms of Service - API & Ecosystem Agreement (Version 4.0, Effective Q3 2026).
 
