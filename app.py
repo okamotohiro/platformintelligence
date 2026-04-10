@@ -3198,8 +3198,11 @@ Article 53: Obligations for providers of general-purpose AI models.
 2. The obligations set out in paragraph 1 shall not apply to providers of AI models that are released under a free and open-source licence, unless the general-purpose AI model presents a systemic risk.""",
 
             "copied_act": """Content Origin Protection and Integrity from Edited and Deepfaked Media (COPIED) Act - Section 4: AI Training and Provenance.
+
 (a) PROHIBITION ON UNAUTHORIZED TRAINING.—A provider of a covered artificial intelligence system may not use covered content to train an AI model or generate synthetic output if the owner of such content has attached content provenance information explicitly reserving rights or prohibiting such use.
+
 (b) REQUIRED TECHNICAL CONTROLS.—Covered platforms that aggregate news and media must provide standardized, machine-readable technical measures for rights holders to embed opt-out signals.
+
 (c) INVALIDITY OF BUNDLED CONSENT.—Terms of service agreements that condition the distribution or indexing of content on traditional search engines upon the implicit consent for generative AI training are deemed coercive and unenforceable. AI developers must negotiate separate, explicit licensing agreements for the ingestion of copyrighted journalistic and enterprise materials.""",
 
             "megaplatform": """MegaPlatform Universal Terms of Service - API & Ecosystem Agreement (Version 4.0, Effective Q3 2026).
