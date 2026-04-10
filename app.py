@@ -3197,8 +3197,15 @@ Article 53: Obligations for providers of general-purpose AI models.
 (d) draw up and make publicly available a sufficiently detailed summary about the content used for training of the general-purpose AI model, according to a template provided by the AI Office.
 2. The obligations set out in paragraph 1 shall not apply to providers of AI models that are released under a free and open-source licence, unless the general-purpose AI model presents a systemic risk.""",
 
-            "copied_act": """Content Origin Protection and Integrity from Edited and Deepfaked Media (COPIED) Act - Section 4: AI Training and Provenance.
+            "copied_act": """118th CONGRESS
+2d Session
+S. 4696
 
+IN THE SENATE OF THE UNITED STATES
+A BILL
+To provide for the protection of content origin and integrity from edited and deepfaked media, and for other purposes.
+
+SEC. 4. AI TRAINING AND PROVENANCE.
 (a) PROHIBITION ON UNAUTHORIZED TRAINING.—A provider of a covered artificial intelligence system may not use covered content to train an AI model or generate synthetic output if the owner of such content has attached content provenance information explicitly reserving rights or prohibiting such use.
 
 (b) REQUIRED TECHNICAL CONTROLS.—Covered platforms that aggregate news and media must provide standardized, machine-readable technical measures for rights holders to embed opt-out signals.
@@ -3283,7 +3290,7 @@ Furthermore, developers are strongly encouraged to implement mechanisms to verif
             </div>""", unsafe_allow_html=True)
             row1_col1, row1_col2 = st.columns(2)
             with row1_col1:
-                if st.button("⬇ US COPIED Act (Draft)", use_container_width=True):
+                if st.button("⬇ US Senate Bill 4696 (AI Copyright & Provenance)", use_container_width=True):
                     st.session_state["policy_text"] = _SAMPLES["copied_act"]
                     st.rerun()
             with row1_col2:
